@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منظم مهام الطلاب - المشترك</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>منظم المهام اليومية للمشاريع</h1>
+    </header>
+
+    <section id="login-section">
+        <h2>أهلاً بك!</h2>
+        <label for="studentId">أدخل رمز الدخول الخاص بك:</label>
+        <input type="text" id="studentId" placeholder="مثلاً: S01 أو اسمك">
+        <button id="loginBtn">دخول</button>
+    </section>
+
+    <section id="tasks-section" class="hidden">
+        <h2>مهام الطالب: <span id="studentNameDisplay"></span></h2>
+        
+        <div id="tasks-list">
+            <p>جارٍ تحميل المهام...</p>
+        </div>
+
+        <button id="logoutBtn" class="secondary-btn">تسجيل الخروج</button>
+    </section>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <script src="app.js"></script>
+
+</body>
+</html>
