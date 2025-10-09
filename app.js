@@ -4,10 +4,8 @@
 
 // --- 0. الإعدادات الأولية وربط Firebase (تم تصحيحها) ---
 
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, doc, updateDoc } from "firebase/firestore";
+// تم نقل الـ Import إلى ملف index.html لحل مشكلة المتصفح
 
-// إعدادات Firebase الخاصة بك الآن في مكانها الصحيح
 const firebaseConfig = {
   apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
   authDomain: "studenttasksmanager.firebaseapp.com",
@@ -18,8 +16,9 @@ const firebaseConfig = {
   measurementId: "G-7QC4FVXKZG"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// هنا يتم استخدام الدوال التي تم تحميلها عبر index.html
+const app = firebase.initializeApp(firebaseConfig); 
+const db = firebase.firestore();
 
 
 // --- 1. متغيرات الحالة العامة ---
@@ -45,8 +44,8 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
 // --- 3. دالة جلب كل البيانات من مجموعة tasks ---
 async function loadAllStudentsData() {
-    const tasksCollection = collection(db, "tasks"); 
-    const querySnapshot = await getDocs(tasksCollection);
+    const tasksCollection = db.collection("tasks"); // تم تعديل طريقة استدعاء الدالة
+    const querySnapshot = await tasksCollection.get();
 
     allStudentsData = {}; 
     
@@ -140,13 +139,13 @@ function renderTasks(studentData) {
 async function claimTaskCompletion(taskIndex) {
     if (!currentStudentId) return;
 
-    const docRef = doc(db, "tasks", currentStudentId);
+    const docRef = db.collection("tasks").doc(currentStudentId); // تم تعديل طريقة استدعاء الدالة
     let studentData = allStudentsData[currentStudentId];
 
     studentData.tasks[taskIndex].claimed_by_student = true;
 
     try {
-        await updateDoc(docRef, {
+        await docRef.update({
             tasks: studentData.tasks 
         });
         renderTasks(studentData);
@@ -216,7 +215,7 @@ function renderTeacherReviewList() {
 
 // --- 9. دالة منح النقاط وتأكيد الموافقة ---
 async function approveTask(studentId, taskIndex, pointsValue) {
-    const docRef = doc(db, "tasks", studentId);
+    const docRef = db.collection("tasks").doc(studentId); // تم تعديل طريقة استدعاء الدالة
     let studentData = allStudentsData[studentId];
     
     studentData.tasks[taskIndex].approved_by_teacher = true;
@@ -225,7 +224,7 @@ async function approveTask(studentId, taskIndex, pointsValue) {
     const newScore = currentScore + pointsValue;
     
     try {
-        await updateDoc(docRef, {
+        await docRef.update({
             tasks: studentData.tasks,
             score: newScore
         });
