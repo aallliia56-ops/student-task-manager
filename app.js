@@ -2,18 +2,20 @@
 // بداية ملف app.js الموحد (للطالب والمعلم ونظام النقاط)
 // //////////////////////////////////////////////////////
 
-// --- 0. الإعدادات الأولية وربط Firebase ---
-// *******************************************************************
-// ملاحظة هامة جداً: يجب أن تعيد وضع الكود الخاص بك هنا
-// (معلومات apiKey, authDomain, إلخ) من Firebase Console
-// *******************************************************************
+// --- 0. الإعدادات الأولية وربط Firebase (تم تصحيحها) ---
 
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs, doc, updateDoc } from "firebase/firestore";
 
-// استخدم إعدادات Firebase الخاصة بك هنا
+// إعدادات Firebase الخاصة بك الآن في مكانها الصحيح
 const firebaseConfig = {
-  // ألصق إعداداتك هنا!
+  apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
+  authDomain: "studenttasksmanager.firebaseapp.com",
+  projectId: "studenttasksmanager",
+  storageBucket: "studenttasksmanager.firebasestorage.app",
+  messagingSenderId: "850350680089",
+  appId: "1:850350680089:web:51b71a710e938754bc6288",
+  measurementId: "G-7QC4FVXKZG"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -62,7 +64,6 @@ async function loadStudentData(studentId) {
     document.getElementById('student-info-score').innerText = `نقاطك الحالية: ${studentData.score || 0}`;
 
     renderTasks(studentData); 
-    // استدعاء دالة تبديل الشاشات الموجودة في index.html
     if (typeof showTasksScreen === 'function') showTasksScreen(studentId); 
 }
 
@@ -161,7 +162,6 @@ async function claimTaskCompletion(taskIndex) {
 
 // --- 7. دالة عرض لوحة المعلم ---
 function showTeacherDashboard() {
-    // استدعاء دالة تبديل الشاشات الموجودة في index.html
     if (typeof showTeacherScreen === 'function') showTeacherScreen(); 
 
     renderTeacherReviewList(); 
