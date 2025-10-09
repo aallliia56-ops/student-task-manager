@@ -1,10 +1,10 @@
 // //////////////////////////////////////////////////////
-// بداية ملف app.js الموحد (للطالب والمعلم ونظام النقاط)
+// بداية ملف app.js الموحد والنهائي
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase (تم تصحيحها) ---
 
-// تم نقل الـ Import إلى ملف index.html لحل مشكلة المتصفح
+// تم نقل استيراد الدوال إلى ملف index.html لحل خطأ المتصفح
 
 const firebaseConfig = {
   apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
@@ -16,7 +16,7 @@ const firebaseConfig = {
   measurementId: "G-7QC4FVXKZG"
 };
 
-// هنا يتم استخدام الدوال التي تم تحميلها عبر index.html
+// هنا يتم استخدام الدوال التي تم تحميلها عبر index.html (Compat Mode)
 const app = firebase.initializeApp(firebaseConfig); 
 const db = firebase.firestore();
 
@@ -44,7 +44,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
 // --- 3. دالة جلب كل البيانات من مجموعة tasks ---
 async function loadAllStudentsData() {
-    const tasksCollection = db.collection("tasks"); // تم تعديل طريقة استدعاء الدالة
+    const tasksCollection = db.collection("tasks"); 
     const querySnapshot = await tasksCollection.get();
 
     allStudentsData = {}; 
@@ -123,7 +123,8 @@ function renderTasks(studentData) {
         } else {
             actionButton.className = 'btn btn-success';
             actionButton.innerText = 'تم الإنجاز (للمراجعة)';
-            actionButton.onclick = () => claimTaskCompletion(index);
+            // التصحيح الأكيد: استخدام addEventListener لضمان الربط
+            actionButton.addEventListener('click', () => claimTaskCompletion(index)); 
         }
 
         taskElement.appendChild(actionButton);
@@ -139,7 +140,7 @@ function renderTasks(studentData) {
 async function claimTaskCompletion(taskIndex) {
     if (!currentStudentId) return;
 
-    const docRef = db.collection("tasks").doc(currentStudentId); // تم تعديل طريقة استدعاء الدالة
+    const docRef = db.collection("tasks").doc(currentStudentId); 
     let studentData = allStudentsData[currentStudentId];
 
     studentData.tasks[taskIndex].claimed_by_student = true;
@@ -148,9 +149,14 @@ async function claimTaskCompletion(taskIndex) {
         await docRef.update({
             tasks: studentData.tasks 
         });
-        renderTasks(studentData);
+        // تحديث الواجهة بعد النجاح
+        allStudentsData[currentStudentId].tasks[taskIndex].claimed_by_student = true;
+        renderTasks(allStudentsData[currentStudentId]);
+        
     } catch (e) {
         console.error("خطأ في تحديث المطالبة: ", e);
+        // التنبيه مهم في هذه المرحلة لتشخيص مشكلة الأمان
+        alert("فشل تحديث الإنجاز. قد تكون قواعد الأمان تمنع الكتابة.");
     }
 }
 
@@ -215,7 +221,7 @@ function renderTeacherReviewList() {
 
 // --- 9. دالة منح النقاط وتأكيد الموافقة ---
 async function approveTask(studentId, taskIndex, pointsValue) {
-    const docRef = db.collection("tasks").doc(studentId); // تم تعديل طريقة استدعاء الدالة
+    const docRef = db.collection("tasks").doc(studentId);
     let studentData = allStudentsData[studentId];
     
     studentData.tasks[taskIndex].approved_by_teacher = true;
