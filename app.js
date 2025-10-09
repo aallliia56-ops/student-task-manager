@@ -2,16 +2,22 @@
 // بداية ملف app.js الموحد (للطالب والمعلم ونظام النقاط)
 // //////////////////////////////////////////////////////
 
-// --- 0. الإعدادات الأولية وربط Firebase (تأكد من وجود هذا القسم في ملفك الفعلي) ---
+// --- 0. الإعدادات الأولية وربط Firebase ---
 // *******************************************************************
-// ملاحظة هامة: يجب أن تكون الأسطر الخاصة بربط Firebase موجودة هنا
-// (مثل import, firebaseConfig, initializeApp, getFirestore)
+// ملاحظة هامة جداً: يجب أن تعيد وضع الكود الخاص بك هنا
+// (معلومات apiKey, authDomain, إلخ) من Firebase Console
 // *******************************************************************
+
+import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs, doc, updateDoc } from "firebase/firestore";
-// import { initializeApp } from "firebase/app"; 
-// const firebaseConfig = { ... }; 
-// const app = initializeApp(firebaseConfig); 
-// const db = getFirestore(app); 
+
+// استخدم إعدادات Firebase الخاصة بك هنا
+const firebaseConfig = {
+  // ألصق إعداداتك هنا!
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 
 // --- 1. متغيرات الحالة العامة ---
@@ -37,7 +43,6 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
 // --- 3. دالة جلب كل البيانات من مجموعة tasks ---
 async function loadAllStudentsData() {
-    // يجب أن تكون الدالة "db" معرفة من اتصالك بـ Firebase
     const tasksCollection = collection(db, "tasks"); 
     const querySnapshot = await getDocs(tasksCollection);
 
@@ -134,7 +139,6 @@ function renderTasks(studentData) {
 async function claimTaskCompletion(taskIndex) {
     if (!currentStudentId) return;
 
-    // يجب أن تكون الدالة "db" معرفة
     const docRef = doc(db, "tasks", currentStudentId);
     let studentData = allStudentsData[currentStudentId];
 
@@ -212,7 +216,6 @@ function renderTeacherReviewList() {
 
 // --- 9. دالة منح النقاط وتأكيد الموافقة ---
 async function approveTask(studentId, taskIndex, pointsValue) {
-    // يجب أن تكون الدالة "db" معرفة
     const docRef = doc(db, "tasks", studentId);
     let studentData = allStudentsData[studentId];
     
