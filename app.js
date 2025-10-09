@@ -1,167 +1,170 @@
-// ************************************
-// 1. إعدادات وتهيئة FIREBASE
-// ************************************
+// *** 1. الإعدادات الأولية وتعديل الدوال الأساسية ***
 
-// تأكد أن هذه المفاتيح هي مفاتيح مشروعك الذي أنشأته
-const firebaseConfig = {
-    apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
-    authDomain: "studenttasksmanager.firebaseapp.com",
-    projectId: "studenttasksmanager",
-    storageBucket: "studenttasksmanager.firebasestorage.app",
-    messagingSenderId: "850350680089",
-    appId: "1:850350680089:web:51b71a710e938754bc6288",
-    measurementId: "G-7QC4FVXKZG"
-};
+// --- متغيرات الحالة العامة ---
+let allStudentsData = {};          // لتخزين بيانات جميع الطلاب (للمعلم)
+let currentStudentId = null;       // رمز الطالب الحالي (119)
+const TEACHER_CODE = 'TEACHER2025'; // الرمز السري للمعلم
 
-// تهيئة تطبيق Firebase وقاعدة البيانات
-const app = firebase.initializeApp(firebaseConfig);
-const db = app.firestore();
-
-// ************************************
-// 2. منطق واجهة المستخدم الأساسي
-// ************************************
-
-const loginSection = document.getElementById('login-section');
-const tasksSection = document.getElementById('tasks-section');
-const studentIdInput = document.getElementById('studentId');
-const studentNameDisplay = document.getElementById('studentNameDisplay');
-const loginBtn = document.getElementById('loginBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const tasksList = document.getElementById('tasks-list');
-
-let currentStudentId = localStorage.getItem('currentStudentId');
-
-// دالة لمعالجة تسجيل الدخول
-const handleLogin = () => {
-    const studentId = studentIdInput.value.trim().toUpperCase(); // تحويل للتوحيد
-
-    if (studentId) {
-        currentStudentId = studentId;
-        localStorage.setItem('currentStudentId', studentId);
-        
-        studentNameDisplay.textContent = studentId;
-
-        loginSection.classList.add('hidden');
-        tasksSection.classList.remove('hidden');
-
-        // الآن، استدعي دالة تحميل المهام
-        loadTasks(studentId); 
-
-    } else {
-        alert("الرجاء إدخال رمز الدخول.");
-    }
-};
-
-// دالة لتسجيل الخروج
-const handleLogout = () => {
-    currentStudentId = null;
-    localStorage.removeItem('currentStudentId');
-    studentIdInput.value = '';
-
-    tasksSection.classList.add('hidden');
-    loginSection.classList.remove('hidden');
-    tasksList.innerHTML = '<p>جارٍ تحميل المهام...</p>';
-};
-
-// ************************************
-// 3. الدوال الرئيسية لـ FIREBASE
-// ************************************
-
-let currentStudentTasks = []; // مصفوفة لحفظ المهام الحالية محلياً
-
-// دالة تحميل المهام
-const loadTasks = async (studentId) => {
-    tasksList.innerHTML = '<p>جاري الاتصال بقاعدة البيانات وتحميل المهام...</p>';
+// --- دالة معالجة تسجيل الدخول (الطالب والمعلم) ---
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const inputId = document.getElementById('student-id').value.trim();
     
-    try {
-        const docRef = db.collection('tasks').doc(studentId);
-        const doc = await docRef.get(); // طلب البيانات مرة واحدة
+    // محاولة تحميل كل البيانات (لضمان وجود بيانات المعلم)
+    await loadAllStudentsData();
 
-        if (doc.exists) {
-            const data = doc.data();
-            currentStudentTasks = data.tasks || []; // حفظ المهام في المتغير المحلي
-            renderTasks(currentStudentTasks);
-        } else {
-            tasksList.innerHTML = `<p style="color: red;">لم يتم العثور على مهام لرمز الدخول: ${studentId}</p>`;
+    if (inputId === TEACHER_CODE) {
+        // إذا كان المعلم، نذهب إلى لوحة القيادة
+        showTeacherDashboard();
+    } else if (inputId.match(/^\d+$/)) { 
+        // إذا كان رقم (طالب)، نقوم بتحميل بياناته
+        const studentId = inputId;
+        loadStudentData(studentId);
+    } else {
+        alert("الرجاء إدخال رمز طالب رقمي (مثل 119) أو الرمز السري للمعلم.");
+    }
+});
+
+// --- دالة لجلب كل البيانات من مجموعة tasks ---
+async function loadAllStudentsData() {
+    const tasksCollection = collection(db, "tasks"); 
+    const querySnapshot = await getDocs(tasksCollection);
+
+    allStudentsData = {}; 
+    
+    querySnapshot.forEach((doc) => {
+        allStudentsData[doc.id] = doc.data();
+    });
+}
+
+// --- دالة لمعالجة تسجيل دخول الطالب (وعرض معلوماته) ---
+async function loadStudentData(studentId) {
+    currentStudentId = studentId;
+
+    if (Object.keys(allStudentsData).length === 0) {
+        await loadAllStudentsData(); // إذا لم تكن البيانات قد تم تحميلها
+    }
+
+    const studentData = allStudentsData[studentId];
+
+    if (studentData && studentData.tasks) {
+        // عرض الاسم والنقاط أولاً
+        document.getElementById('student-info-name').innerText = `أهلاً بك، ${studentData.student_name}`;
+        document.getElementById('student-info-score').innerText = `نقاطك الحالية: ${studentData.score || 0}`;
+
+        renderTasks(studentData); 
+        // هذه دالة افتراضية يجب أن تكون موجودة في index.html لإخفاء شاشة الدخول
+        showTasksScreen(studentId); 
+    } else {
+        document.getElementById('tasks-container').innerHTML = `<p class="alert alert-danger">لم يتم العثور على مهام للرمز: ${studentId}</p>`;
+        showTasksScreen(studentId);
+    }
+}
+// *** 2. منطق عرض المهام المشروطة ***
+
+function renderTasks(studentData) {
+    const tasksContainer = document.getElementById('tasks-container');
+    tasksContainer.innerHTML = '';
+    
+    const tasks = studentData.tasks || [];
+    const now = new Date(); // التاريخ والوقت الحالي
+    let canRenderNextTask = true; // مفتاح للتحكم في ظهور المهام المتسلسلة
+
+    tasks.forEach((task, index) => {
+        // تخطي المهام التي وافق عليها المعلم بشكل نهائي
+        if (task.approved_by_teacher) {
+            return;
         }
-    } catch (error) {
-        // إذا ظهر خطأ هنا، فعادةً يكون بسبب قواعد الأمان أو خطأ في الربط
-        console.error("خطأ في جلب المهام:", error);
-        tasksList.innerHTML = `<p style="color: red;">حدث خطأ في الاتصال. تأكد من قواعد Firebase (allow read, write: if true).</p>`;
-    }
-};
-
-// دالة تحديث حالة الإنجاز (Toggle Complete)
-window.toggleComplete = async (taskIndex) => {
-    // 1. تحديث الحالة محلياً
-    const taskToUpdate = currentStudentTasks[taskIndex];
-    taskToUpdate.completed = !taskToUpdate.completed; // عكس الحالة (صحيح -> خطأ / خطأ -> صحيح)
-
-    // 2. تحديث قائمة المهام على الواجهة فوراً
-    renderTasks(currentStudentTasks);
-
-    // 3. إرسال المصفوفة المُحدّثة بالكامل إلى Firebase
-    try {
-        const docRef = db.collection('tasks').doc(currentStudentId);
         
-        // نُرسل المصفوفة المُعدَّلة كاملةً لتحديث حقل 'tasks'
-        await docRef.update({
-            tasks: currentStudentTasks 
-        });
+        // 1. التحقق من شرط الاعتمادية (depends_on)
+        const isDependent = task.depends_on !== -1 && task.depends_on !== null;
+        let isPrerequisiteApproved = true;
+
+        if (isDependent) {
+            const prerequisiteTask = tasks[task.depends_on];
+            // المهمة السابقة يجب أن تكون معتمدة من المعلم (approved_by_teacher)
+            isPrerequisiteApproved = prerequisiteTask && prerequisiteTask.approved_by_teacher;
+        }
         
-        console.log("تم تحديث المهمة بنجاح في Firebase!");
+        // 2. التحقق من شرط التاريخ والوقت (release_date/time)
+        const releaseDateTime = new Date(`${task.release_date}T${task.release_time}:00`);
+        const isReleased = now >= releaseDateTime;
 
-    } catch (error) {
-        alert("فشل في تحديث المهمة على الإنترنت. تحقق من الاتصال.");
-        console.error("خطأ في تحديث المهمة:", error);
-        // إعادة المهمة لحالتها الأصلية في حال فشل التحديث
-        taskToUpdate.completed = !taskToUpdate.completed;
-        renderTasks(currentStudentTasks);
-    }
-};
+        // --- منطق عرض المهمة للطالب ---
 
-// ************************************
-// 4. دالة عرض المهام على الواجهة
-// ************************************
-
-const renderTasks = (tasks) => {
-    if (tasks.length === 0) {
-        tasksList.innerHTML = '<p>لا توجد مهام حالية مسندة إليك.</p>';
-        return;
-    }
-
-    const tasksHTML = tasks.map((task, index) => {
-        const statusText = task.completed ? 'أُنجزت ✔️' : 'في الانتظار ⏳';
-        const buttonText = task.completed ? 'إلغاء الإنجاز' : 'تم الإنجاز';
-        const itemClass = task.completed ? 'completed-task' : '';
-
-        return `
-            <div class="task-item ${itemClass}">
-                <span class="task-description" style="text-decoration: ${task.completed ? 'line-through' : 'none'};">
-                    ${task.description}
-                </span>
-                <div>
-                    <span class="task-status">${statusText}</span>
-                    <button 
-                        data-index="${index}" 
-                        onclick="toggleComplete(${index})">
-                        ${buttonText}
-                    </button>
-                </div>
-            </div>
+        // إذا كانت المهمة تعتمد على مهمة سابقة لم تتم الموافقة عليها، أو لم يأتِ وقتها
+        if (!isPrerequisiteApproved || !isReleased) {
+            
+            // إذا كانت هذه هي أول مهمة في السلسلة لا تتحقق شروطها، نعرض رسالة
+            if(isDependent && !isPrerequisiteApproved && canRenderNextTask) {
+                 tasksContainer.innerHTML += `<div class="task-item alert-info">المهمة التالية: الرجاء انتظار موافقة المعلم على مهمة: **${tasks[task.depends_on].description}**.</div>`;
+            } else if (!isReleased && canRenderNextTask) {
+                 tasksContainer.innerHTML += `<div class="task-item alert-info">المهمة ستتاح في: **${task.release_date} الساعة ${task.release_time}**.</div>`;
+            }
+            // إيقاف عرض باقي المهام في السلسلة
+            canRenderNextTask = false;
+            return; 
+        }
+        
+        // إذا تم تلبية كل الشروط، قم بإنشاء العنصر:
+        const taskElement = document.createElement('div');
+        taskElement.className = 'task-item';
+        taskElement.innerHTML = `
+            <p class="task-description">
+                <span class="task-type"> [${task.task_type} - ${task.points_value} نقاط] </span>
+                ${task.description} 
+            </p>
         `;
-    }).join(''); 
+        
+        const actionButton = document.createElement('button');
+        
+        if (task.claimed_by_student) {
+            // حالة: قيد مراجعة المعلم
+            actionButton.className = 'btn btn-warning';
+            actionButton.innerText = 'قيد مراجعة المعلم';
+            actionButton.disabled = true;
+            taskElement.className += ' claimed';
+        } else {
+            // زر الإنجاز (Student claims completion)
+            actionButton.className = 'btn btn-success';
+            actionButton.innerText = 'تم الإنجاز (للمراجعة)';
+            actionButton.onclick = () => claimTaskCompletion(index);
+        }
 
-    tasksList.innerHTML = tasksHTML;
-};
+        taskElement.appendChild(actionButton);
+        tasksContainer.appendChild(taskElement);
 
-// ************************************
-// 5. ربط الدوال بأزرار الواجهة والتحقق عند التحميل
-// ************************************
-loginBtn.addEventListener('click', handleLogin);
-logoutBtn.addEventListener('click', handleLogout);
+        // إذا كانت المهمة في سلسلة (isDependent)، نجعل canRenderNextTask = true
+        // وإلا (مهمة مستقلة)، لا نغير حالة canRenderNextTask للسلسلة.
+        if (isDependent) {
+            canRenderNextTask = true; 
+        }
+    });
+}
+// *** 3. منطق تحديث الطالب (مطالبة المراجعة) ***
 
-if (currentStudentId) {
-    studentIdInput.value = currentStudentId;
-    handleLogin(); 
+async function claimTaskCompletion(taskIndex) {
+    if (!currentStudentId) return;
+
+    const docRef = doc(db, "tasks", currentStudentId);
+    
+    // تحديث الحالة في الذاكرة المحلية أولاً
+    let studentData = allStudentsData[currentStudentId];
+    if (!studentData || !studentData.tasks[taskIndex]) return;
+
+    // تحديث الحقل: الطالب يطالب بالإنجاز
+    studentData.tasks[taskIndex].claimed_by_student = true;
+
+    // تحديث البيانات في Firebase
+    try {
+        await updateDoc(docRef, {
+            tasks: studentData.tasks 
+        });
+        console.log(`المهمة ${taskIndex} تم المطالبة بإنجازها بواسطة ${currentStudentId}`);
+        
+        // إعادة عرض المهام بعد التحديث (لتظهر كـ "قيد المراجعة")
+        renderTasks(studentData);
+    } catch (e) {
+        console.error("خطأ في تحديث المطالبة: ", e);
+    }
 }
