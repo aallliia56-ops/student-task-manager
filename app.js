@@ -4,8 +4,6 @@
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
 
-// تم نقل استيراد الدوال إلى ملف index.html لحل خطأ المتصفح
-
 const firebaseConfig = {
   apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
   authDomain: "studenttasksmanager.firebaseapp.com",
@@ -16,7 +14,6 @@ const firebaseConfig = {
   measurementId: "G-7QC4FVXKZG"
 };
 
-// هنا يتم استخدام الدوال التي تم تحميلها عبر index.html (Compat Mode)
 const app = firebase.initializeApp(firebaseConfig); 
 const db = firebase.firestore();
 
@@ -51,7 +48,6 @@ if (loginForm) {
 
 // --- 3. دالة جلب كل البيانات من مجموعة tasks ---
 async function loadAllStudentsData() {
-    // استخدام طريقة الـ Compat Mode
     const tasksCollection = db.collection("tasks"); 
     const querySnapshot = await tasksCollection.get();
 
@@ -60,7 +56,7 @@ async function loadAllStudentsData() {
     querySnapshot.forEach((doc) => {
         allStudentsData[doc.id] = doc.data();
     });
-} // <--- تم التأكد من إغلاق الدالة بقوس واحد فقط (حل خطأ SyntaxError)
+} 
 
 // --- 4. دالة عرض واجهة الطالب ---
 async function loadStudentData(studentId) {
@@ -71,7 +67,6 @@ async function loadStudentData(studentId) {
     document.getElementById('student-info-score').innerText = `نقاطك الحالية: ${studentData.score || 0}`;
 
     renderTasks(studentData); 
-    // يتم استدعاء دالة عرض الشاشة الموجودة في index.html
     if (typeof showTasksScreen === 'function') showTasksScreen(studentId); 
 }
 
@@ -133,7 +128,6 @@ function renderTasks(studentData) {
             actionButton.className = 'btn btn-success';
             actionButton.innerText = 'تم الإنجاز (للمراجعة)';
             
-            // الحل الأقوى: استخدام data attribute لتمرير الـ index بشكل آمن وموثوق
             actionButton.setAttribute('data-task-index', index);
             actionButton.addEventListener('click', function() {
                 const taskIndex = this.getAttribute('data-task-index');
@@ -152,7 +146,6 @@ function renderTasks(studentData) {
 
 // --- 6. منطق تحديث الطالب (مطالبة المراجعة) ---
 async function claimTaskCompletion(taskIndex) {
-    // سطر التشخيص
     console.log("Button Click Registered. Attempting Firestore Update..."); 
 
     if (!currentStudentId) {
@@ -166,19 +159,19 @@ async function claimTaskCompletion(taskIndex) {
     studentData.tasks[taskIndex].claimed_by_student = true;
 
     try {
-        // الإصلاح النهائي: استخدام set مع merge لضمان نجاح عملية الكتابة
+        // الحل الجذري: إرسال كل بيانات الوثيقة لضمان نجاح الكتابة 
         await docRef.set({ 
-            tasks: studentData.tasks 
+            student_name: studentData.student_name,
+            score: studentData.score,
+            tasks: studentData.tasks
         }, { merge: true });
         
-        // تحديث الواجهة بعد النجاح
         allStudentsData[currentStudentId].tasks[taskIndex].claimed_by_student = true;
         renderTasks(allStudentsData[currentStudentId]);
         
     } catch (e) {
-        console.error("خطأ في تحديث المطالبة: ", e);
-        // التنبيه مهم لتشخيص مشكلة الأمان
-        alert("فشل تحديث الإنجاز. الرجاء التأكد من قواعد الأمان (Security Rules) في Firebase.");
+        console.error("خطأ جذري في تحديث المطالبة: ", e);
+        alert("فشل تحديث الإنجاز. الرجاء التأكد من قواعد الأمان المفتوحة والنسخة الأخيرة من الكود.");
     }
 }
 
@@ -189,7 +182,6 @@ async function claimTaskCompletion(taskIndex) {
 
 // --- 7. دالة عرض لوحة المعلم ---
 function showTeacherDashboard() {
-    // يتم استدعاء دالة عرض الشاشة الموجودة في index.html
     if (typeof showTeacherScreen === 'function') showTeacherScreen(); 
 
     renderTeacherReviewList(); 
@@ -244,7 +236,6 @@ function renderTeacherReviewList() {
 
 // --- 9. دالة منح النقاط وتأكيد الموافقة ---
 async function approveTask(studentId, taskIndex, pointsValue) {
-    // استخدام طريقة الـ Compat Mode
     const docRef = db.collection("tasks").doc(studentId);
     let studentData = allStudentsData[studentId];
     
