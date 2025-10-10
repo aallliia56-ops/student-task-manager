@@ -136,11 +136,8 @@ function renderTasks(studentData) {
             actionButton.className = 'btn btn-success';
             actionButton.innerText = 'تم الإنجاز (للمراجعة)';
             
-            actionButton.setAttribute('data-task-index', index);
-            actionButton.addEventListener('click', function() {
-                const taskIndex = this.getAttribute('data-task-index');
-                processTaskClaim(parseInt(taskIndex)); // <--- تم تغيير الاسم هنا
-            });
+            // الحل البديل: الاستدعاء المباشر عبر onclick لتجاوز فشل addEventListener
+            actionButton.setAttribute('onclick', `processTaskClaim(${index})`); 
         }
 
         taskElement.appendChild(actionButton);
@@ -153,7 +150,7 @@ function renderTasks(studentData) {
 }
 
 // --- 6. منطق تحديث الطالب (مطالبة المراجعة) ---
-async function processTaskClaim(taskIndex) { // <--- تم تغيير اسم الدالة هنا
+async function processTaskClaim(taskIndex) {
     console.log("Button Click Registered. Attempting Firestore Update..."); 
 
     if (!currentStudentId) {
@@ -169,7 +166,6 @@ async function processTaskClaim(taskIndex) { // <--- تم تغيير اسم ال
 
     try {
         // العودة لاستخدام update() (لأنها تعمل في قسم المعلم)
-        // هذا هو الحل الجذري الأخير لضمان قبول Firebase للتحديث
         await docRef.update({ 
             tasks: studentData.tasks 
         }); 
