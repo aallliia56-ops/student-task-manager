@@ -166,10 +166,10 @@ async function claimTaskCompletion(taskIndex) {
     studentData.tasks[taskIndex].claimed_by_student = true;
 
     try {
-        // استخدام طريقة الـ Compat Mode
-        await docRef.update({
+        // الإصلاح النهائي: استخدام set مع merge لضمان نجاح عملية الكتابة
+        await docRef.set({ 
             tasks: studentData.tasks 
-        });
+        }, { merge: true });
         
         // تحديث الواجهة بعد النجاح
         allStudentsData[currentStudentId].tasks[taskIndex].claimed_by_student = true;
