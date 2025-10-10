@@ -47,7 +47,6 @@ if (loginForm) {
     });
 } else {
     console.error("ERROR: 'login-form' element NOT found. Check index.html."); // NEW DIAGNOSTIC
-}
 });
 
 // --- 3. دالة جلب كل البيانات من مجموعة tasks ---
@@ -299,4 +298,5 @@ function renderLeaderboard() {
         leaderboardContainer.appendChild(rankItem);
     });
 }
+
 
