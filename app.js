@@ -139,7 +139,7 @@ function renderTasks(studentData) {
             actionButton.setAttribute('data-task-index', index);
             actionButton.addEventListener('click', function() {
                 const taskIndex = this.getAttribute('data-task-index');
-                claimTaskCompletion(parseInt(taskIndex));
+                processTaskClaim(parseInt(taskIndex)); // <--- تم تغيير الاسم هنا
             });
         }
 
@@ -153,7 +153,7 @@ function renderTasks(studentData) {
 }
 
 // --- 6. منطق تحديث الطالب (مطالبة المراجعة) ---
-async function claimTaskCompletion(taskIndex) {
+async function processTaskClaim(taskIndex) { // <--- تم تغيير اسم الدالة هنا
     console.log("Button Click Registered. Attempting Firestore Update..."); 
 
     if (!currentStudentId) {
@@ -164,22 +164,26 @@ async function claimTaskCompletion(taskIndex) {
     const docRef = db.collection("tasks").doc(currentStudentId); 
     let studentData = allStudentsData[currentStudentId];
 
+    // الخطوة 1: تحديث حالة المهمة محلياً
     studentData.tasks[taskIndex].claimed_by_student = true;
 
     try {
-        // الحل الجذري: إرسال كل بيانات الوثيقة لضمان نجاح الكتابة 
-        await docRef.set({ 
-            student_name: studentData.student_name,
-            score: studentData.score,
-            tasks: studentData.tasks
-        }, { merge: true });
-        
+        // العودة لاستخدام update() (لأنها تعمل في قسم المعلم)
+        // هذا هو الحل الجذري الأخير لضمان قبول Firebase للتحديث
+        await docRef.update({ 
+            tasks: studentData.tasks 
+        }); 
+
+        console.log("SUCCESS: Firestore update initiated."); 
+
+        // تحديث الواجهة بعد النجاح
         allStudentsData[currentStudentId].tasks[taskIndex].claimed_by_student = true;
         renderTasks(allStudentsData[currentStudentId]);
         
     } catch (e) {
-        console.error("خطأ جذري في تحديث المطالبة: ", e);
-        alert("فشل تحديث الإنجاز. الرجاء التأكد من قواعد الأمان المفتوحة والنسخة الأخيرة من الكود.");
+        // سنظهر رسالة الخطأ في الـ Console لمعرفة سبب الفشل الآن
+        console.error("CRITICAL FAILURE: Firestore Write Failed.", e); 
+        alert("فشل تحديث الإنجاز. الرجاء مراجعة الـ Console لمعرفة سبب الرفض.");
     }
 }
 
