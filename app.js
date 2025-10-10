@@ -44,6 +44,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
 // --- 3. دالة جلب كل البيانات من مجموعة tasks ---
 async function loadAllStudentsData() {
+    // استخدام طريقة الـ Compat Mode
     const tasksCollection = db.collection("tasks"); 
     const querySnapshot = await tasksCollection.get();
 
@@ -63,6 +64,7 @@ async function loadStudentData(studentId) {
     document.getElementById('student-info-score').innerText = `نقاطك الحالية: ${studentData.score || 0}`;
 
     renderTasks(studentData); 
+    // يتم استدعاء دالة عرض الشاشة الموجودة في index.html
     if (typeof showTasksScreen === 'function') showTasksScreen(studentId); 
 }
 
@@ -123,8 +125,13 @@ function renderTasks(studentData) {
         } else {
             actionButton.className = 'btn btn-success';
             actionButton.innerText = 'تم الإنجاز (للمراجعة)';
-            // استخدام addEventListener لضمان الربط
-            actionButton.addEventListener('click', () => claimTaskCompletion(index)); 
+            
+            // الحل الأقوى: استخدام data attribute لتمرير الـ index بشكل آمن وموثوق
+            actionButton.setAttribute('data-task-index', index);
+            actionButton.addEventListener('click', function() {
+                const taskIndex = this.getAttribute('data-task-index');
+                claimTaskCompletion(parseInt(taskIndex));
+            });
         }
 
         taskElement.appendChild(actionButton);
@@ -138,7 +145,7 @@ function renderTasks(studentData) {
 
 // --- 6. منطق تحديث الطالب (مطالبة المراجعة) ---
 async function claimTaskCompletion(taskIndex) {
-    // سطر التشخيص الجديد: يجب أن يظهر هذا السطر في الـ Console عند الضغط على الزر
+    // سطر التشخيص: إذا ظهر هذا، فالمشكلة ليست في ربط الزر
     console.log("Button Click Registered. Attempting Firestore Update..."); 
 
     if (!currentStudentId) {
@@ -152,6 +159,7 @@ async function claimTaskCompletion(taskIndex) {
     studentData.tasks[taskIndex].claimed_by_student = true;
 
     try {
+        // استخدام طريقة الـ Compat Mode
         await docRef.update({
             tasks: studentData.tasks 
         });
@@ -162,7 +170,7 @@ async function claimTaskCompletion(taskIndex) {
         
     } catch (e) {
         console.error("خطأ في تحديث المطالبة: ", e);
-        // التنبيه يظهر إذا فشلت عملية الكتابة في Firebase
+        // التنبيه مهم لتشخيص مشكلة الأمان
         alert("فشل تحديث الإنجاز. الرجاء التأكد من قواعد الأمان (Security Rules) في Firebase.");
     }
 }
@@ -174,6 +182,7 @@ async function claimTaskCompletion(taskIndex) {
 
 // --- 7. دالة عرض لوحة المعلم ---
 function showTeacherDashboard() {
+    // يتم استدعاء دالة عرض الشاشة الموجودة في index.html
     if (typeof showTeacherScreen === 'function') showTeacherScreen(); 
 
     renderTeacherReviewList(); 
@@ -228,6 +237,7 @@ function renderTeacherReviewList() {
 
 // --- 9. دالة منح النقاط وتأكيد الموافقة ---
 async function approveTask(studentId, taskIndex, pointsValue) {
+    // استخدام طريقة الـ Compat Mode
     const docRef = db.collection("tasks").doc(studentId);
     let studentData = allStudentsData[studentId];
     
