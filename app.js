@@ -1,5 +1,5 @@
 // //////////////////////////////////////////////////////
-// بداية ملف app.js الموحد والنهائي
+// بداية ملف app.js الموحد والنهائي (مع حل حالة المهمة المدمجة)
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
@@ -88,7 +88,8 @@ function renderTasks(studentData) {
     let canRenderNextTask = true; 
 
     tasks.forEach((task, index) => {
-        if (task.approved_by_teacher) return;
+        // التعديل: إيقاف العرض إذا كانت الحالة 'approved'
+        if (task.status === "approved") return; 
         
         // 1. التحقق من شرط الاعتمادية (depends_on)
         const isDependent = task.depends_on !== -1 && task.depends_on !== null;
@@ -96,7 +97,8 @@ function renderTasks(studentData) {
 
         if (isDependent) {
             const prerequisiteTask = tasks[task.depends_on];
-            isPrerequisiteApproved = prerequisiteTask && prerequisiteTask.approved_by_teacher;
+            // التعديل: التحقق من حالة المهمة السابقة
+            isPrerequisiteApproved = prerequisiteTask && (prerequisiteTask.status === "approved"); 
         }
         
         // 2. التحقق من شرط التاريخ والوقت
@@ -128,15 +130,16 @@ function renderTasks(studentData) {
         
         const actionButton = document.createElement('button');
         
-        if (task.claimed_by_student) {
+        // التعديل: إذا كانت الحالة 'claimed' (قيد المراجعة)
+        if (task.status === "claimed") { 
             actionButton.className = 'btn btn-warning';
             actionButton.innerText = 'قيد مراجعة المعلم';
             actionButton.disabled = true;
         } else {
+            // الحالة الافتراضية 'pending' (جاهز للإنجاز)
             actionButton.className = 'btn btn-success';
             actionButton.innerText = 'تم الإنجاز (للمراجعة)';
-            
-            // الحل البديل: الاستدعاء المباشر عبر onclick لتجاوز فشل addEventListener
+            // الحل البديل لـ onclick
             actionButton.setAttribute('onclick', `processTaskClaim(${index})`); 
         }
 
@@ -161,11 +164,10 @@ async function processTaskClaim(taskIndex) {
     const docRef = db.collection("tasks").doc(currentStudentId); 
     let studentData = allStudentsData[currentStudentId];
 
-    // الخطوة 1: تحديث حالة المهمة محلياً
-    studentData.tasks[taskIndex].claimed_by_student = true;
+    // التعديل: تغيير الحالة إلى 'claimed'
+    studentData.tasks[taskIndex].status = "claimed"; 
 
     try {
-        // العودة لاستخدام update() (لأنها تعمل في قسم المعلم)
         await docRef.update({ 
             tasks: studentData.tasks 
         }); 
@@ -173,11 +175,10 @@ async function processTaskClaim(taskIndex) {
         console.log("SUCCESS: Firestore update initiated."); 
 
         // تحديث الواجهة بعد النجاح
-        allStudentsData[currentStudentId].tasks[taskIndex].claimed_by_student = true;
+        allStudentsData[currentStudentId].tasks[taskIndex].status = "claimed";
         renderTasks(allStudentsData[currentStudentId]);
         
     } catch (e) {
-        // سنظهر رسالة الخطأ في الـ Console لمعرفة سبب الفشل الآن
         console.error("CRITICAL FAILURE: Firestore Write Failed.", e); 
         alert("فشل تحديث الإنجاز. الرجاء مراجعة الـ Console لمعرفة سبب الرفض.");
     }
@@ -209,7 +210,8 @@ function renderTeacherReviewList() {
         const tasks = student.tasks || [];
 
         tasks.forEach((task, taskIndex) => {
-            if (task.claimed_by_student && !task.approved_by_teacher) {
+            // التعديل: التحقق من الحالة 'claimed' (بدلاً من المتغيرات المنطقية)
+            if (task.status === "claimed") { 
                 pendingReviewCount++;
                 
                 const reviewItem = document.createElement('div');
@@ -247,7 +249,8 @@ async function approveTask(studentId, taskIndex, pointsValue) {
     const docRef = db.collection("tasks").doc(studentId);
     let studentData = allStudentsData[studentId];
     
-    studentData.tasks[taskIndex].approved_by_teacher = true;
+    // التعديل: تغيير الحالة إلى 'approved'
+    studentData.tasks[taskIndex].status = "approved";
     
     const currentScore = studentData.score || 0;
     const newScore = currentScore + pointsValue;
