@@ -66,10 +66,20 @@ async function loadStudentData(studentId) {
     document.getElementById('student-info-name').innerText = `أهلاً بك، ${studentData.student_name}`;
     document.getElementById('student-info-score').innerText = `نقاطك الحالية: ${studentData.score || 0}`;
 
+    // سطر التشخيص: للتأكد من أننا نصل إلى دالة عرض المهام
+    console.log("Attempting to render tasks..."); 
+    
     renderTasks(studentData); 
-    if (typeof showTasksScreen === 'function') showTasksScreen(studentId); 
+    
+    // يتم استدعاء دالة عرض الشاشة الموجودة في index.html
+    if (typeof showTasksScreen === 'function') {
+        console.log("showTasksScreen function found and called.");
+        showTasksScreen(studentId);
+    } else {
+        // إذا فشل العرض، تظهر هذه الرسالة:
+        console.error("ERROR: showTasksScreen is not defined in index.html. Cannot show task screen.");
+    }
 }
-
 // --- 5. منطق عرض المهام المشروطة (القلب النابض) ---
 function renderTasks(studentData) {
     const tasksContainer = document.getElementById('tasks-container');
@@ -292,4 +302,5 @@ function renderLeaderboard() {
         leaderboardContainer.appendChild(rankItem);
     });
 }
+
 
