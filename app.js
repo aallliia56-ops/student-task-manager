@@ -3,7 +3,6 @@
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
-
 const firebaseConfig = {
   apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
   authDomain: "studenttasksmanager.firebaseapp.com",
@@ -66,7 +65,6 @@ async function loadStudentData(studentId) {
     document.getElementById('student-info-name').innerText = `أهلاً بك، ${studentData.student_name}`;
     document.getElementById('student-info-score').innerText = `نقاطك الحالية: ${studentData.score || 0}`;
 
-    // سطر التشخيص: للتأكد من أننا نصل إلى دالة عرض المهام
     console.log("Attempting to render tasks..."); 
     
     renderTasks(studentData); 
@@ -76,16 +74,13 @@ async function loadStudentData(studentId) {
         console.log("showTasksScreen function found and called.");
         showTasksScreen(studentId);
     } else {
-        // إذا فشل العرض، تظهر هذه الرسالة:
         console.error("ERROR: showTasksScreen is not defined in index.html. Cannot show task screen.");
     }
 }
+
 // --- 5. منطق عرض المهام المشروطة (القلب النابض) ---
 function renderTasks(studentData) {
     const tasksContainer = document.getElementById('tasks-container');
-      // سطر التشخيص الجديد
-    console.log("Rendering tasks for student:", studentData.student_name);
-  
     tasksContainer.innerHTML = '';
     
     const tasks = studentData.tasks || [];
@@ -302,5 +297,3 @@ function renderLeaderboard() {
         leaderboardContainer.appendChild(rankItem);
     });
 }
-
-
