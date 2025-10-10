@@ -73,6 +73,9 @@ async function loadStudentData(studentId) {
 // --- 5. منطق عرض المهام المشروطة (القلب النابض) ---
 function renderTasks(studentData) {
     const tasksContainer = document.getElementById('tasks-container');
+      // سطر التشخيص الجديد
+    console.log("Rendering tasks for student:", studentData.student_name);
+  
     tasksContainer.innerHTML = '';
     
     const tasks = studentData.tasks || [];
@@ -289,3 +292,4 @@ function renderLeaderboard() {
         leaderboardContainer.appendChild(rankItem);
     });
 }
+
