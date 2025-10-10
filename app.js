@@ -2,7 +2,7 @@
 // بداية ملف app.js الموحد والنهائي
 // //////////////////////////////////////////////////////
 
-// --- 0. الإعدادات الأولية وربط Firebase (تم تصحيحها) ---
+// --- 0. الإعدادات الأولية وربط Firebase ---
 
 // تم نقل استيراد الدوال إلى ملف index.html لحل خطأ المتصفح
 
@@ -123,7 +123,7 @@ function renderTasks(studentData) {
         } else {
             actionButton.className = 'btn btn-success';
             actionButton.innerText = 'تم الإنجاز (للمراجعة)';
-            // التصحيح الأكيد: استخدام addEventListener لضمان الربط
+            // استخدام addEventListener لضمان الربط
             actionButton.addEventListener('click', () => claimTaskCompletion(index)); 
         }
 
@@ -138,7 +138,13 @@ function renderTasks(studentData) {
 
 // --- 6. منطق تحديث الطالب (مطالبة المراجعة) ---
 async function claimTaskCompletion(taskIndex) {
-    if (!currentStudentId) return;
+    // سطر التشخيص الجديد: يجب أن يظهر هذا السطر في الـ Console عند الضغط على الزر
+    console.log("Button Click Registered. Attempting Firestore Update..."); 
+
+    if (!currentStudentId) {
+        console.error("No current student ID found.");
+        return;
+    }
 
     const docRef = db.collection("tasks").doc(currentStudentId); 
     let studentData = allStudentsData[currentStudentId];
@@ -149,14 +155,15 @@ async function claimTaskCompletion(taskIndex) {
         await docRef.update({
             tasks: studentData.tasks 
         });
+        
         // تحديث الواجهة بعد النجاح
         allStudentsData[currentStudentId].tasks[taskIndex].claimed_by_student = true;
         renderTasks(allStudentsData[currentStudentId]);
         
     } catch (e) {
         console.error("خطأ في تحديث المطالبة: ", e);
-        // التنبيه مهم في هذه المرحلة لتشخيص مشكلة الأمان
-        alert("فشل تحديث الإنجاز. قد تكون قواعد الأمان تمنع الكتابة.");
+        // التنبيه يظهر إذا فشلت عملية الكتابة في Firebase
+        alert("فشل تحديث الإنجاز. الرجاء التأكد من قواعد الأمان (Security Rules) في Firebase.");
     }
 }
 
