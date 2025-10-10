@@ -30,7 +30,7 @@ const TEACHER_CODE = 'TEACHER2025';
 const loginForm = document.getElementById('login-form');
 
 if (loginForm) {
-    console.log("SUCCESS: 'login-form' element was found."); // NEW DIAGNOSTIC
+    console.log("SUCCESS: 'login-form' element was found."); 
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const inputId = document.getElementById('student-id').value.trim();
@@ -46,8 +46,8 @@ if (loginForm) {
         }
     });
 } else {
-    console.error("ERROR: 'login-form' element NOT found. Check index.html."); // NEW DIAGNOSTIC
-});
+    console.error("ERROR: 'login-form' element NOT found. Check index.html."); 
+}
 
 // --- 3. دالة جلب كل البيانات من مجموعة tasks ---
 async function loadAllStudentsData() {
@@ -60,7 +60,7 @@ async function loadAllStudentsData() {
     querySnapshot.forEach((doc) => {
         allStudentsData[doc.id] = doc.data();
     });
-}
+} // <--- تم تصحيح الأقواس هنا
 
 // --- 4. دالة عرض واجهة الطالب ---
 async function loadStudentData(studentId) {
@@ -298,5 +298,3 @@ function renderLeaderboard() {
         leaderboardContainer.appendChild(rankItem);
     });
 }
-
-
