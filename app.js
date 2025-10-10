@@ -27,19 +27,27 @@ let currentStudentId = null;
 const TEACHER_CODE = 'TEACHER2025'; 
 
 // --- 2. دالة معالجة تسجيل الدخول (الطالب والمعلم) ---
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const inputId = document.getElementById('student-id').value.trim();
-    
-    await loadAllStudentsData();
+const loginForm = document.getElementById('login-form');
 
-    if (inputId === TEACHER_CODE) {
-        showTeacherDashboard();
-    } else if (inputId.match(/^\d+$/) && allStudentsData[inputId]) { 
-        loadStudentData(inputId);
-    } else {
-        alert("الرجاء إدخال رمز صحيح (طالب أو معلم).");
-    }
+if (loginForm) {
+    console.log("SUCCESS: 'login-form' element was found."); // NEW DIAGNOSTIC
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const inputId = document.getElementById('student-id').value.trim();
+        
+        await loadAllStudentsData();
+
+        if (inputId === TEACHER_CODE) {
+            showTeacherDashboard();
+        } else if (inputId.match(/^\d+$/) && allStudentsData[inputId]) { 
+            loadStudentData(inputId);
+        } else {
+            alert("الرجاء إدخال رمز صحيح (طالب أو معلم).");
+        }
+    });
+} else {
+    console.error("ERROR: 'login-form' element NOT found. Check index.html."); // NEW DIAGNOSTIC
+}
 });
 
 // --- 3. دالة جلب كل البيانات من مجموعة tasks ---
@@ -291,3 +299,4 @@ function renderLeaderboard() {
         leaderboardContainer.appendChild(rankItem);
     });
 }
+
