@@ -60,7 +60,7 @@ async function loadAllStudentsData() {
     querySnapshot.forEach((doc) => {
         allStudentsData[doc.id] = doc.data();
     });
-} // <--- تم تصحيح الأقواس هنا
+} // <--- تم التأكد من إغلاق الدالة بقوس واحد فقط (حل خطأ SyntaxError)
 
 // --- 4. دالة عرض واجهة الطالب ---
 async function loadStudentData(studentId) {
@@ -152,7 +152,7 @@ function renderTasks(studentData) {
 
 // --- 6. منطق تحديث الطالب (مطالبة المراجعة) ---
 async function claimTaskCompletion(taskIndex) {
-    // سطر التشخيص: إذا ظهر هذا، فالمشكلة ليست في ربط الزر
+    // سطر التشخيص
     console.log("Button Click Registered. Attempting Firestore Update..."); 
 
     if (!currentStudentId) {
