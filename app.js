@@ -31,7 +31,8 @@ if (loginForm) {
         e.preventDefault();
         const inputId = document.getElementById('student-id').value.trim();
         
-        await loadAllStudentsData();
+        // يجب جلب البيانات هنا لكي تكون متاحة للتحقق من وجود الطالب
+        await loadAllStudentsData(); 
 
         if (inputId === TEACHER_CODE) {
             showTeacherDashboard();
@@ -317,7 +318,7 @@ function attachAddTaskFormListener() {
 
 // ب. دالة معالجة إرسال النموذج وإضافة المهمة
 async function handleAddTaskFormSubmit(e) {
-    e.preventDefault();
+    e.preventDefault(); // <--- هذا السطر يمنع تحديث الصفحة
 
     const studentId = document.getElementById('new-task-student-id').value.trim();
     const description = document.getElementById('new-task-description').value.trim();
@@ -325,11 +326,19 @@ async function handleAddTaskFormSubmit(e) {
     const date = document.getElementById('new-task-date').value.trim();
     const time = document.getElementById('new-task-time').value.trim();
 
+    // التحقق من أن Firebase API متاحة قبل الاستخدام
+    if (typeof firebase === 'undefined' || !firebase.firestore || !firebase.firestore.FieldValue) {
+         alert("خطأ داخلي: فشل تحميل مكتبة Firebase. الرجاء مراجعة الـ Console.");
+         console.error("Firebase object or FieldValue is not defined.");
+         return; 
+    }
+
     if (!studentId || !description || isNaN(points) || !date || !time) {
         alert("الرجاء ملء جميع الحقول بشكل صحيح.");
         return;
     }
 
+    // يجب أن تكون بيانات الطلاب قد تم تحميلها بواسطة دالة loadAllStudentsData عند تسجيل الدخول
     if (!allStudentsData[studentId]) {
         alert(`لا يوجد طالب مسجل بالرمز: ${studentId}.`);
         return;
@@ -340,22 +349,24 @@ async function handleAddTaskFormSubmit(e) {
         points_value: points,
         release_date: date,
         release_time: time,
-        task_type: "مضافة يدوياً", // يمكن تغيير هذا لاحقاً
-        depends_on: -1, // لا تعتمد على مهمة سابقة
-        status: "pending" // الحالة الافتراضية
+        task_type: "مضافة يدوياً", 
+        depends_on: -1, 
+        status: "pending" 
     };
 
     try {
         const studentDocRef = db.collection('tasks').doc(studentId);
         
         // استخدام arrayUnion لإضافة المهمة الجديدة إلى مصفوفة المهام الموجودة
-        // (يجب أن تكون قواعد الأمان تسمح بالكتابة)
         await studentDocRef.update({
             tasks: firebase.firestore.FieldValue.arrayUnion(newTask)
         });
 
         // تحديث البيانات في الذاكرة لتجنب إعادة التحميل الكاملة
+        // (هذا ليس ضروريا جدا، لكنه يضمن التحديث الفوري للذاكرة المؤقتة)
+        allStudentsData[studentId].tasks = allStudentsData[studentId].tasks || [];
         allStudentsData[studentId].tasks.push(newTask);
+
 
         alert(`تم إضافة المهمة بنجاح للطالب: ${allStudentsData[studentId].student_name}.`);
         
@@ -363,7 +374,7 @@ async function handleAddTaskFormSubmit(e) {
         e.target.reset();
         
     } catch (error) {
-        console.error("خطأ في إضافة المهمة: ", error);
-        alert("فشل إضافة المهمة إلى Firebase. تأكد من قواعد الأمان.");
+        console.error("خطأ حاسم في إضافة المهمة: ", error);
+        alert(`فشل إضافة المهمة إلى Firebase! السبب: تأكد من أن قواعد أمان Firestore تسمح بـ 'write' على مجموعة tasks.`);
     }
 }
