@@ -1,5 +1,5 @@
 // //////////////////////////////////////////////////////
-// بداية ملف app.js النهائي (مع إضافة وظيفة "إلغاء الإنجاز")
+// بداية ملف app.js النهائي (مع إضافة وظيفة "إلغاء الإنجاز" المُحسّنة)
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
@@ -88,10 +88,10 @@ function renderTasks(studentData) {
     let canRenderNextTask = true; 
 
     tasks.forEach((task, index) => {
-        // التعديل: إيقاف العرض إذا كانت الحالة 'approved'
+        // إيقاف العرض إذا كانت الحالة 'approved'
         if (task.status === "approved") return; 
         
-        // 1. التحقق من شرط الاعتمادية (depends_on)
+        // التحقق من شرط الاعتمادية والتاريخ
         const isDependent = task.depends_on !== -1 && task.depends_on !== null;
         let isPrerequisiteApproved = true;
 
@@ -100,11 +100,8 @@ function renderTasks(studentData) {
             isPrerequisiteApproved = prerequisiteTask && (prerequisiteTask.status === "approved"); 
         }
         
-        // 2. التحقق من شرط التاريخ والوقت
         const releaseDateTime = new Date(`${task.release_date}T${task.release_time}:00`);
         const isReleased = now >= releaseDateTime;
-
-        // --- منطق إخفاء/عرض المهام ---
 
         if (!isPrerequisiteApproved || !isReleased) {
             
@@ -117,31 +114,39 @@ function renderTasks(studentData) {
             return; 
         }
         
-        // إنشاء زر المهمة وعرضها
+        // إنشاء عنصر المهمة الرئيسي
         const taskElement = document.createElement('div');
         taskElement.className = 'task-item';
-        taskElement.innerHTML = `
-            <p class="task-description">
-                <span class="task-type"> [${task.task_type} - ${task.points_value} نقاط] </span>
-                ${task.description} 
-            </p>
-            <div class="task-actions"></div>
+        
+        // إنشاء حاوية للنص
+        const descriptionElement = document.createElement('p');
+        descriptionElement.className = 'task-description';
+        descriptionElement.innerHTML = `
+            <span class="task-type"> [${task.task_type} - ${task.points_value} نقاط] </span>
+            ${task.description} 
         `;
+
+        // إنشاء حاوية الأزرار
+        const actionContainer = document.createElement('div');
+        actionContainer.className = 'task-actions'; 
+
+        // إضافة النص وحاوية الأزرار إلى عنصر المهمة
+        taskElement.appendChild(descriptionElement);
+        taskElement.appendChild(actionContainer);
         
-        const actionContainer = taskElement.querySelector('.task-actions');
+        // --- منطق عرض الأزرار بناءً على حالة المهمة ---
         
-        // التعديل الرئيسي هنا: إضافة زر إلغاء الإنجاز إذا كانت الحالة 'claimed'
         if (task.status === "claimed") { 
             
             // 1. زر الحالة (معطل)
             const statusButton = document.createElement('button');
-            statusButton.className = 'btn btn-warning me-2';
+            statusButton.className = 'btn btn-warning btn-sm';
             statusButton.innerText = 'قيد مراجعة المعلم';
             statusButton.disabled = true;
 
             // 2. زر إلغاء الإنجاز (مفعل)
             const undoButton = document.createElement('button');
-            undoButton.className = 'btn btn-danger';
+            undoButton.className = 'btn btn-danger btn-sm';
             undoButton.innerText = 'إلغاء الإنجاز';
             undoButton.setAttribute('onclick', `processTaskUndo(${index})`); 
             
@@ -198,7 +203,7 @@ async function processTaskClaim(taskIndex) {
     }
 }
 
-// --- 6.5. منطق إلغاء الإنجاز (التراجع) - NEW ---
+// --- 6.5. منطق إلغاء الإنجاز (التراجع) ---
 async function processTaskUndo(taskIndex) {
     console.log("Undo Button Click Registered. Attempting Firestore Undo..."); 
 
