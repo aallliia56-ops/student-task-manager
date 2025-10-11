@@ -1,5 +1,6 @@
 // //////////////////////////////////////////////////////
-// بداية ملف app.js الموحد والنهائي (بما في ذلك واجهة إضافة المهام للمعلم)
+// بداية ملف app.js النهائي والمستقر
+// (يعتمد على حقل 'status' وتم إزالة وظيفة إضافة المهام)
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
@@ -194,8 +195,8 @@ function showTeacherDashboard() {
     if (typeof showTeacherScreen === 'function') showTeacherScreen(); 
 
     renderTeacherReviewList(); 
-    renderLeaderboard();
-    attachAddTaskFormListener(); // <--- إضافة ربط النموذج عند العرض
+    renderLeaderboard(); 
+    // تم حذف استدعاء دالة إضافة المهام لتجنب الأخطاء
 }
 
 // --- 8. دالة عرض المهام التي تحتاج مراجعة ---
@@ -211,7 +212,7 @@ function renderTeacherReviewList() {
         const tasks = student.tasks || [];
 
         tasks.forEach((task, taskIndex) => {
-            // التعديل: التحقق من الحالة 'claimed' (بدلاً من المتغيرات المنطقية)
+            // التعديل: التحقق من الحالة 'claimed' (بمعنى تنتظر مراجعة المعلم)
             if (task.status === "claimed") { 
                 pendingReviewCount++;
                 
@@ -300,68 +301,4 @@ function renderLeaderboard() {
         `;
         leaderboardContainer.appendChild(rankItem);
     });
-}
-
-
-// --- 11. وظائف إضافة مهمة جديدة (واجهة المعلم) ---
-
-// أ. ربط النموذج الجديد (يتم استدعاؤها في showTeacherDashboard)
-function attachAddTaskFormListener() {
-    const form = document.getElementById('add-task-form');
-    if (form) {
-        form.removeEventListener('submit', handleAddTaskFormSubmit); // لمنع التكرار
-        form.addEventListener('submit', handleAddTaskFormSubmit);
-    }
-}
-
-// ب. دالة معالجة إرسال النموذج وإضافة المهمة
-async function handleAddTaskFormSubmit(e) {
-    e.preventDefault();
-
-    const studentId = document.getElementById('new-task-student-id').value.trim();
-    const description = document.getElementById('new-task-description').value.trim();
-    const points = parseInt(document.getElementById('new-task-points').value.trim());
-    const date = document.getElementById('new-task-date').value.trim();
-    const time = document.getElementById('new-task-time').value.trim();
-
-    if (!studentId || !description || isNaN(points) || !date || !time) {
-        alert("الرجاء ملء جميع الحقول بشكل صحيح.");
-        return;
-    }
-
-    if (!allStudentsData[studentId]) {
-        alert(`لا يوجد طالب مسجل بالرمز: ${studentId}.`);
-        return;
-    }
-
-    const newTask = {
-        description: description,
-        points_value: points,
-        release_date: date,
-        release_time: time,
-        task_type: "مضافة يدوياً", // يمكن تغيير هذا لاحقاً
-        depends_on: -1, // لا تعتمد على مهمة سابقة
-        status: "pending" // الحالة الافتراضية
-    };
-
-    try {
-        const studentDocRef = db.collection('tasks').doc(studentId);
-        
-        // استخدام arrayUnion لإضافة المهمة الجديدة إلى مصفوفة المهام الموجودة
-        await studentDocRef.update({
-            tasks: firebase.firestore.FieldValue.arrayUnion(newTask)
-        });
-
-        // تحديث البيانات في الذاكرة لتجنب إعادة التحميل الكاملة
-        allStudentsData[studentId].tasks.push(newTask);
-
-        alert(`تم إضافة المهمة بنجاح للطالب: ${allStudentsData[studentId].student_name}.`);
-        
-        // مسح النموذج بعد الإرسال
-        e.target.reset();
-        
-    } catch (error) {
-        console.error("خطأ في إضافة المهمة: ", error);
-        alert("فشل إضافة المهمة إلى Firebase. تأكد من قواعد الأمان.");
-    }
 }
