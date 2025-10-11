@@ -22,6 +22,12 @@
         .task-description { margin: 0; flex-grow: 1; }
         .task-type { font-weight: bold; color: #6c757d; }
         .alert-info { border-left-color: #17a2b8; background-color: #d1ecf1; }
+        /* تنسيق حاوية الأزرار الجديدة */
+        .task-actions {
+            display: flex;
+            align-items: center;
+            gap: 5px; /* مسافة بين الأزرار */
+        }
     </style>
 </head>
 <body>
@@ -103,7 +109,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
-    // تعيين التاريخ الافتراضي لنموذج المعلم لليوم الحالي عند التحميل
     document.addEventListener('DOMContentLoaded', () => {
         const dateInput = document.getElementById('new-task-date');
         if (dateInput) {
