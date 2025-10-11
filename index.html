@@ -65,8 +65,9 @@
             <button class="btn btn-secondary" onclick="window.location.reload()">تسجيل الخروج</button>
         </div>
         
-        <h2>إضافة مهمة جديدة للطالب</h2>
-        <div class="card p-3 mb-4">
+        <h2>1. إضافة مهمة يدوية (للتخصيص)</h2>
+        <p class="text-muted">النموذج الحالي: للكتابة اليدوية الكاملة لمهمة واحدة لطالب واحد.</p>
+        <div class="card p-3 mb-5 border border-primary">
             <form id="add-task-form">
                 <div class="mb-3">
                     <label for="new-task-student-id" class="form-label">رمز الطالب (ID)</label>
@@ -90,7 +91,39 @@
                         <input type="time" class="form-control" id="new-task-time" required value="08:00">
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">إضافة المهمة للطالب</button>
+                <button type="submit" class="btn btn-primary w-100">إضافة المهمة يدوياً (لطالب واحد)</button>
+            </form>
+        </div>
+        
+        <h2>2. إضافة مهمة سريعة (جماعية)</h2>
+        <p class="text-muted">لإضافة نفس المهمة لمجموعة من الطلاب دفعة واحدة (بالاعتماد على بنك مهام جاهز).</p>
+        <div class="card p-3 mb-4 border border-success">
+            <form id="add-bulk-task-form">
+                <div class="mb-3">
+                    <label for="bulk-task-select" class="form-label">اختيار المهمة الجاهزة</label>
+                    <select class="form-select" id="bulk-task-select" required>
+                        <option value="">-- الرجاء اختيار مهمة من البنك --</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="bulk-student-select" class="form-label">اختيار الطلاب (اختيار متعدد)</label>
+                    <select multiple class="form-select" id="bulk-student-select" required size="5">
+                        </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="bulk-task-date" class="form-label">تاريخ الإتاحة</label>
+                        <input type="date" class="form-control" id="bulk-task-date" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="bulk-task-time" class="form-label">وقت الإتاحة</label>
+                        <input type="time" class="form-control" id="bulk-task-time" required value="08:00">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success w-100">إضافة المهمة للطلاب المُختارين</button>
             </form>
         </div>
         <h3>مهام للمراجعة</h3>
@@ -109,10 +142,17 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
+    // تعيين التاريخ الافتراضي لنموذج المعلم لليوم الحالي عند التحميل
     document.addEventListener('DOMContentLoaded', () => {
-        const dateInput = document.getElementById('new-task-date');
-        if (dateInput) {
-            dateInput.valueAsDate = new Date();
+        // لنموذج الإضافة اليدوية
+        const dateInputManual = document.getElementById('new-task-date');
+        if (dateInputManual) {
+            dateInputManual.valueAsDate = new Date();
+        }
+        // لنموذج الإضافة الجماعية (يتم التعامل معها أيضًا في app.js)
+        const dateInputBulk = document.getElementById('bulk-task-date');
+        if (dateInputBulk) {
+            dateInputBulk.valueAsDate = new Date();
         }
     });
 
