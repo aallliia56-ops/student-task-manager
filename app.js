@@ -1,5 +1,5 @@
 // //////////////////////////////////////////////////////
-// ملف app.js النهائي: نظام التعاقب القائم على الإنجاز (Progression-Based) - بتصميم جديد
+// ملف app.js النهائي: نظام التعاقب القائم على الإنجاز (Progression-Based) - نسخة نهائية
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
@@ -63,7 +63,8 @@ async function loadAllStudentsData() {
     allStudentsData = {}; 
     
     querySnapshot.forEach((doc) => {
-        allStudentsData[doc.id] = doc.data();
+        // نضمن أن معرف الطالب موجود في بياناته للمقارنة (لغرض عرض الرتبة)
+        allStudentsData[doc.id] = {...doc.data(), id: doc.id}; 
     });
 } 
 
@@ -93,6 +94,7 @@ function getCurrentCurriculumTasks(studentData) {
     const hifzIndex = studentData.hifz_progress || 0;
     const nextHifzTask = curriculumLists.Hifz[hifzIndex];
     if (nextHifzTask) {
+        // التحقق باستخدام curriculum_id فقط، لأن المهمة يتم تحديثها بدلاً من إضافتها مكررة
         const isHifzActive = studentTasks.some(t => t.curriculum_id === nextHifzTask.curriculum_id && t.status === "claimed");
         if (!isHifzActive) {
             activeTasks.push({ ...nextHifzTask, is_curriculum_task: true, curriculum_type: 'Hifz' });
@@ -140,7 +142,7 @@ async function loadStudentData(studentId) {
 }
 
 
-// --- NEW FUNCTION: عرض ترتيب الطالب (Rank) ---
+// --- عرض ترتيب الطالب (Rank) ---
 function renderStudentRank() {
     const rankContainer = document.getElementById('student-rank-info');
     if (!rankContainer || !currentStudentId) return;
@@ -164,7 +166,7 @@ function renderStudentRank() {
 }
 
 
-// --- NEW FUNCTION: عرض أشرطة التقدم (Progress Bars) ---
+// --- عرض أشرطة التقدم (Progress Bars) ---
 function renderProgressBars(studentData) {
     const progressContainer = document.getElementById('progress-container');
     if (!progressContainer) return;
@@ -231,7 +233,7 @@ function renderTasks(studentData, taskList) {
     noTasksMessage.classList.add('d-none');
     
     taskList.forEach((task) => {
-        let cardClass = 'manual-card'; // افتراضي لليدوي
+        let cardClass = 'manual-card'; 
         let iconHtml = '<i class="fas fa-pencil-alt text-warning me-2"></i>';
         let actionButton = '';
         
@@ -248,7 +250,7 @@ function renderTasks(studentData, taskList) {
                 iconHtml = '<i class="fas fa-redo-alt text-info me-2"></i>';
             }
             
-            // تحقق من الحالة الحالية للمهمة التسلسلية (claimed أم لا)
+            // تحقق من الحالة الحالية للمهمة التسلسلية 
             const activeInDb = studentTasksInDb.find(t => 
                 t.curriculum_id === task.curriculum_id && t.status === "claimed"
             );
@@ -308,40 +310,70 @@ function renderTasks(studentData, taskList) {
 }
 
 
-// --- 7. بقية الدوال (بما في ذلك Claim/Approve) تبقى كما هي من الكود السابق ---
-
+// --- دالة إنجاز مهمة تسلسلية (Claim Curriculum Task) - مُعدَّلة لمنع التكرار ---
 async function claimCurriculumTask(curriculumType, curriculumId, pointsValue, description) {
     if (!currentStudentId) return;
 
-    const now = new Date();
-    const newTask = {
-        description: description,
-        points_value: pointsValue,
-        release_date: now.toISOString().split('T')[0], 
-        release_time: now.toTimeString().split(' ')[0].substring(0, 5),
-        task_type: `${curriculumType} تسلسلي`, 
-        curriculum_id: curriculumId, 
-        status: "claimed" 
-    };
-    
     const docRef = db.collection("tasks").doc(currentStudentId); 
-    
-    try {
-        await docRef.update({ 
-            tasks: firebase.firestore.FieldValue.arrayUnion(newTask) 
-        }); 
+    let studentData = allStudentsData[currentStudentId]; 
 
-        allStudentsData[currentStudentId].tasks = allStudentsData[currentStudentId].tasks || [];
-        allStudentsData[currentStudentId].tasks.push(newTask);
+    // 1. البحث عن نسخة موجودة من هذه المهمة التسلسلية في مصفوفة مهام الطالب
+    const existingTasksArray = studentData.tasks || [];
+    const existingIndex = existingTasksArray.findIndex(t => 
+        t.curriculum_id === curriculumId
+    );
+
+    let claimSuccessful = false;
+
+    if (existingIndex !== -1) {
+        // 2. تحديث حالة المهمة الموجودة إلى "claimed"
+        studentData.tasks[existingIndex].status = "claimed";
+        // تحديث تاريخ ووقت المطالبة
+        studentData.tasks[existingIndex].release_date = new Date().toISOString().split('T')[0];
+        studentData.tasks[existingIndex].release_time = new Date().toTimeString().split(' ')[0].substring(0, 5);
         
+        try {
+            await docRef.update({ tasks: studentData.tasks }); 
+            claimSuccessful = true;
+        } catch (e) {
+            console.error("CRITICAL FAILURE: Curriculum Task Update Failed.", e); 
+        }
+
+    } else {
+        // 3. إضافة المهمة لأول مرة (استخدام arrayUnion)
+        const now = new Date();
+        const newTask = {
+            description: description,
+            points_value: pointsValue,
+            release_date: now.toISOString().split('T')[0], 
+            release_time: now.toTimeString().split(' ')[0].substring(0, 5),
+            task_type: `${curriculumType} تسلسلي`,
+            curriculum_id: curriculumId, 
+            status: "claimed" 
+        };
+        
+        try {
+            await docRef.update({ 
+                tasks: firebase.firestore.FieldValue.arrayUnion(newTask) 
+            }); 
+            // تحديث البيانات المحلية
+            allStudentsData[currentStudentId].tasks = allStudentsData[currentStudentId].tasks || [];
+            allStudentsData[currentStudentId].tasks.push(newTask);
+            claimSuccessful = true;
+        } catch (e) {
+             console.error("CRITICAL FAILURE: Curriculum Task Insert Failed.", e); 
+        }
+    }
+    
+    if (claimSuccessful) {
         loadStudentData(currentStudentId);
-        
-    } catch (e) {
-        console.error("CRITICAL FAILURE: Curriculum Task Claim Failed.", e); 
+    } else {
         alert("فشل تحديث الإنجاز للمهمة التسلسلية.");
     }
 }
 
+
+// --- منطق تحديث الطالب (مطالبة المراجعة للمهام الخاصة) ---
 async function processTaskClaim(taskIndex) {
     if (!currentStudentId) return;
 
@@ -360,6 +392,7 @@ async function processTaskClaim(taskIndex) {
     }
 }
 
+// --- منطق إلغاء الإنجاز (التراجع) ---
 async function processTaskUndo(taskIndex) {
     if (!currentStudentId) return;
     
@@ -385,6 +418,7 @@ async function processTaskUndo(taskIndex) {
     }
 }
 
+// --- دالة منح النقاط وتأكيد الموافقة ---
 async function approveTask(studentId, taskIndex, pointsValue) {
     const docRef = db.collection("tasks").doc(studentId);
     let studentData = allStudentsData[studentId];
@@ -433,6 +467,7 @@ async function approveTask(studentId, taskIndex, pointsValue) {
 }
 
 
+// --- بقية دوال المعلم (لم تتغير) ---
 function showTeacherDashboard() {
     if (typeof showTeacherScreen === 'function') showTeacherScreen(); 
     renderTeacherReviewList(); 
