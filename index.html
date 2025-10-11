@@ -58,35 +58,7 @@
             <p id="review-count-info">مهام تنتظر المراجعة: <span id="review-count">0</span></p>
             <button class="btn btn-secondary" onclick="window.location.reload()">تسجيل الخروج</button>
         </div>
-        
-        <h2>إضافة مهمة جديدة للطالب</h2>
-        <div class="card p-3 mb-4">
-            <form id="add-task-form">
-                <div class="mb-3">
-                    <label for="new-task-student-id" class="form-label">رمز الطالب (ID)</label>
-                    <input type="text" class="form-control" id="new-task-student-id" required placeholder="مثال: 119">
-                </div>
-                <div class="mb-3">
-                    <label for="new-task-description" class="form-label">وصف المهمة</label>
-                    <input type="text" class="form-control" id="new-task-description" required placeholder="مثال: قراءة الدرس الأول وحل الأسئلة">
-                </div>
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label for="new-task-points" class="form-label">النقاط</label>
-                        <input type="number" class="form-control" id="new-task-points" required value="10" min="1">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="new-task-date" class="form-label">تاريخ الإتاحة</label>
-                        <input type="date" class="form-control" id="new-task-date" required>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="new-task-time" class="form-label">وقت الإتاحة</label>
-                        <input type="time" class="form-control" id="new-task-time" required value="08:00">
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary w-100">إضافة المهمة للطالب</button>
-            </form>
-        </div>
+
         <h3>مهام للمراجعة</h3>
         <div id="review-tasks-container" class="list-group">
             </div>
@@ -103,14 +75,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
-    // تعيين التاريخ الافتراضي لنموذج المعلم لليوم الحالي عند التحميل
-    document.addEventListener('DOMContentLoaded', () => {
-        const dateInput = document.getElementById('new-task-date');
-        if (dateInput) {
-            dateInput.valueAsDate = new Date();
-        }
-    });
-
     function showTasksScreen(studentId) {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('tasks-screen').style.display = 'block';
