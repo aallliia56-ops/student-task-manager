@@ -1,5 +1,5 @@
 // //////////////////////////////////////////////////////
-// بداية ملف app.js النهائي والمستقر (مع إضافة وظيفة المهام للمعلم)
+// بداية ملف app.js النهائي (مع إضافة وظيفة "إلغاء الإنجاز")
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
@@ -31,7 +31,6 @@ if (loginForm) {
         e.preventDefault();
         const inputId = document.getElementById('student-id').value.trim();
         
-        // يجب جلب البيانات هنا لكي تكون متاحة للتحقق من وجود الطالب
         await loadAllStudentsData(); 
 
         if (inputId === TEACHER_CODE) {
@@ -98,7 +97,6 @@ function renderTasks(studentData) {
 
         if (isDependent) {
             const prerequisiteTask = tasks[task.depends_on];
-            // التعديل: التحقق من حالة المهمة السابقة
             isPrerequisiteApproved = prerequisiteTask && (prerequisiteTask.status === "approved"); 
         }
         
@@ -127,24 +125,39 @@ function renderTasks(studentData) {
                 <span class="task-type"> [${task.task_type} - ${task.points_value} نقاط] </span>
                 ${task.description} 
             </p>
+            <div class="task-actions"></div>
         `;
         
-        const actionButton = document.createElement('button');
+        const actionContainer = taskElement.querySelector('.task-actions');
         
-        // التعديل: إذا كانت الحالة 'claimed' (قيد المراجعة)
+        // التعديل الرئيسي هنا: إضافة زر إلغاء الإنجاز إذا كانت الحالة 'claimed'
         if (task.status === "claimed") { 
-            actionButton.className = 'btn btn-warning';
-            actionButton.innerText = 'قيد مراجعة المعلم';
-            actionButton.disabled = true;
+            
+            // 1. زر الحالة (معطل)
+            const statusButton = document.createElement('button');
+            statusButton.className = 'btn btn-warning me-2';
+            statusButton.innerText = 'قيد مراجعة المعلم';
+            statusButton.disabled = true;
+
+            // 2. زر إلغاء الإنجاز (مفعل)
+            const undoButton = document.createElement('button');
+            undoButton.className = 'btn btn-danger';
+            undoButton.innerText = 'إلغاء الإنجاز';
+            undoButton.setAttribute('onclick', `processTaskUndo(${index})`); 
+            
+            actionContainer.appendChild(statusButton);
+            actionContainer.appendChild(undoButton);
+            
         } else {
             // الحالة الافتراضية 'pending' (جاهز للإنجاز)
-            actionButton.className = 'btn btn-success';
-            actionButton.innerText = 'تم الإنجاز (للمراجعة)';
-            // الحل البديل لـ onclick
-            actionButton.setAttribute('onclick', `processTaskClaim(${index})`); 
+            const claimButton = document.createElement('button');
+            claimButton.className = 'btn btn-success';
+            claimButton.innerText = 'تم الإنجاز (للمراجعة)';
+            claimButton.setAttribute('onclick', `processTaskClaim(${index})`); 
+            
+            actionContainer.appendChild(claimButton);
         }
 
-        taskElement.appendChild(actionButton);
         tasksContainer.appendChild(taskElement);
 
         if (isDependent) {
@@ -165,7 +178,7 @@ async function processTaskClaim(taskIndex) {
     const docRef = db.collection("tasks").doc(currentStudentId); 
     let studentData = allStudentsData[currentStudentId];
 
-    // التعديل: تغيير الحالة إلى 'claimed'
+    // تغيير الحالة إلى 'claimed'
     studentData.tasks[taskIndex].status = "claimed"; 
 
     try {
@@ -173,7 +186,7 @@ async function processTaskClaim(taskIndex) {
             tasks: studentData.tasks 
         }); 
 
-        console.log("SUCCESS: Firestore update initiated."); 
+        console.log("SUCCESS: Task claimed and Firestore updated."); 
 
         // تحديث الواجهة بعد النجاح
         allStudentsData[currentStudentId].tasks[taskIndex].status = "claimed";
@@ -185,9 +198,45 @@ async function processTaskClaim(taskIndex) {
     }
 }
 
+// --- 6.5. منطق إلغاء الإنجاز (التراجع) - NEW ---
+async function processTaskUndo(taskIndex) {
+    console.log("Undo Button Click Registered. Attempting Firestore Undo..."); 
+
+    if (!currentStudentId) {
+        console.error("No current student ID found for undo operation.");
+        return;
+    }
+    
+    if (!confirm("هل أنت متأكد من إلغاء إنجاز هذه المهمة؟ ستختفي من مراجعة المعلم.")) {
+        return;
+    }
+
+    const docRef = db.collection("tasks").doc(currentStudentId); 
+    let studentData = allStudentsData[currentStudentId];
+
+    // تغيير الحالة إلى 'pending'
+    studentData.tasks[taskIndex].status = "pending"; 
+
+    try {
+        await docRef.update({ 
+            tasks: studentData.tasks 
+        }); 
+
+        console.log("SUCCESS: Task claim reverted to pending."); 
+
+        // تحديث الواجهة بعد النجاح
+        allStudentsData[currentStudentId].tasks[taskIndex].status = "pending";
+        renderTasks(allStudentsData[currentStudentId]);
+        
+    } catch (e) {
+        console.error("CRITICAL FAILURE: Firestore Undo Failed.", e); 
+        alert("فشل إلغاء الإنجاز. الرجاء مراجعة الـ Console.");
+    }
+}
+
 
 // //////////////////////////////////////////////////////
-// بداية كود واجهة المعلم الجديدة
+// بداية كود واجهة المعلم (لم يتغير)
 // //////////////////////////////////////////////////////
 
 // --- 7. دالة عرض لوحة المعلم ---
@@ -196,7 +245,7 @@ function showTeacherDashboard() {
 
     renderTeacherReviewList(); 
     renderLeaderboard(); 
-    attachAddTaskFormListener(); // <--- إعادة ربط النموذج
+    attachAddTaskFormListener(); 
 }
 
 // --- 8. دالة عرض المهام التي تحتاج مراجعة ---
@@ -212,7 +261,6 @@ function renderTeacherReviewList() {
         const tasks = student.tasks || [];
 
         tasks.forEach((task, taskIndex) => {
-            // التعديل: التحقق من الحالة 'claimed' (بمعنى تنتظر مراجعة المعلم)
             if (task.status === "claimed") { 
                 pendingReviewCount++;
                 
@@ -251,7 +299,6 @@ async function approveTask(studentId, taskIndex, pointsValue) {
     const docRef = db.collection("tasks").doc(studentId);
     let studentData = allStudentsData[studentId];
     
-    // التعديل: تغيير الحالة إلى 'approved'
     studentData.tasks[taskIndex].status = "approved";
     
     const currentScore = studentData.score || 0;
@@ -310,7 +357,6 @@ function renderLeaderboard() {
 function attachAddTaskFormListener() {
     const form = document.getElementById('add-task-form');
     if (form) {
-        // نستخدم removeEventListener قبل addEventListener لضمان عدم تكرار ربط الدالة
         form.removeEventListener('submit', handleAddTaskFormSubmit); 
         form.addEventListener('submit', handleAddTaskFormSubmit);
     }
@@ -318,7 +364,7 @@ function attachAddTaskFormListener() {
 
 // ب. دالة معالجة إرسال النموذج وإضافة المهمة
 async function handleAddTaskFormSubmit(e) {
-    e.preventDefault(); // <--- هذا السطر يمنع تحديث الصفحة
+    e.preventDefault(); 
 
     const studentId = document.getElementById('new-task-student-id').value.trim();
     const description = document.getElementById('new-task-description').value.trim();
@@ -326,10 +372,8 @@ async function handleAddTaskFormSubmit(e) {
     const date = document.getElementById('new-task-date').value.trim();
     const time = document.getElementById('new-task-time').value.trim();
 
-    // التحقق من أن Firebase API متاحة قبل الاستخدام
     if (typeof firebase === 'undefined' || !firebase.firestore || !firebase.firestore.FieldValue) {
          alert("خطأ داخلي: فشل تحميل مكتبة Firebase. الرجاء مراجعة الـ Console.");
-         console.error("Firebase object or FieldValue is not defined.");
          return; 
     }
 
@@ -338,7 +382,6 @@ async function handleAddTaskFormSubmit(e) {
         return;
     }
 
-    // يجب أن تكون بيانات الطلاب قد تم تحميلها بواسطة دالة loadAllStudentsData عند تسجيل الدخول
     if (!allStudentsData[studentId]) {
         alert(`لا يوجد طالب مسجل بالرمز: ${studentId}.`);
         return;
@@ -357,20 +400,16 @@ async function handleAddTaskFormSubmit(e) {
     try {
         const studentDocRef = db.collection('tasks').doc(studentId);
         
-        // استخدام arrayUnion لإضافة المهمة الجديدة إلى مصفوفة المهام الموجودة
         await studentDocRef.update({
             tasks: firebase.firestore.FieldValue.arrayUnion(newTask)
         });
 
-        // تحديث البيانات في الذاكرة لتجنب إعادة التحميل الكاملة
-        // (هذا ليس ضروريا جدا، لكنه يضمن التحديث الفوري للذاكرة المؤقتة)
         allStudentsData[studentId].tasks = allStudentsData[studentId].tasks || [];
         allStudentsData[studentId].tasks.push(newTask);
 
 
         alert(`تم إضافة المهمة بنجاح للطالب: ${allStudentsData[studentId].student_name}.`);
         
-        // مسح النموذج بعد الإرسال
         e.target.reset();
         
     } catch (error) {
