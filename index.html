@@ -71,7 +71,7 @@
             <h2 class="text-center mb-4">تسجيل الدخول</h2>
             <form id="login-form">
                 <div class="mb-3">
-                    <label for="student-id" class="form-label">رمز الطالب / المعلم (مثال: 119 أو TEACHER2025)</label>
+                    <label for="student-id" class="form-label">رمز الدخول</label> 
                     <input type="text" class="form-control" id="student-id" required>
                 </div>
                 <button type="submit" class="btn btn-primary w-100">دخول</button>
@@ -87,12 +87,12 @@
             <hr>
 
             <div id="progress-container">
-                </div>
+            </div>
             
             <h3 class="mb-3">مهامك النشطة:</h3>
             
             <div id="tasks-container">
-                </div>
+            </div>
             
             <p id="no-tasks-message" class="text-muted mt-4 d-none">لا توجد مهام نشطة حاليًا. يمكنك الاستراحة! 😊</p>
         </div>
@@ -106,37 +106,23 @@
                     <span class="badge bg-danger rounded-pill" id="review-count">0</span>
                 </h4>
                 <div id="review-tasks-container" class="list-group">
-                    </div>
+                </div>
             </div>
 
             <div class="teacher-dashboard">
-                <h4>إضافة مهمة فردية/يدوية</h4>
-                <form id="add-task-form">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <input type="text" class="form-control" id="new-task-student-id" placeholder="رمز الطالب (مثال: 119)" required>
-                        </div>
-                        <div class="col-md-8">
-                            <input type="text" class="form-control" id="new-task-description" placeholder="وصف المهمة (اختبار مفاجئ...)" required>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="number" class="form-control" id="new-task-points" placeholder="نقاط المكافأة" required>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="date" class="form-control" id="new-task-date" title="تاريخ الإتاحة" required>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="time" class="form-control" id="new-task-time" title="وقت الإتاحة" value="00:00" required>
-                        </div>
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-success w-100">إضافة مهمة فردية</button>
-                        </div>
+                <h4>إدارة بنك المهام الجاهزة (مهام إضافية - 1 نقطة)</h4>
+                <form id="add-bank-task-form" class="mb-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="bank-task-description" placeholder="وصف المهمة الجديدة (مثال: بحث إضافي)" required>
+                        <button type="submit" class="btn btn-warning text-white">إضافة للبنك (1 نقطة)</button>
                     </div>
                 </form>
+                <div id="bank-tasks-list" class="list-group">
+                    </div>
             </div>
-
-            <div class="teacher-dashboard">
-                <h4>إضافة مهمة جماعية (من بنك المهام)</h4>
+            
+             <div class="teacher-dashboard">
+                <h4>إضافة مهمة جماعية (من بنك المهام الجاهزة)</h4>
                 <form id="add-bulk-task-form">
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -146,7 +132,7 @@
                         </div>
                          <div class="col-md-6">
                             <select id="bulk-student-select" class="form-select" multiple size="5" required>
-                                </select>
+                            </select>
                             <small class="form-text text-muted">اضغط على Ctrl لاختيار أكثر من طالب.</small>
                         </div>
                          <div class="col-md-4">
@@ -161,11 +147,37 @@
                     </div>
                 </form>
             </div>
+
+            <div class="teacher-dashboard">
+                <h4>إضافة مهمة فردية (يدوية - 1 نقطة)</h4>
+                <form id="add-task-form">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" id="new-task-student-id" placeholder="رمز الطالب (مثال: 119)" required>
+                        </div>
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" id="new-task-description" placeholder="وصف المهمة (اختبار مفاجئ...)" required>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="number" class="form-control" id="new-task-points" value="1" readonly placeholder="نقاط المكافأة" required>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="date" class="form-control" id="new-task-date" title="تاريخ الإتاحة" required>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="time" class="form-control" id="new-task-time" title="وقت الإتاحة" value="00:00" required>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success w-100">إضافة مهمة فردية (1 نقطة)</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
             
             <div class="teacher-dashboard leaderboard-section">
                 <h4>لوحة الشرف (أعلى 5 طلاب)</h4>
                 <div id="leaderboard-container" class="list-group">
-                    </div>
+                </div>
             </div>
 
             <div class="teacher-dashboard add-student-section">
@@ -181,10 +193,11 @@
                         
                         <div class="col-md-6">
                             <input type="number" class="form-control" id="initial-hifz-progress" value="0" min="0" placeholder="نقطة انطلاق الحفظ (رقم المهمة التالية)" required>
-                            <small class="form-text text-muted">مثال: 0 (للمبتدئ) أو 5 (للمتقدم)</small>
+                            <small class="form-text text-muted">قيمة كل مهمة حفظ: 5 نقاط</small>
                         </div>
                         <div class="col-md-6">
                             <input type="number" class="form-control" id="initial-murajaa-progress" value="0" min="0" placeholder="نقطة انطلاق المراجعة (رقم المهمة التالية)" required>
+                             <small class="form-text text-muted">قيمة كل مهمة مراجعة: 3 نقاط</small>
                         </div>
                         
                         <div class="col-12">
@@ -195,25 +208,21 @@
             </div>
             
             <div class="teacher-dashboard curriculum-management-section">
-                <h4>إضافة مهام جديدة إلى المنهج المركزي</h4>
+                <h4>إضافة مهام جديدة إلى المنهج المركزي (تسلسلي)</h4>
                 <form id="add-curriculum-task-form">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <input type="text" class="form-control" id="curriculum-description" placeholder="وصف المهمة (مثال: حفظ الآيات 31-40)" required>
                         </div>
                         <div class="col-md-3">
-                            <input type="number" class="form-control" id="curriculum-points" value="10" min="1" placeholder="قيمة النقاط" required>
-                        </div>
-                        <div class="col-md-3">
                             <select id="curriculum-type-select" class="form-select" required>
                                 <option value="">اختر نوع المهمة</option>
-                                <option value="Hifz">مسار الحفظ</option>
-                                <option value="Murajaa">مسار المراجعة</option>
+                                <option value="Hifz">مسار الحفظ (5 نقاط)</option>
+                                <option value="Murajaa">مسار المراجعة (3 نقاط)</option>
                             </select>
                         </div>
-                        
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-warning w-100 text-white">إضافة المهمة للمنهج</button>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-warning w-100 text-white">إضافة للمنهج</button>
                         </div>
                     </div>
                     <small class="form-text text-muted mt-2 d-block" id="curriculum-status">
