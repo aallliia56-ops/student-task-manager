@@ -13,7 +13,7 @@
         /* --- التصميم الجديد لبطاقات المهام --- */
         .task-card {
             background: #fff;
-            border-left: 5px solid; /* يتم تعيين لون الشريط الجانبي بواسطة JS */
+            border-left: 5px solid; 
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 15px;
@@ -58,6 +58,7 @@
         .leaderboard-section { border-right: 5px solid green !important; }
         .review-section { border-right: 5px solid orange !important; }
         .add-student-section { border-right: 5px solid #0d6efd !important; }
+        .curriculum-management-section { border-right: 5px solid #ffc107 !important; }
     </style>
 </head>
 <body>
@@ -190,6 +191,34 @@
                             <button type="submit" class="btn btn-primary w-100">إنشاء حساب الطالب الجديد</button>
                         </div>
                     </div>
+                </form>
+            </div>
+            
+            <div class="teacher-dashboard curriculum-management-section">
+                <h4>إضافة مهام جديدة إلى المنهج المركزي</h4>
+                <form id="add-curriculum-task-form">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" id="curriculum-description" placeholder="وصف المهمة (مثال: حفظ الآيات 31-40)" required>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="number" class="form-control" id="curriculum-points" value="10" min="1" placeholder="قيمة النقاط" required>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="curriculum-type-select" class="form-select" required>
+                                <option value="">اختر نوع المهمة</option>
+                                <option value="Hifz">مسار الحفظ</option>
+                                <option value="Murajaa">مسار المراجعة</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-warning w-100 text-white">إضافة المهمة للمنهج</button>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted mt-2 d-block" id="curriculum-status">
+                        حالة المنهج: جاري التحميل...
+                    </small>
                 </form>
             </div>
 
