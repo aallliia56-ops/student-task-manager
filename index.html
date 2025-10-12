@@ -44,10 +44,10 @@
         }
         
         /* ألوان تمييز المهام */
-        .hifz-card { border-left-color: #198754 !important; } /* أخضر للحفظ */
-        .murajaa-card { border-left-color: #0dcaf0 !important; } /* سماوي للمراجعة */
-        .manual-card { border-left-color: #ffc107 !important; } /* أصفر لليومية/اليدوية */
-        .claimed-card { border-left-color: #ffc107 !important; background-color: #fff9e6; } /* أصفر فاتح للانتظار */
+        .hifz-card { border-left-color: #198754 !important; } 
+        .murajaa-card { border-left-color: #0dcaf0 !important; } 
+        .manual-card { border-left-color: #ffc107 !important; } 
+        .claimed-card { border-left-color: #ffc107 !important; background-color: #fff9e6; } 
         
         /* Progress Bar styles */
         .progress-section { background-color: #fff; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
@@ -251,7 +251,6 @@
         }
         
         function logout() {
-            // مسح حالة الطالب الحالي والعودة لشاشة الدخول
             currentStudentId = null;
             showScreen('login-screen');
             document.getElementById('student-id').value = '';
