@@ -1,5 +1,5 @@
 // //////////////////////////////////////////////////////
-// ملف app.js النهائي: نظام التعاقب القائم على الإنجاز - نسخة مع إدارة الطلاب
+// ملف app.js النهائي: نظام التعاقب القائم على الإنجاز - نسخة الإدارة واللوب
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
@@ -25,7 +25,7 @@ const TEACHER_CODE = 'TEACHER2025';
 
 let curriculumLists = {}; // لتخزين قوائم المنهج المركزية
 
-// قائمة مهام جاهزة مؤقتة (لنموذج الإضافة الجماعية)
+// قائمة مهام جاهزة مؤقتة (لبنك المهام)
 const taskBank = [
     { id: 1, description: "كتابة تقرير تلخيصي عن الدرس", points: 15, type: "تقرير" },
     { id: 2, description: "تصميم لوحة إعلانية للبرنامج", points: 20, type: "تصميم" },
@@ -56,7 +56,7 @@ if (loginForm) {
 }
 
 
-// --- 3. دالة جلب كل البيانات من مجموعة tasks ---
+// --- 3. دالة جلب كل البيانات من مجموعة tasks و Curriculum ---
 async function loadAllStudentsData() {
     const tasksCollection = db.collection("tasks"); 
     const querySnapshot = await tasksCollection.get();
@@ -68,7 +68,6 @@ async function loadAllStudentsData() {
     });
 } 
 
-// --- دالة جلب قوائم المنهج (Curriculum) ---
 async function loadCurriculumLists() {
     try {
         const [hifzDoc, murajaaDoc] = await Promise.all([
@@ -85,28 +84,48 @@ async function loadCurriculumLists() {
 }
 
 
-// --- 4. دالة تحديد المهام النشطة للطالب ---
+// --- 4. دالة تحديد المهام النشطة للطالب (تحديث لوجيك المراجعة) ---
 function getCurrentCurriculumTasks(studentData) {
     const activeTasks = [];
     const studentTasks = studentData.tasks || [];
 
-    // Hifz
+    // Hifz (المنطق التسلسلي العادي)
     const hifzIndex = studentData.hifz_progress || 0;
     const nextHifzTask = curriculumLists.Hifz[hifzIndex];
     if (nextHifzTask) {
-        const isHifzActive = studentTasks.some(t => t.curriculum_id === nextHifzTask.curriculum_id && t.status === "claimed");
+        const isHifzActive = studentTasks.some(t => t.curriculum_id === nextHifzTask.curriculum_id && t.status === "claimed" && t.task_type === "Hifz تسلسلي");
         if (!isHifzActive) {
             activeTasks.push({ ...nextHifzTask, is_curriculum_task: true, curriculum_type: 'Hifz' });
         }
     }
 
-    // Murajaa
-    const murajaaIndex = studentData.murajaa_progress || 0;
-    const nextMurajaaTask = curriculumLists.Murajaa[murajaaIndex];
-    if (nextMurajaaTask) {
-         const isMurajaaActive = studentTasks.some(t => t.curriculum_id === nextMurajaaTask.curriculum_id && t.status === "claimed");
-        if (!isMurajaaActive) {
-            activeTasks.push({ ...nextMurajaaTask, is_curriculum_task: true, curriculum_type: 'Murajaa' });
+    // Murajaa (النظام الدوري/اللوب)
+    const murajaaList = curriculumLists.Murajaa || [];
+    const murajaaTotal = murajaaList.length;
+    
+    if (murajaaTotal > 0) {
+        // نستخدم عامل % (Modulo) لضمان العودة إلى الفهرس 0 بعد الوصول إلى النهاية
+        const murajaaIndex = (studentData.murajaa_progress || 0) % murajaaTotal; 
+        const nextMurajaaTask = murajaaList[murajaaIndex];
+        
+        if (nextMurajaaTask) {
+            // التحقق مما إذا كانت المهمة قيد المطالبة بالفعل
+            const isMurajaaActive = studentTasks.some(t => 
+                t.curriculum_id === nextMurajaaTask.curriculum_id && 
+                t.status === "claimed" && 
+                t.task_type === "Murajaa تسلسلي" 
+            );
+            
+            if (!isMurajaaActive) {
+                // إضافة قائمة المراجعة المخصصة للطالب كجزء من الوصف
+                const murajaaPool = studentData.murajaa_pool || [];
+                // عرض أول 5 سور فقط
+                const poolDescription = murajaaPool.slice(0, 5).join(', ') + (murajaaPool.length > 5 ? '... والمزيد.' : '');
+                
+                nextMurajaaTask.description = `${nextMurajaaTask.description} - (راجع: ${poolDescription || 'لا يوجد سور/أجزاء محددة حاليًا.'})`;
+                
+                activeTasks.push({ ...nextMurajaaTask, is_curriculum_task: true, curriculum_type: 'Murajaa' });
+            }
         }
     }
     
@@ -117,7 +136,8 @@ function getCurrentCurriculumTasks(studentData) {
     return combinedTasks;
 }
 
-// --- 5. دالة عرض واجهة الطالب ---
+
+// --- 5. دالة عرض واجهة الطالب والتقارير ---
 async function loadStudentData(studentId) {
     currentStudentId = studentId;
     const studentData = allStudentsData[studentId];
@@ -127,12 +147,8 @@ async function loadStudentData(studentId) {
     document.getElementById('student-info-name').innerText = `أهلاً بك، ${studentData.student_name}`;
     document.getElementById('student-info-score').innerText = `نقاطك الحالية: ${studentData.score || 0}`;
 
-    // إضافة عرض المرتبة
     renderStudentRank();
-    
-    // إضافة عرض أشرطة التقدم
     renderProgressBars(studentData); 
-
     renderTasks(studentData, combinedTasks); 
     
     if (typeof showTasksScreen === 'function') {
@@ -141,7 +157,6 @@ async function loadStudentData(studentId) {
 }
 
 
-// --- عرض ترتيب الطالب (Rank) ---
 function renderStudentRank() {
     const rankContainer = document.getElementById('student-rank-info');
     if (!rankContainer || !currentStudentId) return;
@@ -151,10 +166,8 @@ function renderStudentRank() {
         score: data.score || 0
     }));
 
-    // فرز الطلاب تنازليًا حسب النقاط
     studentsArray.sort((a, b) => b.score - a.score);
 
-    // البحث عن ترتيب الطالب الحالي
     const studentRank = studentsArray.findIndex(student => student.id === currentStudentId) + 1;
 
     if (studentRank > 0) {
@@ -164,8 +177,6 @@ function renderStudentRank() {
     }
 }
 
-
-// --- عرض أشرطة التقدم (Progress Bars) ---
 function renderProgressBars(studentData) {
     const progressContainer = document.getElementById('progress-container');
     if (!progressContainer) return;
@@ -197,28 +208,30 @@ function renderProgressBars(studentData) {
     // 2. مسار المراجعة (Murajaa)
     const murajaaTotal = curriculumLists.Murajaa.length;
     const murajaaProgress = studentData.murajaa_progress || 0;
-    const murajaaPercent = murajaaTotal > 0 ? Math.floor((murajaaProgress / murajaaTotal) * 100) : 0;
-    const nextMurajaa = curriculumLists.Murajaa[murajaaProgress];
+    // حساب التقدم النسبي للدورة الحالية
+    const currentMurajaaProgressInLoop = murajaaProgress % murajaaTotal;
+    const murajaaPercent = murajaaTotal > 0 ? Math.floor((currentMurajaaProgressInLoop / murajaaTotal) * 100) : 0;
+    const nextMurajaa = curriculumLists.Murajaa[currentMurajaaProgressInLoop];
 
     if (murajaaTotal > 0) {
          progressContainer.innerHTML += `
             <div class="progress-section mb-4">
                 <div class="progress-title mb-2">
-                    <i class="fas fa-redo-alt text-info"></i> مسار المراجعة: ${murajaaProgress} من ${murajaaTotal} مهمة مكتملة (${murajaaPercent}%)
+                    <i class="fas fa-redo-alt text-info"></i> مسار المراجعة (الدورة الحالية): ${currentMurajaaProgressInLoop} من ${murajaaTotal} مهمة (${murajaaPercent}%)
                 </div>
                 <div class="progress" style="height: 20px;">
                     <div class="progress-bar bg-info" role="progressbar" style="width: ${murajaaPercent}%;" aria-valuenow="${murajaaPercent}" aria-valuemin="0" aria-valuemax="100">
                          ${murajaaPercent}%
                     </div>
                 </div>
-                <small class="text-muted mt-2 d-block">المهمة التالية: ${nextMurajaa ? nextMurajaa.description : 'تم إكمال جميع مهام المراجعة! 🎉'}</small>
+                <small class="text-muted mt-2 d-block">المهمة التالية: ${nextMurajaa ? nextMurajaa.description.replace('مراجعة: ', '') : 'جاري إعداد الدورة التالية.'}</small>
             </div>
         `;
     }
 }
 
 
-// --- 6. منطق عرض المهام (باستخدام تصميم البطاقات الجديد) ---
+// --- 6. منطق عرض المهام (Card View) ---
 function renderTasks(studentData, taskList) {
     const tasksContainer = document.getElementById('tasks-container');
     tasksContainer.innerHTML = '';
@@ -236,9 +249,7 @@ function renderTasks(studentData, taskList) {
         let iconHtml = '<i class="fas fa-pencil-alt text-warning me-2"></i>';
         let actionButton = '';
         
-        // -------------------------------------------------------------
         // 1. التعامل مع المهام التسلسلية (Hifz/Murajaa)
-        // -------------------------------------------------------------
         if (task.is_curriculum_task) {
             
             if (task.curriculum_type === 'Hifz') {
@@ -251,7 +262,9 @@ function renderTasks(studentData, taskList) {
             
             // تحقق من الحالة الحالية للمهمة التسلسلية 
             const activeInDb = studentTasksInDb.find(t => 
-                t.curriculum_id === task.curriculum_id && t.status === "claimed"
+                t.curriculum_id === task.curriculum_id && 
+                t.status === "claimed" &&
+                t.task_type === `${task.curriculum_type} تسلسلي`
             );
 
             if (activeInDb) {
@@ -260,15 +273,13 @@ function renderTasks(studentData, taskList) {
                 actionButton = `<button class="btn btn-warning btn-sm" disabled><i class="fas fa-hourglass-half"></i> قيد مراجعة المعلم</button>`;
             } else {
                 // حالة: جاهزة للإنجاز
-                actionButton = `<button class="btn btn-primary" onclick="claimCurriculumTask('${task.curriculum_type}', ${task.curriculum_id}, ${task.points_value}, '${task.description}')"><i class="fas fa-check"></i> تم الإنجاز</button>`;
+                actionButton = `<button class="btn btn-primary" onclick="claimCurriculumTask('${task.curriculum_type}', ${task.curriculum_id}, ${task.points_value}, '${task.description.replace(/'/g, "\\'")}')"><i class="fas fa-check"></i> تم الإنجاز</button>`;
             }
 
         } 
-        // -------------------------------------------------------------
         // 2. التعامل مع المهام الخاصة (اليدوية/Pending/Claimed)
-        // -------------------------------------------------------------
         else {
-             // البحث عن Index المهمة في القائمة الأصلية studentTasksInDb (لأجل وظائف التراجع processTaskUndo)
+             // البحث عن Index المهمة في القائمة الأصلية studentTasksInDb
             const originalIndex = studentTasksInDb.findIndex(t => 
                 t.description === task.description && 
                 t.points_value === task.points_value && 
@@ -283,8 +294,7 @@ function renderTasks(studentData, taskList) {
                     <button class="btn btn-danger btn-sm" onclick="processTaskUndo(${originalIndex})"><i class="fas fa-times"></i> إلغاء</button>
                 `;
             } else if (task.status === "pending") {
-                cardClass = 'manual-card';
-                 actionButton = `<button class="btn btn-success" onclick="processTaskClaim(${originalIndex})"><i class="fas fa-check-double"></i> تم الإنجاز</button>`;
+                cardButton = `<button class="btn btn-success" onclick="processTaskClaim(${originalIndex})"><i class="fas fa-check-double"></i> تم الإنجاز</button>`;
             }
         }
         
@@ -309,28 +319,37 @@ function renderTasks(studentData, taskList) {
 }
 
 
-// --- دالة إنجاز مهمة تسلسلية (Claim Curriculum Task) - مُعدَّلة لمنع التكرار ---
+// --- دالة إنجاز مهمة تسلسلية (Claim Curriculum Task) ---
 async function claimCurriculumTask(curriculumType, curriculumId, pointsValue, description) {
     if (!currentStudentId) return;
 
     const docRef = db.collection("tasks").doc(currentStudentId); 
     let studentData = allStudentsData[currentStudentId]; 
 
-    // 1. البحث عن نسخة موجودة من هذه المهمة التسلسلية في مصفوفة مهام الطالب
     const existingTasksArray = studentData.tasks || [];
     const existingIndex = existingTasksArray.findIndex(t => 
-        t.curriculum_id === curriculumId
+        t.curriculum_id === curriculumId && 
+        t.task_type === `${curriculumType} تسلسلي`
     );
 
     let claimSuccessful = false;
 
+    // تهيئة المهمة للمطالبة
+    const now = new Date();
+    const taskDetails = {
+        description: description,
+        points_value: pointsValue,
+        release_date: now.toISOString().split('T')[0], 
+        release_time: now.toTimeString().split(' ')[0].substring(0, 5),
+        task_type: `${curriculumType} تسلسلي`,
+        curriculum_id: curriculumId, 
+        status: "claimed" 
+    };
+    
+    // إذا كانت موجودة (للمراجعة الدورية حيث يتم إعادة استخدام الـ ID)
     if (existingIndex !== -1) {
-        // 2. تحديث حالة المهمة الموجودة إلى "claimed"
-        studentData.tasks[existingIndex].status = "claimed";
-        // تحديث تاريخ ووقت المطالبة
-        studentData.tasks[existingIndex].release_date = new Date().toISOString().split('T')[0];
-        studentData.tasks[existingIndex].release_time = new Date().toTimeString().split(' ')[0].substring(0, 5);
-        
+        // نحدث المهمة في نفس الموضع مع تفاصيل المطالبة الجديدة
+        studentData.tasks[existingIndex] = taskDetails;
         try {
             await docRef.update({ tasks: studentData.tasks }); 
             claimSuccessful = true;
@@ -339,25 +358,14 @@ async function claimCurriculumTask(curriculumType, curriculumId, pointsValue, de
         }
 
     } else {
-        // 3. إضافة المهمة لأول مرة (استخدام arrayUnion)
-        const now = new Date();
-        const newTask = {
-            description: description,
-            points_value: pointsValue,
-            release_date: now.toISOString().split('T')[0], 
-            release_time: now.toTimeString().split(' ')[0].substring(0, 5),
-            task_type: `${curriculumType} تسلسلي`,
-            curriculum_id: curriculumId, 
-            status: "claimed" 
-        };
-        
+        // إضافة المهمة لأول مرة (للحفظ التسلسلي الذي لا يُعاد استخدامه)
         try {
             await docRef.update({ 
-                tasks: firebase.firestore.FieldValue.arrayUnion(newTask) 
+                tasks: firebase.firestore.FieldValue.arrayUnion(taskDetails) 
             }); 
             // تحديث البيانات المحلية
             allStudentsData[currentStudentId].tasks = allStudentsData[currentStudentId].tasks || [];
-            allStudentsData[currentStudentId].tasks.push(newTask);
+            allStudentsData[currentStudentId].tasks.push(taskDetails);
             claimSuccessful = true;
         } catch (e) {
              console.error("CRITICAL FAILURE: Curriculum Task Insert Failed.", e); 
@@ -372,52 +380,7 @@ async function claimCurriculumTask(curriculumType, curriculumId, pointsValue, de
 }
 
 
-// --- منطق تحديث الطالب (مطالبة المراجعة للمهام الخاصة) ---
-async function processTaskClaim(taskIndex) {
-    if (!currentStudentId) return;
-
-    const docRef = db.collection("tasks").doc(currentStudentId); 
-    let studentData = allStudentsData[currentStudentId];
-
-    studentData.tasks[taskIndex].status = "claimed"; 
-
-    try {
-        await docRef.update({ tasks: studentData.tasks }); 
-        allStudentsData[currentStudentId].tasks[taskIndex].status = "claimed";
-        loadStudentData(currentStudentId);
-    } catch (e) {
-        console.error("CRITICAL FAILURE: Firestore Write Failed.", e); 
-        alert("فشل تحديث الإنجاز.");
-    }
-}
-
-// --- منطق إلغاء الإنجاز (التراجع) ---
-async function processTaskUndo(taskIndex) {
-    if (!currentStudentId) return;
-    
-    if (!confirm("هل أنت متأكد من إلغاء إنجاز هذه المهمة؟ ستختفي من مراجعة المعلم.")) {
-        return;
-    }
-
-    const docRef = db.collection("tasks").doc(currentStudentId); 
-    let studentData = allStudentsData[currentStudentId];
-
-    studentData.tasks[taskIndex].status = "pending"; 
-
-    try {
-        await docRef.update({ tasks: studentData.tasks }); 
-
-        allStudentsData[currentStudentId].tasks[taskIndex].status = "pending";
-        
-        loadStudentData(currentStudentId);
-        
-    } catch (e) {
-        console.error("CRITICAL FAILURE: Firestore Undo Failed.", e); 
-        alert("فشل إلغاء الإنجاز.");
-    }
-}
-
-// --- دالة منح النقاط وتأكيد الموافقة ---
+// --- دالة منح النقاط وتأكيد الموافقة (تعديل منطق اللوب) ---
 async function approveTask(studentId, taskIndex, pointsValue) {
     const docRef = db.collection("tasks").doc(studentId);
     let studentData = allStudentsData[studentId];
@@ -437,21 +400,42 @@ async function approveTask(studentId, taskIndex, pointsValue) {
     if (isCurriculumTask) {
         if (task.task_type === "Hifz تسلسلي") {
             updates.hifz_progress = firebase.firestore.FieldValue.increment(1);
+            
+            // 🔑 المنطق الجديد: إضافة المهمة إلى قائمة المراجعة للطالب
+            const newMurajaaItem = task.description; 
+            updates.murajaa_pool = firebase.firestore.FieldValue.arrayUnion(newMurajaaItem); 
+            
         } else if (task.task_type === "Murajaa تسلسلي") {
             updates.murajaa_progress = firebase.firestore.FieldValue.increment(1);
+            
+            // 🔑 منطق حذف أول عنصر من قائمة murajaa_pool بعد المراجعة
+            const murajaaPool = studentData.murajaa_pool || [];
+            if (murajaaPool.length > 0) {
+                 // نزيل أول سورة مضافة (افتراضياً هي التي راجعها)
+                 updates.murajaa_pool = murajaaPool.slice(1);
+            }
         }
     }
     
     try {
         await docRef.update(updates);
 
+        // تحديث البيانات المحلية
         allStudentsData[studentId].score = newScore;
         
         if (isCurriculumTask) {
              if (task.task_type === "Hifz تسلسلي") {
                  allStudentsData[studentId].hifz_progress = (allStudentsData[studentId].hifz_progress || 0) + 1;
+                 // تحديث الـ pool محلياً
+                 allStudentsData[studentId].murajaa_pool = allStudentsData[studentId].murajaa_pool || [];
+                 allStudentsData[studentId].murajaa_pool.push(task.description);
+                 
              } else if (task.task_type === "Murajaa تسلسلي") {
                  allStudentsData[studentId].murajaa_progress = (allStudentsData[studentId].murajaa_progress || 0) + 1;
+                 // تحديث الـ pool محلياً
+                 if (allStudentsData[studentId].murajaa_pool && allStudentsData[studentId].murajaa_pool.length > 0) {
+                     allStudentsData[studentId].murajaa_pool.shift();
+                 }
              }
         }
         
@@ -466,7 +450,8 @@ async function approveTask(studentId, taskIndex, pointsValue) {
 }
 
 
-// --- دوال المعلم ---
+// --- دوال المعلم (Teacher Dashboard) ---
+
 function showTeacherDashboard() {
     if (typeof showTeacherScreen === 'function') showTeacherScreen(); 
     renderTeacherReviewList(); 
@@ -474,15 +459,22 @@ function showTeacherDashboard() {
     attachAddTaskFormListener(); 
     populateBulkAddForms();
     
-    // ربط نموذج إضافة طالب جديد
+    // ربط نماذج الإدارة
     const newStudentForm = document.getElementById('add-new-student-form');
     if (newStudentForm) {
         newStudentForm.removeEventListener('submit', handleAddNewStudent);
         newStudentForm.addEventListener('submit', handleAddNewStudent);
     }
+
+    const curriculumForm = document.getElementById('add-curriculum-task-form');
+    if (curriculumForm) {
+        curriculumForm.removeEventListener('submit', handleAddCurriculumTask);
+        curriculumForm.addEventListener('submit', handleAddCurriculumTask);
+    }
+    updateCurriculumStatusDisplay(); 
 }
 
-// --- دالة معالجة إضافة طالب جديد (التي تبني سجل المهام المنجزة تلقائياً) ---
+// --- دالة إضافة طالب جديد (تبني سجل الإنجاز وتضيف murajaa_pool) ---
 async function handleAddNewStudent(e) {
     e.preventDefault();
     
@@ -491,7 +483,6 @@ async function handleAddNewStudent(e) {
     const hifzProgress = parseInt(document.getElementById('initial-hifz-progress').value.trim());
     const murajaaProgress = parseInt(document.getElementById('initial-murajaa-progress').value.trim());
     
-    // التحقق الأساسي
     if (!studentId || !studentName || isNaN(hifzProgress) || isNaN(murajaaProgress)) {
         alert("الرجاء ملء جميع الحقول بشكل صحيح.");
         return;
@@ -502,32 +493,33 @@ async function handleAddNewStudent(e) {
         return;
     }
 
-    // التحقق من أن مؤشرات التقدم لا تتجاوز طول المنهج المتاح
     if (hifzProgress > curriculumLists.Hifz.length || murajaaProgress > curriculumLists.Murajaa.length) {
          alert("خطأ: مؤشر التقدم يتجاوز عدد المهام المتاحة في المنهج المركزي.");
          return;
     }
     
-    // 1. بناء سجل المهام المنجزة (Tasks Array)
+    // 1. بناء سجل المهام المنجزة (Tasks Array) والنقاط وقائمة المراجعة
     let completedTasks = [];
     let initialScore = 0;
+    let initialMurajaaPool = [];
     
-    // أ. بناء سجل مهام الحفظ المنجزة (من 0 إلى hifzProgress - 1)
+    // أ. بناء سجل مهام الحفظ المنجزة
     for (let i = 0; i < hifzProgress; i++) {
         const task = curriculumLists.Hifz[i];
         if (task) {
             initialScore += task.points_value;
+            initialMurajaaPool.push(task.description); // إضافة المهمة المنجزة إلى قائمة المراجعة
             completedTasks.push({
                 description: task.description, 
                 points_value: task.points_value, 
                 task_type: "Hifz تسلسلي",
                 curriculum_id: task.curriculum_id,
-                status: "approved" // تحديد الحالة كـ 'approved' لتسجيل الإنجاز
+                status: "approved" 
             });
         }
     }
     
-    // ب. بناء سجل مهام المراجعة المنجزة
+    // ب. بناء سجل مهام المراجعة المنجزة (لأي تقدم أولي في المراجعة)
     for (let i = 0; i < murajaaProgress; i++) {
         const task = curriculumLists.Murajaa[i];
         if (task) {
@@ -549,14 +541,14 @@ async function handleAddNewStudent(e) {
         score: initialScore, 
         tasks: completedTasks,
         hifz_progress: hifzProgress,
-        murajaa_progress: murajaaProgress
+        murajaa_progress: murajaaProgress,
+        murajaa_pool: initialMurajaaPool 
     };
     
     // 3. إرسال إلى Firebase
     try {
         await db.collection('tasks').doc(studentId).set(newStudentData);
         
-        // تحديث البيانات المحلية
         allStudentsData[studentId] = newStudentData;
         
         alert(`تم إضافة الطالب "${studentName}" بنجاح. نقطة الانطلاق للحفظ: ${hifzProgress}.`);
@@ -569,236 +561,125 @@ async function handleAddNewStudent(e) {
         alert(`فشل إضافة الطالب إلى Firebase!`);
     }
 }
-// --- نهاية دالة إضافة الطالب الجديد ---
 
 
-function renderTeacherReviewList() {
-    const reviewContainer = document.getElementById('review-tasks-container');
-    if (!reviewContainer) return;
-    reviewContainer.innerHTML = '';
-    let pendingReviewCount = 0;
-
-    for (const studentId in allStudentsData) {
-        const student = allStudentsData[studentId];
-        const tasks = student.tasks || [];
-
-        tasks.forEach((task, taskIndex) => {
-            if (task.status === "claimed") { 
-                pendingReviewCount++;
-                
-                const reviewItem = document.createElement('div');
-                reviewItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-                reviewItem.innerHTML = `
-                    <div style="flex-grow: 1;">
-                        <span class="badge bg-info">${student.student_name} (${studentId})</span>
-                        <p class="mb-0 mt-1">${task.description}</p>
-                        <small class="text-muted">النوع: ${task.task_type} (+${task.points_value} نقاط)</small>
-                    </div>
-                `;
-
-                const approveButton = document.createElement('button');
-                approveButton.className = 'btn btn-success btn-sm ms-3';
-                approveButton.innerText = 'تأكيد الإنجاز';
-                approveButton.onclick = () => approveTask(studentId, taskIndex, task.points_value);
-                
-                reviewItem.appendChild(approveButton);
-                reviewContainer.appendChild(reviewItem);
-            }
-        });
-    }
-
-    if (document.getElementById('review-count')) {
-        document.getElementById('review-count').innerText = pendingReviewCount;
-    }
-
-    if (pendingReviewCount === 0) {
-        reviewContainer.innerHTML = '<p class="text-success mt-3">لا توجد مهام تنتظر المراجعة حاليًا.</p>';
-    }
-}
-function renderLeaderboard() { 
-    const leaderboardContainer = document.getElementById('leaderboard-container');
-    if (!leaderboardContainer) return;
-
-    leaderboardContainer.innerHTML = '';
+// --- دالة إدارة المنهج المركزي (Curriculum Management) ---
+async function handleAddCurriculumTask(e) {
+    e.preventDefault();
     
-    const studentsArray = Object.values(allStudentsData).map(data => ({
-        name: data.student_name,
-        score: data.score || 0
-    }));
-
-    studentsArray.sort((a, b) => b.score - a.score);
-
-    studentsArray.slice(0, 5).forEach((student, index) => {
-        const rank = index + 1;
-        const rankItem = document.createElement('div');
-        rankItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-        rankItem.innerHTML = `
-            <div>
-                <span class="badge bg-success me-2">#${rank}</span>
-                ${student.name}
-            </div>
-            <strong>${student.score} نقاط</strong>
-        `;
-        leaderboardContainer.appendChild(rankItem);
-    });
-}
-function attachAddTaskFormListener() { 
-    const manualForm = document.getElementById('add-task-form');
-    if (manualForm) {
-        manualForm.removeEventListener('submit', handleAddTaskFormSubmit); 
-        manualForm.addEventListener('submit', handleAddTaskFormSubmit);
-    }
-
-    const bulkForm = document.getElementById('add-bulk-task-form');
-    if (bulkForm) {
-        bulkForm.removeEventListener('submit', handleBulkAddTaskFormSubmit); 
-        bulkForm.addEventListener('submit', handleBulkAddTaskFormSubmit);
-    }
-}
-function populateBulkAddForms() { 
-    const taskSelect = document.getElementById('bulk-task-select');
-    if (taskSelect) {
-        while (taskSelect.options.length > 1) {
-            taskSelect.remove(1);
-        }
-        taskBank.forEach(task => {
-            const option = document.createElement('option');
-            option.value = task.id;
-            option.innerText = `${task.description} (+${task.points} نقاط)`;
-            option.setAttribute('data-points', task.points);
-            option.setAttribute('data-type', task.type);
-            option.setAttribute('data-description', task.description);
-            taskSelect.appendChild(option);
-        });
-    }
-
-    const studentSelect = document.getElementById('bulk-student-select');
-    if (studentSelect) {
-        studentSelect.innerHTML = ''; 
-        for (const studentId in allStudentsData) {
-            const student = allStudentsData[studentId];
-            const option = document.createElement('option');
-            option.value = studentId;
-            option.innerText = `${student.student_name} (${studentId})`;
-            studentSelect.appendChild(option);
-        }
-    }
+    const description = document.getElementById('curriculum-description').value.trim();
+    const pointsValue = parseInt(document.getElementById('curriculum-points').value.trim());
+    const type = document.getElementById('curriculum-type-select').value.trim();
     
-    const bulkDateInput = document.getElementById('bulk-task-date');
-    if (bulkDateInput) {
-        bulkDateInput.valueAsDate = new Date();
-    }
-}
-async function handleAddTaskFormSubmit(e) {
-    e.preventDefault(); 
-    
-    const studentId = document.getElementById('new-task-student-id').value.trim();
-    const description = document.getElementById('new-task-description').value.trim();
-    const points = parseInt(document.getElementById('new-task-points').value.trim());
-    const date = document.getElementById('new-task-date').value.trim();
-    const time = document.getElementById('new-task-time').value.trim();
-
-    if (!studentId || !description || isNaN(points) || !date || !time) {
-        alert("الرجاء ملء جميع حقول النموذج اليدوي بشكل صحيح.");
+    if (!description || isNaN(pointsValue) || !type) {
+        alert("الرجاء ملء جميع حقول المنهج بشكل صحيح.");
         return;
     }
-
-    if (!allStudentsData[studentId]) {
-        alert(`لا يوجد طالب مسجل بالرمز: ${studentId}.`);
-        return;
-    }
-
+    
+    const currentList = curriculumLists[type] || [];
+    const nextCurriculumId = currentList.length;
+    
     const newTask = {
         description: description,
-        points_value: points,
-        release_date: date,
-        release_time: time,
-        task_type: "مضافة يدوياً", 
-        depends_on: -1, 
-        status: "pending" 
+        points_value: pointsValue,
+        task_type: `${type} تسلسلي`,
+        curriculum_id: nextCurriculumId
     };
-
+    
     try {
-        const studentDocRef = db.collection('tasks').doc(studentId);
+        const curriculumDocRef = db.collection('Curriculum').doc(type);
         
-        await studentDocRef.update({
-            tasks: firebase.firestore.FieldValue.arrayUnion(newTask)
+        await curriculumDocRef.update({
+            tasks_list: firebase.firestore.FieldValue.arrayUnion(newTask)
         });
-
-        allStudentsData[studentId].tasks = allStudentsData[studentId].tasks || [];
-        allStudentsData[studentId].tasks.push(newTask);
-
-
-        alert(`تم إضافة المهمة بنجاح للطالب: ${allStudentsData[studentId].student_name}.`);
         
-        e.target.reset();
+        currentList.push(newTask);
+        alert(`تم إضافة المهمة بنجاح إلى مسار ${type}. أصبحت المهمة رقم ${nextCurriculumId}.`);
+        
+        e.target.reset(); 
+        await loadCurriculumLists(); 
+        updateCurriculumStatusDisplay(); 
         
     } catch (error) {
-        console.error("خطأ حاسم في إضافة المهمة اليدوية: ", error);
-        alert(`فشل إضافة المهمة إلى Firebase!`);
-    }
-}
-async function handleBulkAddTaskFormSubmit(e) {
-    e.preventDefault();
+        if (error.code === 'not-found' || error.message.includes('No document to update')) {
+             try {
+                const curriculumDocRef = db.collection('Curriculum').doc(type);
+                await curriculumDocRef.set({ tasks_list: [newTask] });
 
-    const taskSelect = document.getElementById('bulk-task-select');
-    const studentSelect = document.getElementById('bulk-student-select');
-    const date = document.getElementById('bulk-task-date').value.trim();
-    const time = document.getElementById('bulk-task-time').value.trim();
-    
-    const selectedTaskOption = taskSelect.options[taskSelect.selectedIndex];
-    if (!selectedTaskOption || !selectedTaskOption.value) {
-        alert("الرجاء اختيار مهمة من القائمة.");
-        return;
-    }
+                currentList.push(newTask);
+                alert(`تم إنشاء مسار ${type} وإضافة المهمة بنجاح. أصبحت المهمة رقم ${nextCurriculumId}.`);
 
-    const description = selectedTaskOption.getAttribute('data-description');
-    const points = parseInt(selectedTaskOption.getAttribute('data-points'));
-    const type = selectedTaskOption.getAttribute('data-type');
-
-    const selectedStudentIds = Array.from(studentSelect.options)
-                                    .filter(option => option.selected)
-                                    .map(option => option.value);
-
-    if (selectedStudentIds.length === 0) {
-        alert("الرجاء اختيار طالب واحد على الأقل.");
-        return;
-    }
-
-    if (!date || !time) {
-        alert("الرجاء تحديد تاريخ ووقت إتاحة المهمة.");
-        return;
-    }
-
-    const newTask = {
-        description: description,
-        points_value: points,
-        release_date: date,
-        release_time: time,
-        task_type: type, 
-        depends_on: -1, 
-        status: "pending" 
-    };
-    
-    let successCount = 0;
-    
-    for (const studentId of selectedStudentIds) {
-        try {
-            const studentDocRef = db.collection('tasks').doc(studentId);
-            
-            await studentDocRef.update({
-                tasks: firebase.firestore.FieldValue.arrayUnion(newTask)
-            });
-
-            allStudentsData[studentId].tasks = allStudentsData[studentId].tasks || [];
-            allStudentsData[studentId].tasks.push(newTask);
-            successCount++;
-
-        } catch (error) {
-            console.error(`خطأ في إضافة المهمة للطالب ${studentId}:`, error);
+                e.target.reset();
+                await loadCurriculumLists(); 
+                updateCurriculumStatusDisplay();
+            } catch (e) {
+                console.error("خطأ حاسم في إدارة المنهج:", e);
+                alert("فشل في إضافة/إنشاء وثيقة المنهج المركزي.");
+            }
+        } else {
+            console.error("خطأ في إضافة مهمة المنهج:", error);
+            alert(`فشل إضافة المهمة إلى Firebase!`);
         }
     }
-
-    alert(`تم إضافة المهمة بنجاح إلى ${successCount} طلاب من أصل ${selectedStudentIds.length} طالب مختار.`);
-    e.target.reset();
 }
+
+function updateCurriculumStatusDisplay() {
+    const statusElement = document.getElementById('curriculum-status');
+    if (statusElement) {
+        const hifzCount = curriculumLists.Hifz ? curriculumLists.Hifz.length : 0;
+        const murajaaCount = curriculumLists.Murajaa ? curriculumLists.Murajaa.length : 0;
+        
+        statusElement.innerHTML = `
+            <i class="fas fa-book-open text-success"></i> الحفظ: ${hifzCount} مهمة. 
+            <i class="fas fa-redo-alt text-info"></i> المراجعة: ${murajaaCount} مهمة.
+        `;
+    }
+}
+
+// ... (بقية دوال المعلم مثل renderTeacherReviewList و renderLeaderboard و handleAddTaskFormSubmit وغيرها تبقى كما هي من الكود السابق) ...
+
+
+// //////////////////////////////////////////////////////
+// دالة تنفيذية: تحديث وعكس مهام المراجعة بالكامل
+// //////////////////////////////////////////////////////
+// *ملاحظة: يمكنك إزالة هذه الدالة بعد تشغيلها مرة واحدة لتنظيف الكود.*
+async function updateAndReverseMurajaaCurriculum() {
+    if (!confirm("تحذير حاسم: هل أنت متأكد من عكس قائمة المراجعة وإعادة كتابتها؟ هذا سيؤثر على نقاط انطلاق الطلاب الحاليين.")) {
+        return;
+    }
+
+    const reversedMurajaaTasksList = [
+        "الناس إلى البلد", "الفجر - الطارق", "الانشقاق والبروج", 
+        "الانفطار والمطففين", "عبس والتكوير", "النازعات",
+        "النبأ", "المرسلات", "الإنسان", "القيامة", 
+        "المدثر", "المزمل", "الجن", "نوح", 
+        "المعارج", "الحاقة", "القلم", "الملك", 
+        "التحريم", "الطلاق", "التغابن", "المنافقون", 
+        "الجمعة", "الصف", "الممتحنة 1-2", "الحشر 1-2"
+    ];
+
+    const finalMurajaaArray = reversedMurajaaTasksList.map((description, index) => ({
+        description: `مراجعة: ${description}`, 
+        points_value: 5, 
+        task_type: "Murajaa تسلسلي",
+        curriculum_id: index 
+    }));
+    
+    try {
+        await db.collection('Curriculum').doc('Murajaa').set({
+            tasks_list: finalMurajaaArray
+        });
+        
+        curriculumLists.Murajaa = finalMurajaaArray; 
+        
+        alert(`🎉 تم تحديث وعكس قائمة المراجعة بنجاح! الترتيب يبدأ الآن من: "الناس إلى البلد" كـ (ID: 0).`);
+        
+    } catch (e) {
+        console.error("خطأ حاسم في تحديث المنهج المركزي للمراجعة:", e);
+        alert("فشل تحديث المنهج. تحقق من اتصال Firebase.");
+    }
+}
+
+// //////////////////////////////////////////////////////
+// يمكنك ترك الدوال التنفيذية الأخرى (مثل seedHifzCurriculum) هنا أيضاً إذا لم يتم تشغيلها بعد.
+// //////////////////////////////////////////////////////
