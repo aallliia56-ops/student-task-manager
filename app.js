@@ -1,5 +1,5 @@
 // //////////////////////////////////////////////////////
-// ملف app.js النهائي والمستقر: تم التحقق من نقاط المهام، وإضافة الطلاب، ووظائف الأزرار.
+// ملف app.js النهائي والمستقر (مع التعديلات الأخيرة)
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
@@ -25,7 +25,7 @@ const TEACHER_CODE = 'TEACHER2025';
 
 let curriculumLists = {}; 
 let taskBank = [];        
-const MANUAL_TASK_POINTS = 1; // 🔴 نقاط ثابتة: 1 للمهام اليدوية/البنكية
+const MANUAL_TASK_POINTS = 1; // نقاط ثابتة: 1 للمهام اليدوية/البنكية
 
 
 // --- 2. دالة معالجة تسجيل الدخول (الطالب والمعلم) ---
@@ -36,7 +36,7 @@ if (loginForm) {
         e.preventDefault();
         const inputId = document.getElementById('student-id').value.trim();
         
-        // 🔑 تحميل البيانات الأساسية قبل القرار
+        // تحميل البيانات الأساسية قبل القرار لضمان وجودها
         await loadAllStudentsData(); 
         await loadCurriculumLists(); 
         await loadTaskBank(); 
@@ -54,14 +54,19 @@ if (loginForm) {
 
 // --- 3. دوال جلب البيانات من Firestore ---
 async function loadAllStudentsData() {
-    const tasksCollection = db.collection("tasks"); 
-    const querySnapshot = await tasksCollection.get();
+    try {
+        const tasksCollection = db.collection("tasks"); 
+        const querySnapshot = await tasksCollection.get();
 
-    allStudentsData = {}; 
-    
-    querySnapshot.forEach((doc) => {
-        allStudentsData[doc.id] = {...doc.data(), id: doc.id}; 
-    });
+        allStudentsData = {}; 
+        
+        querySnapshot.forEach((doc) => {
+            allStudentsData[doc.id] = {...doc.data(), id: doc.id}; 
+        });
+    } catch (error) {
+        console.error("Error loading all students data. Check Firebase Rules/Connection:", error);
+        alert("فشل تحميل بيانات الطلاب. تأكد من قواعد الأمان والاتصال.");
+    }
 } 
 
 async function loadCurriculumLists() {
@@ -75,7 +80,7 @@ async function loadCurriculumLists() {
         curriculumLists.Murajaa = murajaaDoc.exists ? murajaaDoc.data().tasks_list || [] : [];
         
     } catch (e) {
-        console.error("Error loading curriculum lists. Please ensure 'Curriculum' collection exists:", e);
+        console.error("Error loading curriculum lists:", e);
     }
 }
 
@@ -90,7 +95,7 @@ async function loadTaskBank() {
 }
 
 
-// --- 4. دالة تحديد المهام النشطة للطالب (تفعيل اللوب) ---
+// --- 4. دالة تحديد المهام النشطة للطالب (تفعيل نظام التقدم التسلسلي) ---
 function getCurrentCurriculumTasks(studentData) {
     const activeTasks = [];
     const studentTasks = studentData.tasks || [];
@@ -109,33 +114,33 @@ function getCurrentCurriculumTasks(studentData) {
         }
     }
 
-    // Murajaa
+    // Murajaa (نظام تسلسلي يتوقف عند النهاية)
     const murajaaList = curriculumLists.Murajaa || [];
     const murajaaTotal = murajaaList.length;
     
     if (murajaaTotal > 0) {
-        const murajaaIndex = (studentData.murajaa_progress || 0) % murajaaTotal; 
-        const nextMurajaaTask = murajaaList[murajaaIndex];
+        const murajaaIndex = studentData.murajaa_progress || 0; 
         
-        if (nextMurajaaTask) {
-            const isMurajaaActive = studentTasks.some(t => 
-                t.curriculum_id === nextMurajaaTask.curriculum_id && 
-                t.status === "claimed" && 
-                t.task_type === "Murajaa تسلسلي" 
-            );
+        // 💡 الشرط الجديد: إذا كان التقدم أقل من العدد الإجمالي للمهام، استمر.
+        if (murajaaIndex < murajaaTotal) {
+            const nextMurajaaTask = murajaaList[murajaaIndex];
             
-            if (!isMurajaaActive) {
-                const murajaaPool = studentData.murajaa_pool || [];
-                const poolDescription = murajaaPool.slice(0, 5).join(', ') + (murajaaPool.length > 5 ? '... والمزيد.' : '');
+            if (nextMurajaaTask) {
+                const isMurajaaActive = studentTasks.some(t => 
+                    t.curriculum_id === nextMurajaaTask.curriculum_id && 
+                    t.status === "claimed" && 
+                    t.task_type === "Murajaa تسلسلي" 
+                );
                 
-                const taskWithPool = { ...nextMurajaaTask };
-                taskWithPool.description = `${taskWithPool.description} - (راجع: ${poolDescription || 'لا يوجد سور/أجزاء محددة حاليًا.'})`;
-
-                activeTasks.push({ ...taskWithPool, is_curriculum_task: true, curriculum_type: 'Murajaa' });
+                if (!isMurajaaActive) {
+                    // تم حذف منطق Murajaa Pool
+                    activeTasks.push({ ...nextMurajaaTask, is_curriculum_task: true, curriculum_type: 'Murajaa' });
+                }
             }
         }
     }
     
+    // فلترة المهام اليدوية والبنكية التي لم يتم الانتهاء منها (pending/claimed)
     const pendingAndClaimedTasks = studentTasks.filter(t => t.status === "pending" || t.status === "claimed");
     const combinedTasks = pendingAndClaimedTasks.concat(activeTasks);
 
@@ -182,6 +187,7 @@ function renderStudentRank() {
     }
 }
 
+// 🔑 دالة التقدم مع حل مشكلة "المهمة التالية" وإلغاء لوب المراجعة
 function renderProgressBars(studentData) {
     const progressContainer = document.getElementById('progress-container');
     if (!progressContainer) return;
@@ -193,12 +199,10 @@ function renderProgressBars(studentData) {
     const hifzProgress = studentData.hifz_progress || 0;
     const hifzPercent = hifzTotal > 0 ? Math.floor((hifzProgress / hifzTotal) * 100) : 0;
     
-    // 💡 التعديل هنا: المهمة التالية فعلياً هي hifzProgress + 1
+    // حساب المهمة التالية (N+1)
     const nextHifzIndex = hifzProgress + 1; 
-    // المهمة التي ستفتح بعد إنجاز المهمة الحالية (N)
     const nextHifz = curriculumLists.Hifz[nextHifzIndex]; 
 
-    // ... (بقية كود الحفظ لم يتغير)
     if (hifzTotal > 0) {
         progressContainer.innerHTML += `
             <div class="progress-section mb-4">
@@ -219,57 +223,32 @@ function renderProgressBars(studentData) {
     const murajaaTotal = curriculumLists.Murajaa.length;
     const murajaaProgress = studentData.murajaa_progress || 0;
     
-    // 💡 التعديل هنا: المهمة التالية فعلياً هي murajaaProgress + 1
-    const nextMurajaaProgress = murajaaProgress + 1;
-    // نحسب المهمة الجديدة بعد اللوب
-    const nextMurajaaIndex = nextMurajaaProgress % murajaaTotal;
+    // 💡 التعديل هنا: المهمة التالية هي التقدم الحالي + 1 (بدون لوب)
+    const nextMurajaaIndex = murajaaProgress + 1;
     
-    const currentMurajaaProgressInLoop = murajaaProgress % murajaaTotal; // هذا يبقى كما هو لحساب شريط التقدم
+    const currentMurajaaProgress = murajaaProgress; // هذا هو التقدم المكتمل
     
-    const murajaaPercent = murajaaTotal > 0 ? Math.floor((currentMurajaaProgressInLoop / murajaaTotal) * 100) : 0;
+    const murajaaPercent = murajaaTotal > 0 ? Math.floor((currentMurajaaProgress / murajaaTotal) * 100) : 0;
     
-    // المهمة التي ستفتح بعد إنجاز المهمة الحالية (N)
-    const nextMurajaa = curriculumLists.Murajaa[nextMurajaaIndex];
+    const nextMurajaa = curriculumLists.Murajaa[nextMurajaaIndex]; // استخدام القائمة المباشرة
 
-    // ... (بقية كود المراجعة لم يتغير)
     if (murajaaTotal > 0) {
          progressContainer.innerHTML += `
             <div class="progress-section mb-4">
                 <div class="progress-title mb-2">
-                    <i class="fas fa-redo-alt text-info"></i> مسار المراجعة (الدورة الحالية): ${currentMurajaaProgressInLoop} من ${murajaaTotal} مهمة (${murajaaPercent}%)
+                    <i class="fas fa-redo-alt text-info"></i> مسار المراجعة: ${currentMurajaaProgress} من ${murajaaTotal} مهمة (${murajaaPercent}%)
                 </div>
                 <div class="progress" style="height: 20px;">
                     <div class="progress-bar bg-info" role="progressbar" style="width: ${murajaaPercent}%;" aria-valuenow="${murajaaPercent}" aria-valuemin="0" aria-valuemax="100">
                          ${murajaaPercent}%
                     </div>
                 </div>
-                <small class="text-muted mt-2 d-block">المهمة التالية: ${nextMurajaa ? nextMurajaa.description.replace('مراجعة: ', '') : 'جاري إعداد الدورة التالية.'}</small>
+                <small class="text-muted mt-2 d-block">المهمة التالية: ${nextMurajaa ? nextMurajaa.description.replace('مراجعة: ', '') : 'تم الانتهاء من دورة المراجعة الحالية.'}</small>
             </div>
         `;
     }
 }
-    
-    const murajaaTotal = curriculumLists.Murajaa.length;
-    const murajaaProgress = studentData.murajaa_progress || 0;
-    const currentMurajaaProgressInLoop = murajaaProgress % murajaaTotal;
-    const murajaaPercent = murajaaTotal > 0 ? Math.floor((currentMurajaaProgressInLoop / murajaaTotal) * 100) : 0;
-    const nextMurajaa = curriculumLists.Murajaa[currentMurajaaProgressInLoop];
 
-    if (murajaaTotal > 0) {
-         progressContainer.innerHTML += `
-            <div class="progress-section mb-4">
-                <div class="progress-title mb-2">
-                    <i class="fas fa-redo-alt text-info"></i> مسار المراجعة (الدورة الحالية): ${currentMurajaaProgressInLoop} من ${murajaaTotal} مهمة (${murajaaPercent}%)
-                </div>
-                <div class="progress" style="height: 20px;">
-                    <div class="progress-bar bg-info" role="progressbar" style="width: ${murajaaPercent}%;" aria-valuenow="${murajaaPercent}" aria-valuemin="0" aria-valuemax="100">
-                         ${murajaaPercent}%
-                    </div>
-                </div>
-                <small class="text-muted mt-2 d-block">المهمة التالية: ${nextMurajaa ? nextMurajaa.description.replace('مراجعة: ', '') : 'جاري إعداد الدورة التالية.'}</small>
-            </div>
-        `;
-    }
 
 function renderTasks(studentData, taskList) {
     const tasksContainer = document.getElementById('tasks-container');
@@ -359,10 +338,12 @@ async function claimCurriculumTask(type, curriculumId, points, description) {
     if (!currentStudentId) return alert("خطأ: لا يوجد رمز طالب نشط.");
     
     const studentData = allStudentsData[currentStudentId];
-    const expectedId = (type === 'Hifz') ? (studentData.hifz_progress || 0) : (studentData.murajaa_progress || 0) % (curriculumLists.Murajaa.length || 1);
+    
+    // التحقق من أن الطالب يطالب بالمهمة الصحيحة (التقدم الحالي)
+    const expectedId = (type === 'Hifz') ? (studentData.hifz_progress || 0) : (studentData.murajaa_progress || 0);
 
-    if (type === 'Hifz' && curriculumId !== expectedId) {
-        alert("هذه ليست مهمة الحفظ التالية المطلوبة. يرجى إكمال المهمة السابقة.");
+    if (curriculumId !== expectedId) {
+        alert("هذه ليست المهمة التسلسلية التالية المطلوبة. يرجى إكمال المهمة السابقة.");
         return;
     }
     
@@ -442,7 +423,7 @@ async function processTaskUndo(taskIndex) {
     }
 }
 
-// 🔑 دالة الموافقة على المهمة (المعلم)
+// دالة الموافقة على المهمة (المعلم)
 async function approveTask(studentId, taskIndex) {
     const studentData = allStudentsData[studentId];
     if (!studentData || !studentData.tasks || taskIndex >= studentData.tasks.length) return;
@@ -460,18 +441,13 @@ async function approveTask(studentId, taskIndex) {
     let newScore = (studentData.score || 0) + scoreIncrease;
     let hifz_progress = studentData.hifz_progress || 0;
     let murajaa_progress = studentData.murajaa_progress || 0;
-    let murajaa_pool = [...(studentData.murajaa_pool || [])];
 
     // المنطق التسلسلي (Hifz/Murajaa)
     if (task.task_type === "Hifz تسلسلي") {
         hifz_progress++;
-        // إضافة المهمة المنجزة إلى مجمع المراجعة الدوري
-        murajaa_pool.push(task.description);
-        // قص مجمع المراجعة ليحتوي على آخر 10 مهام فقط
-        if (murajaa_pool.length > 10) {
-            murajaa_pool = murajaa_pool.slice(murajaa_pool.length - 10);
-        }
+        // 🛑 تم حذف منطق Murajaa Pool بالكامل
     } else if (task.task_type === "Murajaa تسلسلي") {
+        // 💡 التقدم تسلسلي بدون لوب
         murajaa_progress++;
     }
 
@@ -485,7 +461,7 @@ async function approveTask(studentId, taskIndex) {
             tasks: updatedTasks,
             hifz_progress: hifz_progress,
             murajaa_progress: murajaa_progress,
-            murajaa_pool: murajaa_pool
+            // 🛑 تم حذف murajaa_pool من التحديث
         });
         
         await batch.commit();
@@ -499,7 +475,7 @@ async function approveTask(studentId, taskIndex) {
     }
 }
 
-// 🔑 دالة رفض المهمة (المعلم)
+// دالة رفض المهمة (المعلم)
 async function rejectTask(studentId, taskIndex) {
     if (!confirm("هل أنت متأكد من رفض المهمة؟ سيتم حذفها من قائمة الطالب.")) return;
 
@@ -646,7 +622,7 @@ function renderLeaderboard() {
 }
 
 
-// دالة إضافة طالب جديد (تم تعديلها لاستخدام set لضمان الإنشاء)
+// دالة إضافة طالب جديد 
 async function handleAddNewStudent(e) {
     e.preventDefault();
 
@@ -669,12 +645,11 @@ async function handleAddNewStudent(e) {
         score: 0,
         hifz_progress: initialHifz,
         murajaa_progress: initialMurajaa,
-        murajaa_pool: [], 
+        // 🛑 تم حذف murajaa_pool من بيانات الطالب
         tasks: [] 
     };
 
     try {
-        // 🔑 استخدام .set() لضمان إنشاء الوثيقة بنجاح
         await db.collection('tasks').doc(studentId).set(newStudentData);
 
         alert(`🎉 تم إضافة الطالب ${studentName} (${studentId}) بنجاح!`);
@@ -689,7 +664,7 @@ async function handleAddNewStudent(e) {
     }
 }
 
-// دالة إضافة مهمة منهج جديدة (تستخدم النقاط الثابتة 5 أو 3)
+// دالة إضافة مهمة منهج جديدة 
 async function handleAddCurriculumTask(e) {
     e.preventDefault();
     
@@ -944,8 +919,7 @@ async function handleAddBulkTask(e) {
 
 
 // //////////////////////////////////////////////////////
-// 🔴 الدوال التنفيذية لملء قاعدة البيانات (Seed Scripts) 🔴
-// ⚠️ يجب تشغيلها يدوياً في Console بعد التأكد من عمل البرنامج
+// الدوال التنفيذية لملء قاعدة البيانات (Seed Scripts) 
 // //////////////////////////////////////////////////////
 
 async function seedHifzCurriculum() {
@@ -980,7 +954,7 @@ async function seedHifzCurriculum() {
 
     const finalHifzArray = hifzTasksList.map((description, index) => ({
         description: description,
-        points_value: 5, // 🔴 5 نقاط للحفظ
+        points_value: 5, 
         task_type: "Hifz تسلسلي",
         curriculum_id: index
     }));
@@ -1001,24 +975,49 @@ async function seedHifzCurriculum() {
 }
 
 
+// 🔑 دالة تحديث قائمة المراجعة (بالترتيب المخصص والمعكوس الجديد)
 async function updateAndReverseMurajaaCurriculum() {
-    if (!confirm("تحذير حاسم: هل أنت متأكد من عكس قائمة المراجعة وإعادة كتابتها؟ هذا ضروري لنظام اللوب الجديد.")) {
+    if (!confirm("تحذير حاسم: هل أنت متأكد من إعادة كتابة قائمة المراجعة بالمهام المخصصة الجديدة؟ سيتم حذف القائمة القديمة.")) {
         return;
     }
 
-    const reversedMurajaaTasksList = [
-        "الناس إلى البلد", "الفجر - الطارق", "الانشقاق والبروج", 
-        "الانفطار والمطففين", "عبس والتكوير", "النازعات",
-        "النبأ", "المرسلات", "الإنسان", "القيامة", 
-        "المدثر", "المزمل", "الجن", "نوح", 
-        "المعارج", "الحاقة", "القلم", "الملك", 
-        "التحريم", "الطلاق", "التغابن", "المنافقون", 
-        "الجمعة", "الصف", "الممتحنة 1-2", "الحشر 1-2"
+    // 💡 القائمة الجديدة المخصصة والكاملة (بالترتيب المعكوس)
+    const customMurajaaTasksList = [
+        "المجادلة 1", 
+        "المجادلة 2", 
+        "الحشر 1", 
+        "الحشر 2", 
+        "الممتحنة 1", 
+        "الممتحنة 2", 
+        "الصف", 
+        "الجمعة",
+        "المنافقون",
+        "التغابن",
+        "الطلاق",
+        "التحريم",
+        "الملك",
+        "القلم",
+        "الحاقة",
+        "المعارج",
+        "نوح",
+        "الجن",
+        "المزمل",
+        "المدثر",
+        "القيامة",
+        "الإنسان",
+        "المرسلات",
+        "النبأ",
+        "النازعات",
+        "عبس والتكوير",
+        "الانفطار والمطففين",
+        "الانشقاق والبروج",
+        "الفجر - الطارق",
+        "الناس إلى البلد"
     ];
 
-    const finalMurajaaArray = reversedMurajaaTasksList.map((description, index) => ({
+    const finalMurajaaArray = customMurajaaTasksList.map((description, index) => ({
         description: `مراجعة: ${description}`, 
-        points_value: 3, // 🔴 3 نقاط للمراجعة
+        points_value: 3, 
         task_type: "Murajaa تسلسلي",
         curriculum_id: index 
     }));
@@ -1030,12 +1029,10 @@ async function updateAndReverseMurajaaCurriculum() {
         
         curriculumLists.Murajaa = finalMurajaaArray; 
         
-        alert(`🎉 تم تحديث وعكس قائمة المراجعة بنجاح! الترتيب يبدأ الآن من: "الناس إلى البلد" كـ (ID: 0). (3 نقاط للمهمة).`);
+        alert(`🎉 تم تحديث قائمة المراجعة بـ ${finalMurajaaArray.length} مهمة مخصصة بنجاح!`);
         
     } catch (e) {
         console.error("خطأ حاسم في تحديث المنهج المركزي للمراجعة:", e);
         alert("فشل تحديث المنهج. تحقق من اتصال Firebase.");
     }
 }
-
-
