@@ -270,7 +270,6 @@ function renderProgressBars(studentData) {
             </div>
         `;
     }
-}
 
 function renderTasks(studentData, taskList) {
     const tasksContainer = document.getElementById('tasks-container');
@@ -1038,4 +1037,5 @@ async function updateAndReverseMurajaaCurriculum() {
         alert("فشل تحديث المنهج. تحقق من اتصال Firebase.");
     }
 }
+
 
