@@ -188,11 +188,17 @@ function renderProgressBars(studentData) {
     
     progressContainer.innerHTML = '';
     
+    // --- 1. مسار الحفظ (Hifz) ---
     const hifzTotal = curriculumLists.Hifz.length;
     const hifzProgress = studentData.hifz_progress || 0;
     const hifzPercent = hifzTotal > 0 ? Math.floor((hifzProgress / hifzTotal) * 100) : 0;
-    const nextHifz = curriculumLists.Hifz[hifzProgress];
+    
+    // 💡 التعديل هنا: المهمة التالية فعلياً هي hifzProgress + 1
+    const nextHifzIndex = hifzProgress + 1; 
+    // المهمة التي ستفتح بعد إنجاز المهمة الحالية (N)
+    const nextHifz = curriculumLists.Hifz[nextHifzIndex]; 
 
+    // ... (بقية كود الحفظ لم يتغير)
     if (hifzTotal > 0) {
         progressContainer.innerHTML += `
             <div class="progress-section mb-4">
@@ -208,6 +214,40 @@ function renderProgressBars(studentData) {
             </div>
         `;
     }
+    
+    // --- 2. مسار المراجعة (Murajaa) ---
+    const murajaaTotal = curriculumLists.Murajaa.length;
+    const murajaaProgress = studentData.murajaa_progress || 0;
+    
+    // 💡 التعديل هنا: المهمة التالية فعلياً هي murajaaProgress + 1
+    const nextMurajaaProgress = murajaaProgress + 1;
+    // نحسب المهمة الجديدة بعد اللوب
+    const nextMurajaaIndex = nextMurajaaProgress % murajaaTotal;
+    
+    const currentMurajaaProgressInLoop = murajaaProgress % murajaaTotal; // هذا يبقى كما هو لحساب شريط التقدم
+    
+    const murajaaPercent = murajaaTotal > 0 ? Math.floor((currentMurajaaProgressInLoop / murajaaTotal) * 100) : 0;
+    
+    // المهمة التي ستفتح بعد إنجاز المهمة الحالية (N)
+    const nextMurajaa = curriculumLists.Murajaa[nextMurajaaIndex];
+
+    // ... (بقية كود المراجعة لم يتغير)
+    if (murajaaTotal > 0) {
+         progressContainer.innerHTML += `
+            <div class="progress-section mb-4">
+                <div class="progress-title mb-2">
+                    <i class="fas fa-redo-alt text-info"></i> مسار المراجعة (الدورة الحالية): ${currentMurajaaProgressInLoop} من ${murajaaTotal} مهمة (${murajaaPercent}%)
+                </div>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: ${murajaaPercent}%;" aria-valuenow="${murajaaPercent}" aria-valuemin="0" aria-valuemax="100">
+                         ${murajaaPercent}%
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block">المهمة التالية: ${nextMurajaa ? nextMurajaa.description.replace('مراجعة: ', '') : 'جاري إعداد الدورة التالية.'}</small>
+            </div>
+        `;
+    }
+}
     
     const murajaaTotal = curriculumLists.Murajaa.length;
     const murajaaProgress = studentData.murajaa_progress || 0;
@@ -998,3 +1038,4 @@ async function updateAndReverseMurajaaCurriculum() {
         alert("فشل تحديث المنهج. تحقق من اتصال Firebase.");
     }
 }
+
