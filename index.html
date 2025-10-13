@@ -3,270 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة مهام الطلاب</title>
+    <title>منصة إدارة مهام الطلاب</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        body { background-color: #f8f9fa; }
-        .container { max-width: 900px; margin-top: 30px; }
-        
-        /* --- التصميم الجديد لبطاقات المهام --- */
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+        }
+        .container-custom {
+            max-width: 1000px;
+            margin-top: 50px;
+        }
+        .card-header-custom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
         .task-card {
-            background: #fff;
-            border-left: 5px solid; 
             border-radius: 8px;
-            padding: 20px;
             margin-bottom: 15px;
+            padding: 15px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.05);
             transition: transform 0.2s;
         }
-        .task-card:hover { transform: translateY(-3px); }
-        .card-header-custom {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+        .task-card:hover {
+            transform: translateY(-2px);
         }
-        .task-title {
-            font-size: 1.15rem;
+        /* الألوان المخصصة للمهام */
+        .hifz-card { background-color: #e6fff0; border-left: 5px solid #198754; } /* Success Green */
+        .murajaa-card { background-color: #eaf8ff; border-left: 5px solid #0dcaf0; } /* Info Cyan */
+        .manual-card { background-color: #fff8e6; border-left: 5px solid #ffc107; } /* Warning Yellow */
+        
+        .claimed-card { 
+            opacity: 0.7; 
+            background-color: #f0f0f0; 
+            border-left: 5px solid #6c757d; /* Secondary Gray */
+        }
+
+        .teacher-nav .nav-link {
+            cursor: pointer;
+        }
+        .teacher-nav .nav-link.active {
             font-weight: bold;
-            color: #333;
+            border-bottom: 3px solid #0d6efd;
         }
-        .task-points {
-            font-size: 1.5rem;
-            font-weight: bolder;
-            color: #0d6efd;
-            background: #e9f0ff;
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-        
-        /* ألوان تمييز المهام */
-        .hifz-card { border-left-color: #198754 !important; } 
-        .murajaa-card { border-left-color: #0dcaf0 !important; } 
-        .manual-card { border-left-color: #ffc107 !important; } 
-        .claimed-card { border-left-color: #ffc107 !important; background-color: #fff9e6; } 
-        
-        /* Progress Bar styles */
-        .progress-section { background-color: #fff; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
-        .progress-title { font-size: 1.1rem; font-weight: 600; }
-        
-        /* Teacher Dashboard styles */
-        .teacher-dashboard { border: 1px solid #ccc; padding: 20px; border-radius: 8px; background-color: #fff; margin-bottom: 20px;}
-        .leaderboard-section { border-right: 5px solid green !important; }
-        .review-section { border-right: 5px solid orange !important; }
-        .add-student-section { border-right: 5px solid #0d6efd !important; }
-        .curriculum-management-section { border-right: 5px solid #ffc107 !important; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        
-        <button id="logout-btn" class="btn btn-secondary float-start d-none" onclick="logout()">تسجيل الخروج</button>
+<div class="container container-custom">
+    <h1 class="text-center mb-4 text-primary"><i class="fas fa-tasks me-2"></i> نظام إدارة المهام</h1>
 
-        <div id="login-screen">
-            <h2 class="text-center mb-4">تسجيل الدخول</h2>
-            <form id="login-form">
-                <div class="mb-3">
-                    <label for="student-id" class="form-label">رمز الدخول</label> 
-                    <input type="text" class="form-control" id="student-id" required>
-                </div>
-                <button type="submit" class="btn btn-primary w-100">دخول</button>
-            </form>
-        </div>
-        
-        <div id="tasks-screen" class="d-none">
-            <h2 id="student-info-name"></h2>
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <p id="student-info-score" class="h5 text-primary mb-0"></p>
-                <p id="student-rank-info" class="h6 text-muted mb-0"><i class="fas fa-trophy text-warning"></i> جارٍ التحميل...</p>
+    <div id="login-screen" class="card shadow-lg p-4">
+        <h2 class="card-title text-center mb-4">تسجيل الدخول</h2>
+        <form id="login-form">
+            <div class="mb-3">
+                <label for="student-id" class="form-label">رمز الطالب / المعلم (TEACHER2025)</label>
+                <input type="text" class="form-control" id="student-id" required>
             </div>
-            <hr>
-
-            <div id="progress-container">
-            </div>
-            
-            <h3 class="mb-3">مهامك النشطة:</h3>
-            
-            <div id="tasks-container">
-            </div>
-            
-            <p id="no-tasks-message" class="text-muted mt-4 d-none">لا توجد مهام نشطة حاليًا. يمكنك الاستراحة! 😊</p>
-        </div>
-        
-        <div id="teacher-screen" class="d-none">
-            <h2 class="mb-4">لوحة تحكم المعلم</h2>
-            
-            <div class="teacher-dashboard review-section">
-                <h4 class="d-flex justify-content-between align-items-center">
-                    مهام تنتظر المراجعة 
-                    <span class="badge bg-danger rounded-pill" id="review-count">0</span>
-                </h4>
-                <div id="review-tasks-container" class="list-group">
-                </div>
-            </div>
-
-            <div class="teacher-dashboard">
-                <h4>إدارة بنك المهام الجاهزة (مهام إضافية - 1 نقطة)</h4>
-                <form id="add-bank-task-form" class="mb-3">
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="bank-task-description" placeholder="وصف المهمة الجديدة (مثال: بحث إضافي)" required>
-                        <button type="submit" class="btn btn-warning text-white">إضافة للبنك (1 نقطة)</button>
-                    </div>
-                </form>
-                <div id="bank-tasks-list" class="list-group">
-                    </div>
-            </div>
-            
-             <div class="teacher-dashboard">
-                <h4>إضافة مهمة جماعية (من بنك المهام الجاهزة)</h4>
-                <form id="add-bulk-task-form">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <select id="bulk-task-select" class="form-select" required>
-                                <option value="">اختر المهمة...</option>
-                            </select>
-                        </div>
-                         <div class="col-md-6">
-                            <select id="bulk-student-select" class="form-select" multiple size="5" required>
-                            </select>
-                            <small class="form-text text-muted">اضغط على Ctrl لاختيار أكثر من طالب.</small>
-                        </div>
-                         <div class="col-md-4">
-                            <input type="date" class="form-control" id="bulk-task-date" title="تاريخ الإتاحة" required>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="time" class="form-control" id="bulk-task-time" title="وقت الإتاحة" value="00:00" required>
-                        </div>
-                        <div class="col-md-4">
-                            <button type="submit" class="btn btn-info w-100 text-white">إضافة جماعية</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <div class="teacher-dashboard">
-                <h4>إضافة مهمة فردية (يدوية - 1 نقطة)</h4>
-                <form id="add-task-form">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <input type="text" class="form-control" id="new-task-student-id" placeholder="رمز الطالب (مثال: 119)" required>
-                        </div>
-                        <div class="col-md-8">
-                            <input type="text" class="form-control" id="new-task-description" placeholder="وصف المهمة (اختبار مفاجئ...)" required>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="number" class="form-control" id="new-task-points" value="1" readonly placeholder="نقاط المكافأة" required>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="date" class="form-control" id="new-task-date" title="تاريخ الإتاحة" required>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="time" class="form-control" id="new-task-time" title="وقت الإتاحة" value="00:00" required>
-                        </div>
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-success w-100">إضافة مهمة فردية (1 نقطة)</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            
-            <div class="teacher-dashboard leaderboard-section">
-                <h4>لوحة الشرف (أعلى 5 طلاب)</h4>
-                <div id="leaderboard-container" class="list-group">
-                </div>
-            </div>
-
-            <div class="teacher-dashboard add-student-section">
-                <h4>إضافة طالب جديد وتحديد نقطة الانطلاق</h4>
-                <form id="add-new-student-form">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <input type="text" class="form-control" id="new-student-id" placeholder="رمز الطالب الجديد (مثال: 125)" required>
-                        </div>
-                        <div class="col-md-6">
-                            <input type="text" class="form-control" id="new-student-name" placeholder="اسم الطالب الكامل" required>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <input type="number" class="form-control" id="initial-hifz-progress" value="0" min="0" placeholder="نقطة انطلاق الحفظ (رقم المهمة التالية)" required>
-                            <small class="form-text text-muted">قيمة كل مهمة حفظ: 5 نقاط</small>
-                        </div>
-                        <div class="col-md-6">
-                            <input type="number" class="form-control" id="initial-murajaa-progress" value="0" min="0" placeholder="نقطة انطلاق المراجعة (رقم المهمة التالية)" required>
-                             <small class="form-text text-muted">قيمة كل مهمة مراجعة: 3 نقاط</small>
-                        </div>
-                        
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary w-100">إنشاء حساب الطالب الجديد</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            
-            <div class="teacher-dashboard curriculum-management-section">
-                <h4>إضافة مهام جديدة إلى المنهج المركزي (تسلسلي)</h4>
-                <form id="add-curriculum-task-form">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <input type="text" class="form-control" id="curriculum-description" placeholder="وصف المهمة (مثال: حفظ الآيات 31-40)" required>
-                        </div>
-                        <div class="col-md-3">
-                            <select id="curriculum-type-select" class="form-select" required>
-                                <option value="">اختر نوع المهمة</option>
-                                <option value="Hifz">مسار الحفظ (5 نقاط)</option>
-                                <option value="Murajaa">مسار المراجعة (3 نقاط)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <button type="submit" class="btn btn-warning w-100 text-white">إضافة للمنهج</button>
-                        </div>
-                    </div>
-                    <small class="form-text text-muted mt-2 d-block" id="curriculum-status">
-                        حالة المنهج: جاري التحميل...
-                    </small>
-                </form>
-            </div>
-
-        </div>
-
+            <button type="submit" class="btn btn-primary w-100">دخول</button>
+        </form>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <div id="tasks-screen" class="d-none">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card shadow-sm p-3 bg-light">
+                    <h5 id="student-info-name" class="card-title text-dark"></h5>
+                    <p class="mb-0"><span id="student-info-score" class="fw-bold text-success me-3"></span> <span id="student-rank-info" class="text-muted"></span></p>
+                </div>
+            </div>
+            <div class="col-md-6 d-flex align-items-center">
+                <button class="btn btn-outline-danger w-100" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> خروج</button>
+            </div>
+        </div>
+
+        <h3 class="mb-3 text-secondary"><i class="fas fa-chart-line me-2"></i> مسار التقدم</h3>
+        <div id="progress-container" class="card shadow-sm p-4 mb-4">
+            </div>
+
+        <h3 class="mb-3 text-secondary"><i class="fas fa-clipboard-list me-2"></i> مهامك النشطة</h3>
+        <div id="tasks-container">
+            </div>
+        <div id="no-tasks-message" class="alert alert-info d-none text-center">
+            <i class="fas fa-hand-peace me-2"></i> لا توجد مهام نشطة حاليًا. ممتاز!
+        </div>
+    </div>
     
-    <script>
-        function showScreen(screenId) {
-            document.getElementById('login-screen').classList.add('d-none');
-            document.getElementById('tasks-screen').classList.add('d-none');
-            document.getElementById('teacher-screen').classList.add('d-none');
-            document.getElementById('logout-btn').classList.add('d-none');
+    <div id="teacher-screen" class="d-none">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-primary"><i class="fas fa-chalkboard-teacher me-2"></i> لوحة تحكم المعلم</h2>
+            <button class="btn btn-outline-danger" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> خروج</button>
+        </div>
 
-            document.getElementById(screenId).classList.remove('d-none');
-            if (screenId !== 'login-screen') {
-                 document.getElementById('logout-btn').classList.remove('d-none');
-            }
-        }
+        <ul class="nav nav-tabs teacher-nav mb-4">
+            <li class="nav-item">
+                <a class="nav-link active" id="review-tab" onclick="showTeacherSection('review')"><i class="fas fa-sync-alt"></i> المراجعات (<span id="review-count">0</span>)</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="add-tasks-tab" onclick="showTeacherSection('add-tasks')"><i class="fas fa-plus-circle"></i> إضافة مهام</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="manage-curriculum-tab" onclick="showTeacherSection('manage-curriculum')"><i class="fas fa-list-ol"></i> إدارة المنهج</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="leaderboard-tab" onclick="showTeacherSection('leaderboard')"><i class="fas fa-trophy"></i> لوحة الشرف</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="add-student-tab" onclick="showTeacherSection('add-student')"><i class="fas fa-user-plus"></i> إضافة طالب</a>
+            </li>
+        </ul>
 
-        function showTasksScreen(studentId) {
-            showScreen('tasks-screen');
-        }
+        <div id="review-section" class="teacher-section">
+            <h4 class="mb-3">مهام تنتظر الموافقة</h4>
+            <div id="review-tasks-container" class="list-group">
+                </div>
+        </div>
 
-        function showTeacherScreen() {
-            showScreen('teacher-screen');
-        }
+        <div id="add-tasks-section" class="teacher-section d-none">
+            <h4 class="mb-3">إضافة مهام يدوية وفردية (1 نقطة)</h4>
+            <form id="add-task-form" class="card p-3 mb-4 shadow-sm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="new-task-student-id" class="form-label">رمز الطالب</label>
+                        <input type="text" class="form-control" id="new-task-student-id" placeholder="مثال: 101" required>
+                    </div>
+                    <div class="col-md-9">
+                        <label for="new-task-description" class="form-label">وصف المهمة (يدوية)</label>
+                        <input type="text" class="form-control" id="new-task-description" placeholder="مثال: بحث عن سورة الملك" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="new-task-date" class="form-label">تاريخ التسليم</label>
+                        <input type="date" class="form-control" id="new-task-date">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="new-task-time" class="form-label">وقت التسليم</label>
+                        <input type="time" class="form-control" id="new-task-time">
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button type="submit" class="btn btn-warning w-100"><i class="fas fa-paper-plane"></i> تعيين مهمة فردية (1 نقطة)</button>
+                    </div>
+                </div>
+            </form>
+
+            <h4 class="mb-3 mt-5">تعيين مهمة جماعية من البنك (1 نقطة)</h4>
+            <form id="add-bulk-task-form" class="card p-3 shadow-sm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="bulk-task-select" class="form-label">اختيار المهمة الجاهزة</label>
+                        <select class="form-select" id="bulk-task-select" required></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="bulk-student-select" class="form-label">اختيار الطلاب (اضغط Ctrl للاختيار المتعدد)</label>
+                        <select multiple class="form-select" id="bulk-student-select" style="height: 100px;" required></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="bulk-task-date" class="form-label">تاريخ التسليم</label>
+                        <input type="date" class="form-control" id="bulk-task-date">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="bulk-task-time" class="form-label">وقت التسليم</label>
+                        <input type="time" class="form-control" id="bulk-task-time">
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success w-100"><i class="fas fa-users"></i> تعيين مهمة جماعية</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div id="manage-curriculum-section" class="teacher-section d-none">
+            <h4 class="mb-3">إدارة المنهج المركزي (Hifz: 5pt | Murajaa: 3pt)</h4>
+            <div id="curriculum-status" class="alert alert-primary mb-4">جاري تحميل حالة المنهج...</div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3">إضافة مهمة منهج تسلسلية جديدة</h5>
+                    <form id="add-curriculum-task-form" class="card p-3 shadow-sm">
+                        <div class="mb-3">
+                            <label for="curriculum-type-select" class="form-label">نوع المهمة</label>
+                            <select class="form-select" id="curriculum-type-select" required>
+                                <option value="Hifz">حفظ (5 نقاط)</option>
+                                <option value="Murajaa">مراجعة (3 نقاط)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="curriculum-description" class="form-label">وصف السورة / الجزء</label>
+                            <input type="text" class="form-control" id="curriculum-description" placeholder="مثال: سورة الناس كاملة" required>
+                        </div>
+                        <button type="submit" class="btn btn-info w-100"><i class="fas fa-list-ol"></i> إضافة للمسار التسلسلي</button>
+                    </form>
+                </div>
+
+                <div class="col-md-6">
+                    <h5 class="mb-3">إدارة بنك المهام الجاهزة (1 نقطة)</h5>
+                    <form id="add-bank-task-form" class="card p-3 mb-3 shadow-sm">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="bank-task-description" placeholder="أدخل وصف مهمة جاهزة جديدة" required>
+                            <button class="btn btn-warning" type="submit"><i class="fas fa-plus"></i> إضافة للبنك</button>
+                        </div>
+                    </form>
+                    <h5 class="mb-3 mt-4">المهام الجاهزة الحالية:</h5>
+                    <div id="bank-tasks-list" class="list-group">
+                        </div>
+                </div>
+            </div>
+            
+        </div>
+
+        <div id="leaderboard-section" class="teacher-section d-none">
+            <h4 class="mb-3">لوحة شرف الأداء (أعلى 5 طلاب)</h4>
+            <div id="leaderboard-container" class="list-group">
+                </div>
+        </div>
+
+        <div id="add-student-section" class="teacher-section d-none">
+            <h4 class="mb-3">إضافة طالب جديد</h4>
+            <form id="add-new-student-form" class="card p-4 shadow-sm">
+                <div class="mb-3">
+                    <label for="new-student-id" class="form-label">رمز الطالب (رقم فريد)</label>
+                    <input type="text" class="form-control" id="new-student-id" placeholder="مثال: 101" required>
+                </div>
+                <div class="mb-3">
+                    <label for="new-student-name" class="form-label">اسم الطالب</label>
+                    <input type="text" class="form-control" id="new-student-name" required>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="initial-hifz-progress" class="form-label">نقطة بداية الحفظ (ID)</label>
+                        <input type="number" class="form-control" id="initial-hifz-progress" value="0" min="0">
+                        <small class="text-muted">المهمة التسلسلية التي سيبدأ منها الحفظ.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="initial-murajaa-progress" class="form-label">نقطة بداية المراجعة (ID)</label>
+                        <input type="number" class="form-control" id="initial-murajaa-progress" value="0" min="0">
+                        <small class="text-muted">المهمة التسلسلية التي سيبدأ منها المراجعة.</small>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">تسجيل الطالب</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="app.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // الدوال الخاصة بالـ UI (منعاً للخلط مع دوال Firebase في app.js)
+
+    function showTasksScreen(studentId) {
+        document.getElementById('login-screen').classList.add('d-none');
+        document.getElementById('teacher-screen').classList.add('d-none');
+        document.getElementById('tasks-screen').classList.remove('d-none');
+    }
+
+    function showTeacherScreen() {
+        document.getElementById('login-screen').classList.add('d-none');
+        document.getElementById('tasks-screen').classList.add('d-none');
+        document.getElementById('teacher-screen').classList.remove('d-none');
+        showTeacherSection('review'); // عرض قائمة المراجعة أولاً
+    }
+
+    function showLoginScreen() {
+        document.getElementById('login-screen').classList.remove('d-none');
+        document.getElementById('tasks-screen').classList.add('d-none');
+        document.getElementById('teacher-screen').classList.add('d-none');
+    }
+
+    function logout() {
+        currentStudentId = null;
+        showLoginScreen();
+    }
+    
+    // إدارة تبويبات المعلم
+    function showTeacherSection(sectionId) {
+        document.querySelectorAll('.teacher-section').forEach(section => {
+            section.classList.add('d-none');
+        });
+        document.getElementById(sectionId + '-section').classList.remove('d-none');
         
-        function logout() {
-            currentStudentId = null;
-            showScreen('login-screen');
-            document.getElementById('student-id').value = '';
-        }
-    </script>
-
-    <script src="app.js"></script>
+        document.querySelectorAll('.teacher-nav .nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        document.getElementById(sectionId + '-tab').classList.add('active');
+    }
     
+    // إعداد الشاشة الأولية
+    showLoginScreen();
+</script>
+
 </body>
 </html>
