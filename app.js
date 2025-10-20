@@ -1,5 +1,5 @@
 // //////////////////////////////////////////////////////
-// ملف app.js النهائي والمستقر (مع فصل مهام الأطفال التام والترتيب الخاص)
+// ملف app.js (الإصدار الأساسي - قبل فصل مهام الأطفال)
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
@@ -16,8 +16,7 @@ const firebaseConfig = {
 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-// 💡 التعديل: تهيئة Firebase Storage
-const storage = firebase.storage();
+// لا حاجة لـ Firebase Storage في هذا الإصدار (تم حذفه)
 
 
 // --- 1. متغيرات الحالة العامة ---
@@ -26,10 +25,8 @@ let currentStudentId = null;
 const TEACHER_CODE = 'TEACHER2025';
 
 let curriculumLists = {};
-let taskBankRegular = []; // بنك مهام الكبار/العاديين
-let taskBankChild = [];   // بنك مهام الأطفال
+let taskBank = []; // بنك مهام واحد (للكبار/العاديين)
 const MANUAL_TASK_POINTS = 1; // نقاط المهام اليدوية/البنكية العادية
-const CHILD_TASK_POINTS = 10; // نقاط مهام الأطفال الثابتة
 
 
 // --- 2. دالة معالجة تسجيل الدخول (الطالب والمعلم) ---
@@ -57,27 +54,6 @@ if (loginForm) {
 
 
 // --- 3. دوال جلب البيانات من Firestore والتخزين ---
-
-// دالة رفع الملفات المساعدة (جديدة)
-async function uploadAudioFile(file) {
-    if (!file) return null;
-
-    // إنشاء مسار فريد: audio/child_tasks/TIMESTAMP_FILENAME
-    const storageRef = storage.ref();
-    const fileName = `${Date.now()}_${file.name}`;
-    const fileRef = storageRef.child(`audio/child_tasks/${fileName}`);
-
-    try {
-        // يمكن إضافة مؤشر تحميل هنا
-        const snapshot = await fileRef.put(file);
-        const downloadURL = await snapshot.ref.getDownloadURL();
-        return downloadURL;
-    } catch (error) {
-        console.error("خطأ في رفع الملف الصوتي:", error);
-        alert("فشل رفع الملف الصوتي. تأكد من قواعد أمان Firebase Storage.");
-        return null;
-    }
-}
 
 async function loadAllStudentsData() {
     try {
@@ -110,69 +86,25 @@ async function loadCurriculumLists() {
     }
 }
 
-// دالة تحميل بنوك المهام (مُعدّلة لدعم بنكين)
+// دالة تحميل بنك المهام (بصيغة واحدة)
 async function loadTaskBank() {
     try {
-        const [regularDoc, childDoc] = await Promise.all([
-            db.collection("Settings").doc("TaskBank_Regular").get(), // بنك مهام الكبار/العادي
-            db.collection("Settings").doc("TaskBank_Child").get()    // بنك مهام الأطفال
-        ]);
+        const regularDoc = await db.collection("Settings").doc("TaskBank_Regular").get();
         
-        taskBankRegular = regularDoc.exists ? regularDoc.data().tasks || [] : [];
-        taskBankChild = childDoc.exists ? childDoc.data().tasks || [] : [];
+        taskBank = regularDoc.exists ? regularDoc.data().tasks || [] : [];
         
     } catch (e) {
-        console.error("Error loading Task Banks.", e);
-        taskBankRegular = [];
-        taskBankChild = [];
+        console.error("Error loading Task Bank.", e);
+        taskBank = [];
     }
 }
 
 
-// --- 4. دالة تحديد المهام النشطة للطالب (مفصولة حسب الفئة) ---
+// --- 4. دالة تحديد المهام النشطة للطالب (النسخة الأساسية) ---
 
-// 💡 دالة تحديد المهام النشطة للطالب (مُعدّلة للفصل التام بين فئة 'child' والفئات الأخرى)
 function getCurrentCurriculumTasks(studentData) {
     const activeTasks = [];
     const studentTasks = studentData.tasks || [];
-    const studentCategory = studentData.student_category || 'regular'; // الافتراضي 'regular'
-
-    // -----------------------------------------------------------
-    // 💡 المنطق الخاص بمهام الأطفال (Child Category)
-    // -----------------------------------------------------------
-    if (studentCategory === 'child') {
-        const childProgress = studentData.child_tasks_progress || 0;
-        const nextChildTask = taskBankChild[childProgress];
-
-        if (nextChildTask) {
-            // التحقق مما إذا كانت المهمة قيد المراجعة بالفعل (حالة claimed)
-            const isChildTaskActive = studentTasks.some(t =>
-                t.bank_id === nextChildTask.id &&
-                t.status === "claimed" &&
-                t.task_type === "Child تسلسلي"
-            );
-            if (!isChildTaskActive) {
-                activeTasks.push({ 
-                    ...nextChildTask, 
-                    is_curriculum_task: true, 
-                    curriculum_type: 'Child',
-                    audio_url: nextChildTask.audio_url 
-                });
-            }
-        }
-        
-        // الطلاب من فئة "child" يرون المهام التسلسلية لمهامهم فقط، بالإضافة إلى أي مهام أُضيفت لهم (في حالة pending/claimed)
-        const childSpecificTasks = studentTasks.filter(t => 
-            t.task_type === "Child تسلسلي" && (t.status === "pending" || t.status === "claimed")
-        );
-        
-        // ندمج المهام المعلقة/المطالب بها الخاصة بالأطفال مع المهمة التسلسلية التالية
-        return childSpecificTasks.concat(activeTasks);
-    }
-    
-    // -----------------------------------------------------------
-    // 💡 المنطق الخاص بالمهام العادية (Regular Category)
-    // -----------------------------------------------------------
 
     // 1. مهام الحفظ (Hifz)
     const hifzIndex = studentData.hifz_progress || 0;
@@ -211,9 +143,7 @@ function getCurrentCurriculumTasks(studentData) {
 
     // 3. فلترة المهام اليدوية والبنكية العادية (pending/claimed)
     const pendingAndClaimedTasks = studentTasks.filter(t => 
-        (t.status === "pending" || t.status === "claimed") && 
-        !t.is_curriculum_task && // استبعاد مهام المنهج (Hifz/Murajaa)
-        t.task_type !== "Child تسلسلي" // استبعاد مهام الأطفال التسلسلية (لضمان الفصل التام)
+        (t.status === "pending" || t.status === "claimed")
     );
     
     const combinedTasks = pendingAndClaimedTasks.concat(activeTasks);
@@ -246,9 +176,8 @@ function renderStudentRank() {
     const rankContainer = document.getElementById('student-rank-info');
     if (!rankContainer || !currentStudentId) return;
 
-    // 💡 نستخدم نفس منطق التصفية في لوحة الشرف
+    // الترتيب للجميع (قبل الفصل)
     const studentsArray = Object.values(allStudentsData)
-        .filter(data => (data.student_category || 'regular') !== 'child') // استثناء فئة الأطفال
         .map(data => ({
             id: data.id,
             score: data.score || 0
@@ -259,51 +188,25 @@ function renderStudentRank() {
     const studentRank = studentsArray.findIndex(student => student.id === currentStudentId) + 1;
 
     if (studentRank > 0) {
-        rankContainer.innerHTML = `<i class="fas fa-trophy text-warning"></i> مرتبتك: ${studentRank} من ${studentsArray.length} (ترتيب البالغين)`;
+        rankContainer.innerHTML = `<i class="fas fa-trophy text-warning"></i> مرتبتك: ${studentRank} من ${studentsArray.length}`;
     } else {
-         // إذا كان الطالب الحالي طفل، لن يظهر ترتيب رقمي
-         rankContainer.innerHTML = `<i class="fas fa-trophy text-warning"></i> نظام مهام الأطفال لا يعرض الترتيب العام.`;
+         rankContainer.innerHTML = ``;
     }
 }
 
-// دالة التقدم المُعدّلة لإضافة تقدم الأطفال
+// دالة التقدم (النسخة الأساسية - فقط الحفظ والمراجعة)
 function renderProgressBars(studentData) {
     const progressContainer = document.getElementById('progress-container');
     if (!progressContainer) return;
 
     progressContainer.innerHTML = '';
     
-    // 💡 إذا كان الطالب طفل، نعرض فقط شريط تقدم الأطفال
-    if (studentData.student_category === 'child') {
-        const childTotal = taskBankChild.length;
-        const childProgress = studentData.child_tasks_progress || 0;
-        const nextChildIndex = childProgress; 
-        const nextChild = taskBankChild[nextChildIndex];
-
-        const childPercent = childTotal > 0 ? Math.floor((childProgress / childTotal) * 100) : 0;
-        
-        progressContainer.innerHTML += `
-            <div class="progress-section mb-4">
-                <div class="progress-title mb-2">
-                    <i class="fas fa-child text-danger"></i> مهام الأطفال: ${childProgress} من ${childTotal} مهمة (${childPercent}%)
-                </div>
-                <div class="progress" style="height: 20px;">
-                    <div class="progress-bar bg-danger" role="progressbar" style="width: ${childPercent}%;" aria-valuenow="${childPercent}" aria-valuemin="0" aria-valuemax="100">
-                        ${childPercent}%
-                    </div>
-                </div>
-                <small class="text-muted mt-2 d-block">المهمة التالية: ${nextChild ? nextChild.description : 'تم الانتهاء من جميع مهام الأطفال.'}</small>
-            </div>
-        `;
-        return; // إنهاء الدالة وعدم عرض الحفظ والمراجعة
-    }
-
     // --- 1. مسار الحفظ (Hifz) ---
     const hifzTotal = curriculumLists.Hifz.length;
     const hifzProgress = studentData.hifz_progress || 0;
     const hifzPercent = hifzTotal > 0 ? Math.floor((hifzProgress / hifzTotal) * 100) : 0;
-    const nextHifzIndex = hifzProgress + 1;
-    const nextHifz = curriculumLists.Hifz[nextHifzIndex];
+    const nextHifzIndex = hifzProgress;
+    const nextHifz = curriculumLists.Hifz[nextHifzIndex]; // تعديل على Index
 
     if (hifzTotal > 0) {
         progressContainer.innerHTML += `
@@ -324,9 +227,9 @@ function renderProgressBars(studentData) {
     // --- 2. مسار المراجعة (Murajaa) ---
     const murajaaTotal = curriculumLists.Murajaa.length;
     const murajaaProgress = studentData.murajaa_progress || 0;
-    const nextMurajaaIndex = murajaaProgress + 1;
+    const murajaaIndex = murajaaProgress; // تعديل على Index
     const murajaaPercent = murajaaTotal > 0 ? Math.floor((murajaaProgress / murajaaTotal) * 100) : 0;
-    const nextMurajaa = curriculumLists.Murajaa[nextMurajaaIndex]; 
+    const nextMurajaa = curriculumLists.Murajaa[murajaaIndex]; 
 
     if (murajaaTotal > 0) {
         progressContainer.innerHTML += `
@@ -346,7 +249,7 @@ function renderProgressBars(studentData) {
 }
 
 
-// دالة عرض المهام المُعدّلة لعرض مشغل الصوت ومهام الأطفال
+// دالة عرض المهام (النسخة الأساسية)
 function renderTasks(studentData, taskList) {
     const tasksContainer = document.getElementById('tasks-container');
     tasksContainer.innerHTML = '';
@@ -364,59 +267,29 @@ function renderTasks(studentData, taskList) {
         let iconHtml = '<i class="fas fa-pencil-alt text-warning me-2"></i>';
         let actionButton = '';
         let taskTypeDisplay = task.task_type;
-        let audioPlayerHtml = '';
         
-        // مشغل الصوت (يظهر فقط إذا كان الرابط موجودًا)
-        if (task.audio_url) {
-            audioPlayerHtml = `<audio controls preload="none" class="d-block w-100 my-2"><source src="${task.audio_url}" type="audio/mp3">متصفحك لا يدعم مشغل الصوت.</audio>`;
-        }
-
-
         if (task.is_curriculum_task) {
             
-            // منطق مهام الأطفال التسلسلية
-            if (task.curriculum_type === 'Child') {
-                cardClass = 'child-task-card'; // استخدم كلاس CSS مختلف
-                iconHtml = '<i class="fas fa-child text-danger me-2"></i>';
-                
-                // البحث في studentTasks للتأكد من حالة claimed 
-                const activeInDb = studentTasksInDb.find(t =>
-                    t.bank_id === task.id && // نستخدم ID البنك هنا
-                    t.status === "claimed" &&
-                    t.task_type === "Child تسلسلي"
-                );
-
-                if (activeInDb) {
-                    cardClass += ' claimed-card';
-                    actionButton = `<button class="btn btn-warning btn-sm" disabled><i class="fas fa-hourglass-half"></i> قيد مراجعة المعلم</button>`;
-                } else {
-                    // زر إنجاز مهام الأطفال التسلسلية (نمرر id المهمة من البنك)
-                    actionButton = `<button class="btn btn-danger" onclick="claimCurriculumTask('Child', ${task.id}, ${task.points}, '${task.description.replace(/'/g, "\\'")}', '${task.audio_url}')"><i class="fas fa-check"></i> تم الإنجاز</button>`;
-                }
+            if (task.curriculum_type === 'Hifz') {
+                cardClass = 'hifz-card';
+                iconHtml = '<i class="fas fa-quran text-success me-2"></i>';
+            } else if (task.curriculum_type === 'Murajaa') {
+                cardClass = 'murajaa-card';
+                iconHtml = '<i class="fas fa-redo-alt text-info me-2"></i>';
             }
-            // منطق Hifz و Murajaa 
-            else {
-                if (task.curriculum_type === 'Hifz') {
-                    cardClass = 'hifz-card';
-                    iconHtml = '<i class="fas fa-quran text-success me-2"></i>';
-                } else if (task.curriculum_type === 'Murajaa') {
-                    cardClass = 'murajaa-card';
-                    iconHtml = '<i class="fas fa-redo-alt text-info me-2"></i>';
-                }
 
-                const activeInDb = studentTasksInDb.find(t =>
-                    t.curriculum_id === task.curriculum_id &&
-                    t.status === "claimed" &&
-                    t.task_type === `${task.curriculum_type} تسلسلي`
-                );
+            const activeInDb = studentTasksInDb.find(t =>
+                t.curriculum_id === task.curriculum_id &&
+                t.status === "claimed" &&
+                t.task_type === `${task.curriculum_type} تسلسلي`
+            );
 
-                if (activeInDb) {
-                    cardClass += ' claimed-card';
-                    actionButton = `<button class="btn btn-warning btn-sm" disabled><i class="fas fa-hourglass-half"></i> قيد مراجعة المعلم</button>`;
-                } else {
-                    // زر إنجاز المهام التسلسلية
-                    actionButton = `<button class="btn btn-primary" onclick="claimCurriculumTask('${task.curriculum_type}', ${task.curriculum_id}, ${task.points_value}, '${task.description.replace(/'/g, "\\'")}')"><i class="fas fa-check"></i> تم الإنجاز</button>`;
-                }
+            if (activeInDb) {
+                cardClass += ' claimed-card';
+                actionButton = `<button class="btn btn-warning btn-sm" disabled><i class="fas fa-hourglass-half"></i> قيد مراجعة المعلم</button>`;
+            } else {
+                // زر إنجاز المهام التسلسلية
+                actionButton = `<button class="btn btn-primary" onclick="claimCurriculumTask('${task.curriculum_type}', ${task.curriculum_id}, ${task.points_value}, '${task.description.replace(/'/g, "\\'")}')"><i class="fas fa-check"></i> تم الإنجاز</button>`;
             }
         }
         else {
@@ -443,7 +316,6 @@ function renderTasks(studentData, taskList) {
         const taskElement = document.createElement('div');
         taskElement.className = `task-card ${cardClass}`;
 
-        // التأكد من استخدام حقل النقاط الصحيح (task.points_value للمناهج القديمة، task.points لمهام الأطفال والمهام اليدوية)
         const displayPoints = task.points || task.points_value; 
 
         taskElement.innerHTML = `
@@ -451,7 +323,7 @@ function renderTasks(studentData, taskList) {
                 <span class="task-title">${iconHtml} ${task.description}</span>
                 <span class="task-points">${displayPoints} نقطة</span>
             </div>
-            ${audioPlayerHtml} <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center">
                 <small class="text-muted d-none">النوع: ${taskTypeDisplay}</small>
                 <div class="task-actions">
                     ${actionButton}
@@ -462,8 +334,8 @@ function renderTasks(studentData, taskList) {
     });
 }
 
-// دالة المطالبة بإنجاز مهمة تسلسلية (مُعدّلة لدعم الأطفال)
-async function claimCurriculumTask(type, taskIdentifier, points, description, audioUrl = null) {
+// دالة المطالبة بإنجاز مهمة تسلسلية (النسخة الأساسية - فقط Hifz/Murajaa)
+async function claimCurriculumTask(type, taskIdentifier, points, description) {
     if (!currentStudentId) return alert("خطأ: لا يوجد رمز طالب نشط.");
 
     const studentData = allStudentsData[currentStudentId];
@@ -474,12 +346,10 @@ async function claimCurriculumTask(type, taskIdentifier, points, description, au
         expectedIndex = studentData.hifz_progress || 0;
     } else if (type === 'Murajaa') {
         expectedIndex = studentData.murajaa_progress || 0;
-    } else if (type === 'Child') {
-        expectedIndex = studentData.child_tasks_progress || 0;
     }
 
-    // التحقق من أن الطالب يطالب بالمهمة الصحيحة (التقدم الحالي)
-    if (type === 'Child' && taskIdentifier !== taskBankChild[expectedIndex]?.id) {
+    // التحقق من أن الطالب يطالب بالمهمة الصحيحة 
+    if (taskIdentifier !== expectedIndex) {
          alert("هذه ليست المهمة التسلسلية التالية المطلوبة. يرجى إكمال المهمة السابقة.");
          return;
     } 
@@ -488,10 +358,7 @@ async function claimCurriculumTask(type, taskIdentifier, points, description, au
         description: description,
         points_value: points,
         task_type: `${type} تسلسلي`,
-        // إضافة الحقل المناسب (curriculum_id للمناهج، bank_id للأطفال)
-        curriculum_id: (type !== 'Child' ? taskIdentifier : undefined), 
-        bank_id: (type === 'Child' ? taskIdentifier : undefined), 
-        audio_url: audioUrl, // إضافة رابط الصوت
+        curriculum_id: taskIdentifier, 
         status: "claimed",
         claimed_date: new Date().toISOString()
     };
@@ -543,23 +410,22 @@ async function processTaskUndo(taskIndex) {
     const studentData = allStudentsData[currentStudentId];
     if (!studentData || !studentData.tasks || taskIndex >= studentData.tasks.length) return;
     
-    // تأكيد من المستخدم لحذف المهمة
     if (!confirm("هل أنت متأكد من إلغاء هذه المهمة؟ سيتم حذفها من قائمة مهامك.")) {
         return;
     }
 
     let updatedTasks = [...studentData.tasks];
-    const removedTask = updatedTasks.splice(taskIndex, 1); // حذف المهمة من المصفوفة تمامًا
+    const removedTask = updatedTasks.splice(taskIndex, 1); 
 
     try {
         await db.collection('tasks').doc(currentStudentId).update({
             tasks: updatedTasks
         });
         
-        await loadAllStudentsData(); // إعادة تحميل بيانات الطلاب
-        loadStudentData(currentStudentId); // إعادة عرض واجهة الطالب
+        await loadAllStudentsData(); 
+        loadStudentData(currentStudentId); 
         if (removedTask.length > 0) {
-            alert(`تم حذف المهمة "${removedTask[0].description}" بنجاح.`); // تأكيد الحذف
+            alert(`تم حذف المهمة "${removedTask[0].description}" بنجاح.`); 
         } else {
             alert("تم حذف المهمة بنجاح.");
         }
@@ -585,19 +451,16 @@ async function approveTask(studentId, taskIndex) {
     updatedTasks[taskIndex].approved_date = new Date().toISOString();
 
     // 2. تحديث بيانات الطالب
-    let scoreIncrease = task.points_value || task.points; // استخدام أي من الحقلين
+    let scoreIncrease = task.points_value || task.points; 
     let newScore = (studentData.score || 0) + scoreIncrease;
     let hifz_progress = studentData.hifz_progress || 0;
     let murajaa_progress = studentData.murajaa_progress || 0;
-    let child_tasks_progress = studentData.child_tasks_progress || 0; 
 
-    // المنطق التسلسلي (Hifz/Murajaa/Child)
+    // المنطق التسلسلي (Hifz/Murajaa)
     if (task.task_type === "Hifz تسلسلي") {
         hifz_progress++;
     } else if (task.task_type === "Murajaa تسلسلي") {
         murajaa_progress++;
-    } else if (task.task_type === "Child تسلسلي") { 
-        child_tasks_progress++;
     }
 
     try {
@@ -609,8 +472,8 @@ async function approveTask(studentId, taskIndex) {
             score: newScore,
             tasks: updatedTasks,
             hifz_progress: hifz_progress,
-            murajaa_progress: murajaa_progress,
-            child_tasks_progress: child_tasks_progress
+            murajaa_progress: murajaa_progress
+            // لا يوجد child_tasks_progress
         });
         
         await batch.commit();
@@ -671,11 +534,8 @@ function showTeacherDashboard() {
         addBankTaskForm.removeEventListener('submit', handleAddBankTask);
         addBankTaskForm.addEventListener('submit', handleAddBankTask);
     }
-    const addChildBankTaskForm = document.getElementById('add-child-bank-task-form');
-    if (addChildBankTaskForm) {
-        addChildBankTaskForm.removeEventListener('submit', handleAddChildBankTask);
-        addChildBankTaskForm.addEventListener('submit', handleAddChildBankTask);
-    }
+    // تم حذف نموذج الأطفال
+    
     const addTaskForm = document.getElementById('add-task-form');
     if (addTaskForm) {
         addTaskForm.removeEventListener('submit', handleAddTask);
@@ -689,15 +549,14 @@ function showTeacherDashboard() {
 
 
     renderTeacherReviewList();
-    renderLeaderboard(); // 💡 تم تعديلها لتصفية الأطفال
+    renderLeaderboard(); 
     updateCurriculumStatusDisplay();
-    renderBankTasks(); // يعرض بنك المهام العادي
-    renderChildBankTasks(); // يعرض بنك مهام الأطفال
+    renderBankTasks(); 
     populateBulkTaskSelect();
     populateBulkStudentSelect();
 }
 
-// دالة عرض المهام التي تنتظر المراجعة
+// دالة عرض المهام التي تنتظر المراجعة (بدون منطق الأطفال)
 function renderTeacherReviewList() {
     const container = document.getElementById('review-tasks-container');
     const countSpan = document.getElementById('review-count');
@@ -712,14 +571,11 @@ function renderTeacherReviewList() {
                 const item = document.createElement('div');
                 item.className = 'list-group-item d-flex justify-content-between align-items-center mb-2';
                 
-                // إذا كانت المهمة تحتوي على رابط صوتي، أضف رمزاً
-                let audioIcon = task.audio_url ? '<i class="fas fa-volume-up text-danger me-2"></i>' : '';
-                // النقاط
                 const displayPoints = task.points_value || task.points;
 
                 item.innerHTML = `
                     <div>
-                        <p class="mb-1 fw-bold">${audioIcon}${task.description} (${displayPoints} نقطة)</p>
+                        <p class="mb-1 fw-bold">${task.description} (${displayPoints} نقطة)</p>
                         <small class="text-primary">الطالب: ${student.student_name} (${student.id})</small>
                         <small class="d-block text-muted">النوع: ${task.task_type}</small>
                     </div>
@@ -743,14 +599,12 @@ function renderTeacherReviewList() {
     }
 }
 
-// دالة عرض لوحة الشرف (مُعدّلة لاستثناء فئة 'child' افتراضياً)
+// دالة عرض لوحة الشرف (النسخة الأساسية - للجميع)
 function renderLeaderboard() {
     const container = document.getElementById('leaderboard-container');
     container.innerHTML = '';
     
-    // 💡 التعديل: تصفية الطلاب لاستثناء فئة 'child'
     const studentsArray = Object.values(allStudentsData)
-        .filter(data => (data.student_category || 'regular') !== 'child') // استثناء فئة الأطفال
         .map(data => ({
             name: data.student_name,
             score: data.score || 0
@@ -761,7 +615,7 @@ function renderLeaderboard() {
     const topStudents = studentsArray.slice(0, 5);
 
     if (topStudents.length === 0) {
-        container.innerHTML = '<div class="alert alert-warning m-0">لا توجد بيانات طلاب (بالغين/عاديين) لعرض لوحة الشرف.</div>';
+        container.innerHTML = '<div class="alert alert-warning m-0">لا توجد بيانات طلاب لعرض لوحة الشرف.</div>';
         return;
     }
 
@@ -783,7 +637,7 @@ function renderLeaderboard() {
 }
 
 
-// دالة إضافة طالب جديد (مُعدّلة لإضافة فئة الطالب والتقدم)
+// دالة إضافة طالب جديد (النسخة الأساسية - بدون فئة الطالب)
 async function handleAddNewStudent(e) {
     e.preventDefault();
 
@@ -792,8 +646,8 @@ async function handleAddNewStudent(e) {
     const initialHifz = parseInt(document.getElementById('initial-hifz-progress').value) || 0;
     const initialMurajaa = parseInt(document.getElementById('initial-murajaa-progress').value) || 0;
     
-    // التعديل الجديد: الحصول على فئة الطالب
-    const studentCategory = document.getElementById('new-student-category').value; 
+    // تم حذف حقل فئة الطالب
+    // const studentCategory = document.getElementById('new-student-category').value; 
 
     if (!studentId || !studentName) {
         alert("الرجاء إدخال الرمز والاسم.");
@@ -810,14 +664,13 @@ async function handleAddNewStudent(e) {
         hifz_progress: initialHifz,
         murajaa_progress: initialMurajaa,
         tasks: [],
-        student_category: studentCategory, // إضافة الفئة
-        child_tasks_progress: 0 // إضافة تقدم مهام الأطفال
+        // لا يوجد student_category ولا child_tasks_progress
     };
 
     try {
         await db.collection('tasks').doc(studentId).set(newStudentData);
 
-        alert(`🎉 تم إضافة الطالب ${studentName} (${studentId}) بنجاح! الفئة: ${studentCategory}`);
+        alert(`🎉 تم إضافة الطالب ${studentName} (${studentId}) بنجاح!`);
         e.target.reset();
 
         await loadAllStudentsData();
@@ -938,7 +791,7 @@ async function handleAddBankTask(e) {
 async function deleteBankTask(taskId) {
     if (!confirm("هل أنت متأكد من حذف هذه المهمة من بنك المهام الجاهزة؟")) return;
 
-    const taskToRemove = taskBankRegular.find(t => t.id === taskId);
+    const taskToRemove = taskBank.find(t => t.id === taskId);
     if (!taskToRemove) return;
 
     try {
@@ -962,12 +815,12 @@ function renderBankTasks() {
 
     listContainer.innerHTML = '';
 
-    if (taskBankRegular.length === 0) {
-        listContainer.innerHTML = '<div class="alert alert-info m-0">لا توجد مهام إضافية جاهزة حالياً (عادي).</div>';
+    if (taskBank.length === 0) {
+        listContainer.innerHTML = '<div class="alert alert-info m-0">لا توجد مهام إضافية جاهزة حالياً.</div>';
         return;
     }
 
-    taskBankRegular.forEach(task => {
+    taskBank.forEach(task => {
         const item = document.createElement('div');
         item.className = 'list-group-item d-flex justify-content-between align-items-center';
         item.innerHTML = `
@@ -980,103 +833,7 @@ function renderBankTasks() {
     });
 }
 
-
-// دوال إدارة بنك مهام الأطفال (10 نقاط + مقطع صوتي) - TaskBank_Child
-
-// دالة إضافة مهمة لبنك مهام الأطفال (مُعدّلة لدعم الرفع الصوتي)
-async function handleAddChildBankTask(e) {
-    e.preventDefault();
-    const description = document.getElementById('child-bank-task-description').value.trim();
-    // جلب الملف الصوتي من حقل الإدخال
-    const audioFile = document.getElementById('child-bank-audio-file').files[0]; 
-    
-    if (!description) {
-        alert("الرجاء إدخال وصف المهمة.");
-        return;
-    }
-
-    if (!audioFile) {
-        alert("الرجاء تحديد مقطع صوتي للمهمة.");
-        return;
-    }
-    
-    // 1. رفع الملف الصوتي والحصول على الرابط
-    const audioUrl = await uploadAudioFile(audioFile);
-    if (!audioUrl) return; // توقف إذا فشل الرفع
-
-    const newTask = {
-        id: Date.now(),
-        description: description,
-        points: CHILD_TASK_POINTS, // النقاط ثابتة على 10
-        type: "طفل",
-        audio_url: audioUrl // تخزين رابط المقطع الصوتي
-    };
-
-    try {
-        await db.collection('Settings').doc('TaskBank_Child').set({
-            tasks: firebase.firestore.FieldValue.arrayUnion(newTask)
-        }, { merge: true });
-
-        alert(`تم إضافة المهمة "${description}" إلى بنك مهام الأطفال (10 نقاط) مع مقطع صوتي.`);
-        e.target.reset();
-        await loadTaskBank();
-        renderChildBankTasks(); 
-        populateBulkTaskSelect(); 
-    } catch (error) {
-        console.error("خطأ في إضافة المهمة لبنك مهام الأطفال:", error);
-        alert("فشل إضافة المهمة لبنك مهام الأطفال.");
-    }
-}
-
-// دالة حذف مهمة من بنك مهام الأطفال
-async function deleteChildBankTask(taskId) {
-    if (!confirm("هل أنت متأكد من حذف هذه المهمة من بنك مهام الأطفال؟")) return;
-
-    const taskToRemove = taskBankChild.find(t => t.id === taskId);
-    if (!taskToRemove) return;
-
-    try {
-        await db.collection('Settings').doc('TaskBank_Child').update({
-            tasks: firebase.firestore.FieldValue.arrayRemove(taskToRemove)
-        });
-
-        alert(`تم حذف المهمة بنجاح.`);
-        await loadTaskBank();
-        renderChildBankTasks();
-        populateBulkTaskSelect();
-    } catch (error) {
-        console.error("خطأ في حذف المهمة من بنك مهام الأطفال:", error);
-        alert("فشل حذف المهمة من بنك مهام الأطفال.");
-    }
-}
-
-// دالة عرض مهام بنك الأطفال
-function renderChildBankTasks() {
-    const listContainer = document.getElementById('child-bank-tasks-list');
-    if (!listContainer) return;
-
-    listContainer.innerHTML = '';
-
-    if (taskBankChild.length === 0) {
-        listContainer.innerHTML = '<div class="alert alert-info m-0">لا توجد مهام إضافية للأطفال حالياً.</div>';
-        return;
-    }
-
-    taskBankChild.forEach(task => {
-        const item = document.createElement('div');
-        item.className = 'list-group-item d-flex justify-content-between align-items-center';
-        
-        let audioIcon = task.audio_url ? '<i class="fas fa-volume-up text-danger me-2"></i>' : '';
-        
-        item.innerHTML = `
-            <span>${audioIcon}${task.description} (${task.points} نقطة)</span>
-            <button class="btn btn-sm btn-danger" onclick="deleteChildBankTask(${task.id})">
-                <i class="fas fa-trash"></i> حذف
-            </button>
-        `;
-        listContainer.appendChild(item);
-    });
-}
+// تم حذف دوال إدارة بنك الأطفال و renderChildBankTasks
 
 
 function populateBulkTaskSelect() {
@@ -1084,12 +841,12 @@ function populateBulkTaskSelect() {
     if (!select) return; 
     select.innerHTML = '<option value="">اختر المهمة...</option>';
 
-    // نستخدم بنك المهام العادي فقط للإضافة الجماعية العشوائية، لتجنب تداخل منطق التسلسل للأطفال
+    // نستخدم بنك المهام العادي فقط 
     
-    taskBankRegular.forEach((task) => { 
+    taskBank.forEach((task) => { 
         const option = document.createElement('option');
-        option.value = JSON.stringify({ description: task.description, points: task.points, type: "من البنك العادي" });
-        option.textContent = `[عادي] ${task.description} (${task.points} نقطة)`;
+        option.value = JSON.stringify({ description: task.description, points: task.points, type: "من البنك" });
+        option.textContent = `${task.description} (${task.points} نقطة)`;
         select.appendChild(option);
     });
 }
@@ -1102,7 +859,7 @@ function populateBulkStudentSelect() {
     Object.values(allStudentsData).forEach(student => {
         const option = document.createElement('option');
         option.value = student.id;
-        option.textContent = `${student.student_name} (${student.id}) - الفئة: ${student.student_category || 'غير محدد'}`;
+        option.textContent = `${student.student_name} (${student.id})`;
         select.appendChild(option);
     });
 }
@@ -1179,7 +936,7 @@ async function handleAddBulkTask(e) {
         let successfulAdds = 0;
 
         for (const studentId of selectedStudentIds) {
-            if (allStudentsData[studentId]) { // التأكد من أن الطالب موجود
+            if (allStudentsData[studentId]) { 
                 const studentRef = db.collection('tasks').doc(studentId);
                 batch.update(studentRef, {
                     tasks: firebase.firestore.FieldValue.arrayUnion(taskDetails)
@@ -1194,9 +951,8 @@ async function handleAddBulkTask(e) {
             await batch.commit();
             alert(`تم إضافة المهمة "${taskData.description}" لـ ${successfulAdds} طلاب بنجاح.`);
             e.target.reset();
-            await loadAllStudentsData(); // إعادة تحميل بيانات الطلاب لتحديث الواجهة
-            renderTeacherReviewList(); // تحديث لوحة المعلم بعد الإضافة
-            // إذا كان الطالب النشط الحالي من ضمن الذين تم إضافة المهام لهم
+            await loadAllStudentsData(); 
+            renderTeacherReviewList(); 
             if (currentStudentId && selectedStudentIds.includes(currentStudentId)) {
                 loadStudentData(currentStudentId);
             }
