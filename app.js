@@ -1,5 +1,5 @@
 // //////////////////////////////////////////////////////
-// ملف app.js النهائي والمستقر (مع فصل مهام الأطفال التام)
+// ملف app.js النهائي والمستقر (مع فصل مهام الأطفال التام والترتيب الخاص)
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
@@ -131,7 +131,7 @@ async function loadTaskBank() {
 
 // --- 4. دالة تحديد المهام النشطة للطالب (مفصولة حسب الفئة) ---
 
-// 💡 التعديل النهائي: دالة تحديد المهام النشطة للطالب (مُعدّلة للفصل التام بين فئة 'child' والفئات الأخرى)
+// 💡 دالة تحديد المهام النشطة للطالب (مُعدّلة للفصل التام بين فئة 'child' والفئات الأخرى)
 function getCurrentCurriculumTasks(studentData) {
     const activeTasks = [];
     const studentTasks = studentData.tasks || [];
@@ -246,19 +246,23 @@ function renderStudentRank() {
     const rankContainer = document.getElementById('student-rank-info');
     if (!rankContainer || !currentStudentId) return;
 
-    const studentsArray = Object.values(allStudentsData).map(data => ({
-        id: data.id,
-        score: data.score || 0
-    }));
+    // 💡 نستخدم نفس منطق التصفية في لوحة الشرف
+    const studentsArray = Object.values(allStudentsData)
+        .filter(data => (data.student_category || 'regular') !== 'child') // استثناء فئة الأطفال
+        .map(data => ({
+            id: data.id,
+            score: data.score || 0
+        }));
 
     studentsArray.sort((a, b) => b.score - a.score);
 
     const studentRank = studentsArray.findIndex(student => student.id === currentStudentId) + 1;
 
     if (studentRank > 0) {
-        rankContainer.innerHTML = `<i class="fas fa-trophy text-warning"></i> مرتبتك: ${studentRank} من ${studentsArray.length}`;
+        rankContainer.innerHTML = `<i class="fas fa-trophy text-warning"></i> مرتبتك: ${studentRank} من ${studentsArray.length} (ترتيب البالغين)`;
     } else {
-        rankContainer.innerHTML = `جاري تحديث المرتبة...`;
+         // إذا كان الطالب الحالي طفل، لن يظهر ترتيب رقمي
+         rankContainer.innerHTML = `<i class="fas fa-trophy text-warning"></i> نظام مهام الأطفال لا يعرض الترتيب العام.`;
     }
 }
 
@@ -652,7 +656,6 @@ function showTeacherDashboard() {
     if (typeof showTeacherScreen === 'function') showTeacherScreen();
     
     // ربط النماذج بـ Handlers
-    // ... (تأكد من وجود هذا المنطق لربط الدوال بالعناصر في HTML)
     const newStudentForm = document.getElementById('add-new-student-form');
     if (newStudentForm) {
         newStudentForm.removeEventListener('submit', handleAddNewStudent);
@@ -686,7 +689,7 @@ function showTeacherDashboard() {
 
 
     renderTeacherReviewList();
-    renderLeaderboard();
+    renderLeaderboard(); // 💡 تم تعديلها لتصفية الأطفال
     updateCurriculumStatusDisplay();
     renderBankTasks(); // يعرض بنك المهام العادي
     renderChildBankTasks(); // يعرض بنك مهام الأطفال
@@ -778,22 +781,6 @@ function renderLeaderboard() {
         container.appendChild(item);
     });
 }
-
-    topStudents.forEach((student, index) => {
-        const item = document.createElement('div');
-        let icon = '';
-        if (index === 0) icon = '<i class="fas fa-medal text-warning me-2"></i>';
-        else if (index === 1) icon = '<i class="fas fa-medal text-secondary me-2"></i>';
-        else if (index === 2) icon = '<i class="fas fa-medal text-danger me-2"></i>';
-        else icon = '<i class="fas fa-trophy text-info me-2"></i>';
-
-        item.className = 'list-group-item d-flex justify-content-between align-items-center';
-        item.innerHTML = `
-            <span>${icon} ${index + 1}. ${student.name}</span>
-            <span class="badge bg-primary rounded-pill">${student.score} نقطة</span>
-        `;
-        container.appendChild(item);
-    });
 
 
 // دالة إضافة طالب جديد (مُعدّلة لإضافة فئة الطالب والتقدم)
@@ -1222,5 +1209,3 @@ async function handleAddBulkTask(e) {
         alert("فشل إضافة المهام الجماعية. تحقق من قواعد الأمان (Security Rules) ووجود الطلاب.");
     }
 }
-
-
