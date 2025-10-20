@@ -740,24 +740,44 @@ function renderTeacherReviewList() {
     }
 }
 
-// دالة عرض لوحة الشرف
+// دالة عرض لوحة الشرف (مُعدّلة لاستثناء فئة 'child' افتراضياً)
 function renderLeaderboard() {
     const container = document.getElementById('leaderboard-container');
     container.innerHTML = '';
     
-    const studentsArray = Object.values(allStudentsData).map(data => ({
-        name: data.student_name,
-        score: data.score || 0
-    }));
+    // 💡 التعديل: تصفية الطلاب لاستثناء فئة 'child'
+    const studentsArray = Object.values(allStudentsData)
+        .filter(data => (data.student_category || 'regular') !== 'child') // استثناء فئة الأطفال
+        .map(data => ({
+            name: data.student_name,
+            score: data.score || 0
+        }));
 
     studentsArray.sort((a, b) => b.score - a.score);
 
     const topStudents = studentsArray.slice(0, 5);
 
     if (topStudents.length === 0) {
-        container.innerHTML = '<div class="alert alert-warning m-0">لا توجد بيانات طلاب لعرض لوحة الشرف.</div>';
+        container.innerHTML = '<div class="alert alert-warning m-0">لا توجد بيانات طلاب (بالغين/عاديين) لعرض لوحة الشرف.</div>';
         return;
     }
+
+    topStudents.forEach((student, index) => {
+        const item = document.createElement('div');
+        let icon = '';
+        if (index === 0) icon = '<i class="fas fa-medal text-warning me-2"></i>';
+        else if (index === 1) icon = '<i class="fas fa-medal text-secondary me-2"></i>';
+        else if (index === 2) icon = '<i class="fas fa-medal text-danger me-2"></i>';
+        else icon = '<i class="fas fa-trophy text-info me-2"></i>';
+
+        item.className = 'list-group-item d-flex justify-content-between align-items-center';
+        item.innerHTML = `
+            <span>${icon} ${index + 1}. ${student.name}</span>
+            <span class="badge bg-primary rounded-pill">${student.score} نقطة</span>
+        `;
+        container.appendChild(item);
+    });
+}
 
     topStudents.forEach((student, index) => {
         const item = document.createElement('div');
@@ -1203,3 +1223,4 @@ async function handleAddBulkTask(e) {
         alert("فشل إضافة المهام الجماعية. تحقق من قواعد الأمان (Security Rules) ووجود الطلاب.");
     }
 }
+
