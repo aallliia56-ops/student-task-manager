@@ -1,5 +1,5 @@
 // //////////////////////////////////////////////////////
-// ملف app.js (الإصدار المُعدَّل بناءً على طلبك - مع إصلاح المشاكل السابقة)
+// ملف app.js (الإصدار المُعدَّل على التصميم والوضوح)
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
@@ -24,11 +24,11 @@ let currentStudentId = null;
 const TEACHER_CODE = 'TEACHER2025';
 
 let curriculumLists = {};
-let taskBank = []; // بنك مهام واحد (للكبار/العاديين)
-const MANUAL_TASK_POINTS = 1; // نقاط المهام اليدوية/البنكية العادية
+let taskBank = []; 
+const MANUAL_TASK_POINTS = 1; 
 
 
-// --- دوال عرض الشاشة (تنظيف الكود) ---
+// --- دوال عرض الشاشة (لا تغيير) ---
 function showLoginScreen() {
     document.querySelectorAll('#app-screens section').forEach(section => {
         section.classList.add('d-none');
@@ -66,7 +66,6 @@ if (loginForm) {
         e.preventDefault();
         const inputId = document.getElementById('student-id').value.trim();
 
-        // تحميل البيانات الأساسية قبل القرار لضمان وجودها
         await loadAllStudentsData();
         await loadCurriculumLists();
         await loadTaskBank();
@@ -82,9 +81,7 @@ if (loginForm) {
 }
 
 
-// --- 3. دوال جلب البيانات من Firestore والتخزين ---
-// (باقي الدوال: loadAllStudentsData, loadCurriculumLists, loadTaskBank كما كانت)
-
+// --- 3. دوال جلب البيانات من Firestore (لا تغيير) ---
 async function loadAllStudentsData() {
     try {
         const tasksCollection = db.collection("tasks");
@@ -100,7 +97,6 @@ async function loadAllStudentsData() {
         alert("فشل تحميل بيانات الطلاب. تأكد من قواعد الأمان والاتصال.");
     }
 }
-
 async function loadCurriculumLists() {
     try {
         const [hifzDoc, murajaaDoc] = await Promise.all([
@@ -115,7 +111,6 @@ async function loadCurriculumLists() {
         console.error("Error loading curriculum lists:", e);
     }
 }
-
 async function loadTaskBank() {
     try {
         const regularDoc = await db.collection("Settings").doc("TaskBank_Regular").get();
@@ -129,16 +124,14 @@ async function loadTaskBank() {
 }
 
 
-// --- 4. دالة تحديد المهام النشطة للطالب (مُعدَّلة لعرض الإضافية فقط) ---
-
+// --- 4. دالة تحديد المهام الإضافية النشطة (لا تغيير) ---
 function getCurrentCurriculumTasks(studentData) {
     const studentTasks = studentData.tasks || [];
     const now = new Date();
     
-    // دالة مساعدة لتحديد ما إذا كانت المهمة قد ظهرت (للمهام اليدوية/البنكية)
     function isTaskReleased(task, now) {
         if (!task.release_date || !task.release_time) {
-            return true; // إذا لم يحدد المعلم تاريخ ووقت، تعتبر نشطة دائماً
+            return true; 
         }
         
         const releaseDateTimeString = `${task.release_date}T${task.release_time}:00`;
@@ -147,11 +140,10 @@ function getCurrentCurriculumTasks(studentData) {
         return now >= releaseDate;
     }
 
-    // فلترة المهام اليدوية والبنكية العادية (pending/claimed) التي ليست تسلسلية
     const pendingAndClaimedTasks = studentTasks.filter(t => 
         (t.status === "pending" || t.status === "claimed") &&
-        !t.task_type.includes('تسلسلي') && // استبعاد المهام التسلسلية
-        isTaskReleased(t, now) // التحقق من تاريخ ووقت الظهور
+        !t.task_type.includes('تسلسلي') && 
+        isTaskReleased(t, now) 
     );
     
     return pendingAndClaimedTasks;
@@ -164,16 +156,13 @@ async function loadStudentData(studentId) {
     currentStudentId = studentId;
     const studentData = allStudentsData[studentId];
 
-    // جلب المهام الإضافية (اليدوية/البنكية) النشطة
     const activeTasks = getCurrentCurriculumTasks(studentData); 
 
     document.getElementById('student-info-name').innerText = `أهلاً بك، ${studentData.student_name}`;
-    document.getElementById('student-info-score').innerText = `نقاطك الحالية: ${studentData.score || 0}`;
+    document.getElementById('student-info-score').innerText = `${studentData.score || 0}`;
 
     renderStudentRank();
-    // 🔴 تم تعديل هذه الدالة لعرض المهام التسلسلية التالية 
     renderProgressBars(studentData); 
-    // 🔴 تم تعديل هذه الدالة لعرض المهام الإضافية فقط
     renderTasks(studentData, activeTasks); 
 
     if (typeof showTasksScreen === 'function') {
@@ -181,13 +170,35 @@ async function loadStudentData(studentId) {
     }
 }
 
-// دالة التقدم (مُعدَّلة: تعرض المهمة التالية وزر الإنجاز)
+// دالة عرض الترتيب (مُعدَّلة لاستخدام حاوية الـ index الجديدة)
+function renderStudentRank() {
+    const rankContainer = document.getElementById('student-rank-info');
+    if (!rankContainer || !currentStudentId) return;
+
+    const studentsArray = Object.values(allStudentsData)
+        .map(data => ({ id: data.id, score: data.score || 0 }));
+
+    studentsArray.sort((a, b) => b.score - a.score);
+
+    const studentRank = studentsArray.findIndex(student => student.id === currentStudentId) + 1;
+
+    if (studentRank > 0) {
+        rankContainer.innerHTML = `#${studentRank} من ${studentsArray.length}`;
+    } else {
+         rankContainer.innerHTML = ` - `;
+    }
+    
+    // إعادة عرض لوحة الشرف المصغرة في نفس الـ Card
+    renderLeaderboard(true); 
+}
+
+// دالة التقدم (مُحسَّنة: تصميم أوضح للمهمة التالية)
 function renderProgressBars(studentData) {
     const progressContainer = document.getElementById('progress-container');
     if (!progressContainer) return;
 
     progressContainer.innerHTML = '';
-    const studentTasks = studentData.tasks || []; // قائمة مهام الطالب الأصلية
+    const studentTasks = studentData.tasks || []; 
 
     // --- 1. مسار الحفظ (Hifz) ---
     const hifzTotal = curriculumLists.Hifz.length;
@@ -196,10 +207,9 @@ function renderProgressBars(studentData) {
     const nextHifzIndex = hifzProgress;
     const nextHifz = curriculumLists.Hifz[nextHifzIndex]; 
 
-    let hifzStatusHtml = '';
     if (hifzTotal > 0) {
+        let hifzStatusHtml = '';
         if (nextHifz) {
-             // التحقق مما إذا كانت المهمة قيد المراجعة بالفعل
             const isHifzClaimed = studentTasks.some(t =>
                 t.curriculum_id === nextHifz.curriculum_id &&
                 t.status === "claimed" &&
@@ -208,17 +218,20 @@ function renderProgressBars(studentData) {
 
             if (isHifzClaimed) {
                  hifzStatusHtml = `
-                    <div class="alert alert-warning mt-2 p-2">
-                        <i class="fas fa-hourglass-half me-2"></i> 
-                        <strong>المهمة التالية:</strong> ${nextHifz.description} (قيد مراجعة المعلم)
+                    <div class="alert alert-warning mt-2 p-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-hourglass-half me-2"></i> 
+                            <strong>المهمة التالية:</strong> ${nextHifz.description}
+                        </div>
+                        <button class="btn btn-sm btn-warning" disabled>قيد المراجعة</button>
                     </div>`;
             } else {
                  hifzStatusHtml = `
-                    <div class="alert alert-success mt-2 p-2 d-flex justify-content-between align-items-center">
+                    <div class="alert alert-success mt-2 p-3 d-flex justify-content-between align-items-center">
                         <div>
-                            <i class="fas fa-check-circle me-2"></i> 
+                            <i class="fas fa-arrow-left me-2"></i> 
                             <strong>المهمة التالية:</strong> ${nextHifz.description}
-                            <span class="badge bg-success ms-2">${nextHifz.points_value} نقاط</span>
+                            <span class="badge bg-success ms-2">+${nextHifz.points_value} نقاط</span>
                         </div>
                         <button class="btn btn-sm btn-success" 
                                 onclick="claimCurriculumTask('Hifz', ${nextHifz.curriculum_id}, ${nextHifz.points_value}, '${nextHifz.description.replace(/'/g, "\\'")}')">
@@ -227,14 +240,15 @@ function renderProgressBars(studentData) {
                     </div>`;
             }
         } else {
-            hifzStatusHtml = `<div class="alert alert-info mt-2 p-2">تم إكمال جميع مهام الحفظ! 🎉</div>`;
+            hifzStatusHtml = `<div class="alert alert-info mt-2 p-2"><i class="fas fa-check-double me-2"></i> تم إكمال جميع مهام الحفظ! 🎉</div>`;
         }
 
 
         progressContainer.innerHTML += `
             <div class="progress-section mb-4">
-                <div class="progress-title mb-2">
-                    <i class="fas fa-book-open text-success"></i> مسار الحفظ: ${hifzProgress} من ${hifzTotal} مهمة مكتملة
+                <div class="progress-title mb-2 d-flex justify-content-between">
+                    <span class="text-success"><i class="fas fa-quran me-1"></i> مسار الحفظ</span>
+                    <small class="text-muted">${hifzProgress} من ${hifzTotal}</small>
                 </div>
                 <div class="progress" style="height: 25px;">
                     <div class="progress-bar bg-success" role="progressbar" style="width: ${hifzPercent}%;" aria-valuenow="${hifzPercent}" aria-valuemin="0" aria-valuemax="100">
@@ -253,28 +267,32 @@ function renderProgressBars(studentData) {
     const murajaaPercent = murajaaTotal > 0 ? Math.floor((murajaaProgress / murajaaTotal) * 100) : 0;
     const nextMurajaa = curriculumLists.Murajaa[murajaaIndex]; 
 
-    let murajaaStatusHtml = '';
     if (murajaaTotal > 0) {
+        let murajaaStatusHtml = '';
         if (nextMurajaa) {
             const isMurajaaClaimed = studentTasks.some(t =>
                 t.curriculum_id === nextMurajaa.curriculum_id &&
                 t.status === "claimed" &&
                 t.task_type === "Murajaa تسلسلي"
             );
+            const murajaaDesc = nextMurajaa.description.replace('مراجعة: ', '');
 
             if (isMurajaaClaimed) {
                 murajaaStatusHtml = `
-                    <div class="alert alert-warning mt-2 p-2">
-                        <i class="fas fa-hourglass-half me-2"></i> 
-                        <strong>المهمة التالية:</strong> ${nextMurajaa.description} (قيد مراجعة المعلم)
+                    <div class="alert alert-warning mt-2 p-3 d-flex justify-content-between align-items-center">
+                         <div>
+                            <i class="fas fa-hourglass-half me-2"></i> 
+                            <strong>المهمة التالية:</strong> ${murajaaDesc}
+                        </div>
+                        <button class="btn btn-sm btn-warning" disabled>قيد المراجعة</button>
                     </div>`;
             } else {
                  murajaaStatusHtml = `
-                    <div class="alert alert-info mt-2 p-2 d-flex justify-content-between align-items-center">
+                    <div class="alert alert-info mt-2 p-3 d-flex justify-content-between align-items-center">
                         <div>
-                            <i class="fas fa-check-circle me-2"></i> 
-                            <strong>المهمة التالية:</strong> ${nextMurajaa.description.replace('مراجعة: ', '')}
-                            <span class="badge bg-info ms-2">${nextMurajaa.points_value} نقاط</span>
+                            <i class="fas fa-arrow-left me-2"></i> 
+                            <strong>المهمة التالية:</strong> ${murajaaDesc}
+                            <span class="badge bg-info ms-2">+${nextMurajaa.points_value} نقاط</span>
                         </div>
                         <button class="btn btn-sm btn-info text-white" 
                                 onclick="claimCurriculumTask('Murajaa', ${nextMurajaa.curriculum_id}, ${nextMurajaa.points_value}, '${nextMurajaa.description.replace(/'/g, "\\'")}')">
@@ -283,13 +301,14 @@ function renderProgressBars(studentData) {
                     </div>`;
             }
         } else {
-            murajaaStatusHtml = `<div class="alert alert-info mt-2 p-2">تم الانتهاء من دورة المراجعة الحالية.</div>`;
+            murajaaStatusHtml = `<div class="alert alert-info mt-2 p-2"><i class="fas fa-check-double me-2"></i> تم الانتهاء من دورة المراجعة الحالية.</div>`;
         }
 
         progressContainer.innerHTML += `
             <div class="progress-section mb-4">
-                <div class="progress-title mb-2">
-                    <i class="fas fa-redo-alt text-info"></i> مسار المراجعة: ${murajaaProgress} من ${murajaaTotal} مهمة 
+                <div class="progress-title mb-2 d-flex justify-content-between">
+                    <span class="text-info"><i class="fas fa-redo-alt me-1"></i> مسار المراجعة</span>
+                    <small class="text-muted">${murajaaProgress} من ${murajaaTotal}</small>
                 </div>
                 <div class="progress" style="height: 25px;">
                     <div class="progress-bar bg-info" role="progressbar" style="width: ${murajaaPercent}%;" aria-valuenow="${murajaaPercent}" aria-valuemin="0" aria-valuemax="100">
@@ -303,7 +322,7 @@ function renderProgressBars(studentData) {
 }
 
 
-// دالة عرض المهام (مُعدَّلة: لعرض المهام الإضافية فقط وبشكل جمالي أفضل)
+// دالة عرض المهام الإضافية (مُحسَّنة: شكل البطاقات)
 function renderTasks(studentData, taskList) {
     const tasksContainer = document.getElementById('tasks-container');
     tasksContainer.innerHTML = '';
@@ -316,14 +335,12 @@ function renderTasks(studentData, taskList) {
     }
     noTasksMessage.classList.add('d-none');
 
-    // دالة مساعدة للحصول على المؤشر الصحيح
     const getTaskDbIndex = (task) => {
-        // نستخدم findIndex للعثور على المؤشر الصحيح للمهمة في قائمة المهام الأصلية
         return studentTasksInDb.findIndex(t =>
             t.description === task.description &&
             t.points_value === (task.points || task.points_value) &&
             t.status === task.status &&
-            !t.task_type.includes('تسلسلي') // مهم جدًا: للبحث فقط عن المهام غير التسلسلية
+            !t.task_type.includes('تسلسلي')
         );
     };
 
@@ -334,10 +351,10 @@ function renderTasks(studentData, taskList) {
         const displayPoints = task.points || task.points_value; 
         const dbIndex = getTaskDbIndex(task);
 
-        if (dbIndex === -1) return; // يمنع عرض مهمة لم يتم العثور على مؤشرها
+        if (dbIndex === -1) return; 
 
         if (task.task_type === "يدوي") {
-            iconHtml = '<i class="fas fa-pencil-alt text-warning me-2"></i>';
+            iconHtml = '<i class="fas fa-medal text-warning me-2"></i>';
         } else if (task.task_type === "من البنك") {
             iconHtml = '<i class="fas fa-layer-group text-primary me-2"></i>';
         }
@@ -345,13 +362,21 @@ function renderTasks(studentData, taskList) {
         if (task.status === "claimed") {
             cardClass += ' claimed-card';
             actionButton = `
-                <button class="btn btn-warning btn-sm me-2" disabled><i class="fas fa-hourglass-half"></i> قيد المراجعة</button>
-                <button class="btn btn-danger btn-sm" onclick="processTaskUndo(${dbIndex})"><i class="fas fa-times"></i> إلغاء المطالبة</button>
+                <button class="btn btn-sm btn-warning me-2" disabled><i class="fas fa-hourglass-half"></i> قيد المراجعة</button>
+                <button class="btn btn-sm btn-danger" onclick="processTaskUndo(${dbIndex})"><i class="fas fa-times"></i> إلغاء المطالبة</button>
             `;
         } else if (task.status === "pending") {
             // زر إنجاز المهام اليدوية
-            actionButton = `<button class="btn btn-success" onclick="processTaskClaim(${dbIndex})"><i class="fas fa-check-double"></i> أرسل للإنجاز</button>`;
+            actionButton = `<button class="btn btn-sm btn-success" onclick="processTaskClaim(${dbIndex})"><i class="fas fa-check-double"></i> أرسل للإنجاز</button>`;
         }
+        
+        let releaseInfo = '';
+        if (task.release_date || task.release_time) {
+            const date = task.release_date || 'غير محدد';
+            const time = task.release_time || 'غير محدد';
+            releaseInfo = `<small class="text-secondary ms-3"><i class="far fa-clock"></i> الظهور: ${date} ${time}</small>`;
+        }
+
 
         const taskElement = document.createElement('div');
         taskElement.className = `task-card ${cardClass}`;
@@ -359,11 +384,14 @@ function renderTasks(studentData, taskList) {
         taskElement.innerHTML = `
             <div class="card-header-custom">
                 <span class="task-title">${iconHtml} ${task.description}</span>
-                <span class="task-points badge bg-secondary">${displayPoints} نقطة</span>
+                <span class="task-points badge bg-dark text-white">+${displayPoints} نقطة</span>
             </div>
-            <div class="d-flex justify-content-between align-items-center">
-                <small class="text-muted">نوع المهمة: ${task.task_type}</small>
-                <div class="task-actions">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div class="task-details">
+                    <small class="text-muted"><i class="fas fa-tag"></i> النوع: ${task.task_type}</small>
+                    ${releaseInfo}
+                </div>
+                <div class="task-actions mt-2 mt-sm-0">
                     ${actionButton}
                 </div>
             </div>
@@ -373,222 +401,63 @@ function renderTasks(studentData, taskList) {
 }
 
 
-// (باقي دوال الإنجاز والحذف والموافقة والرفض ودوال المعلم كما كانت)
-
-// دالة المطالبة بإنجاز مهمة تسلسلية (فقط Hifz/Murajaa) - لا تغيير
-async function claimCurriculumTask(type, taskIdentifier, points, description) {
-    if (!currentStudentId) return alert("خطأ: لا يوجد رمز طالب نشط.");
-
-    const studentData = allStudentsData[currentStudentId];
-
-    // تحديد التقدم المتوقع (expectedId)
-    let expectedIndex = 0;
-    if (type === 'Hifz') {
-        expectedIndex = studentData.hifz_progress || 0;
-    } else if (type === 'Murajaa') {
-        expectedIndex = studentData.murajaa_progress || 0;
-    }
-
-    // التحقق من أن الطالب يطالب بالمهمة الصحيحة 
-    if (taskIdentifier !== expectedIndex) {
-         alert("هذه ليست المهمة التسلسلية التالية المطلوبة. يرجى إكمال المهمة السابقة.");
-         return;
-    } 
-     // التحقق مما إذا كانت المهمة قيد المراجعة بالفعل (تكرار للمنع)
-    const isClaimed = studentData.tasks.some(t =>
-        t.curriculum_id === taskIdentifier &&
-        t.status === "claimed" &&
-        t.task_type === `${type} تسلسلي`
-    );
-     if (isClaimed) {
-         alert("هذه المهمة قيد المراجعة بالفعل.");
-         return;
-    }
-
-
-    const taskDetails = {
-        description: description,
-        points_value: points,
-        task_type: `${type} تسلسلي`,
-        curriculum_id: taskIdentifier, 
-        status: "claimed",
-        claimed_date: new Date().toISOString()
-    };
-
-    try {
-        await db.collection('tasks').doc(currentStudentId).update({
-            tasks: firebase.firestore.FieldValue.arrayUnion(taskDetails)
-        });
-
-        await loadAllStudentsData();
-        await loadCurriculumLists();
-        loadStudentData(currentStudentId);
-        alert("تم إرسال المهمة للمراجعة!");
-
-    } catch (error) {
-        console.error("خطأ في المطالبة بالمهمة التسلسلية:", error);
-        alert("فشل إرسال المهمة. تحقق من قواعد الأمان (Security Rules).");
-    }
-}
-
-// دالة المطالبة بإنجاز مهمة يدوية/من البنك (pending -> claimed) - لا تغيير
-async function processTaskClaim(taskIndex) {
-    if (!currentStudentId) return;
-    const studentData = allStudentsData[currentStudentId];
-    if (!studentData || !studentData.tasks || taskIndex >= studentData.tasks.length) return;
-
-    let updatedTasks = [...studentData.tasks];
-    updatedTasks[taskIndex].status = "claimed";
-    updatedTasks[taskIndex].claimed_date = new Date().toISOString();
-
-    try {
-        await db.collection('tasks').doc(currentStudentId).update({
-            tasks: updatedTasks
-        });
-
-        await loadAllStudentsData();
-        loadStudentData(currentStudentId);
-        alert("تم إرسال المهمة للمراجعة!");
-
-    } catch (error) {
-        console.error("خطأ في المطالبة بالمهمة اليدوية:", error);
-        alert("فشل إرسال المهمة. تأكد من إعداد Firestore.");
-    }
-}
-
-// دالة إلغاء المطالبة بمهمة يدوية/من البنك (claimed -> delete) - لا تغيير
-async function processTaskUndo(taskIndex) {
-    if (!currentStudentId) return;
-    const studentData = allStudentsData[currentStudentId];
-    if (!studentData || !studentData.tasks || taskIndex >= studentData.tasks.length) return;
+// دالة عرض لوحة الشرف (مُعدَّلة لاستخدام حاوية الـ index الجديدة)
+function renderLeaderboard(isMini = false) {
+    const container = document.getElementById('leaderboard-container'); // للمعلم
+    const miniContainer = document.getElementById('leaderboard-container-mini'); // للطالب
     
-    if (!confirm("هل أنت متأكد من إلغاء هذه المهمة؟ سيتم حذفها من قائمة مهامك.")) {
-        return;
-    }
+    // تحديد الحاويات المستهدفة
+    const targets = [];
+    if (!isMini && container) targets.push(container);
+    if (isMini && miniContainer) targets.push(miniContainer);
+    if (targets.length === 0) return;
 
-    const removedTaskDescription = studentData.tasks[taskIndex].description;
-    
-    let updatedTasks = studentData.tasks.filter((_, index) => index !== taskIndex); 
-
-    try {
-        await db.collection('tasks').doc(currentStudentId).update({
-            tasks: updatedTasks
-        });
-        
-        await loadAllStudentsData(); 
-        loadStudentData(currentStudentId); 
-        alert(`تم حذف المهمة "${removedTaskDescription}" بنجاح.`);
-        
-    } catch (error) {
-        console.error("خطأ في حذف المهمة عند الإلغاء:", error);
-        alert("فشل حذف المهمة.");
-    }
-}
-
-
-// دالة الموافقة على المهمة (المعلم) - لا تغيير
-async function approveTask(studentId, taskIndex) {
-    const studentData = allStudentsData[studentId];
-    if (!studentData || !studentData.tasks || taskIndex >= studentData.tasks.length) return;
-    
-    const task = studentData.tasks[taskIndex];
-    if (task.status !== "claimed") return;
-
-    // 1. تحديث قائمة المهام
-    let updatedTasks = [...studentData.tasks];
-    updatedTasks[taskIndex].status = "approved";
-    updatedTasks[taskIndex].approved_date = new Date().toISOString();
-
-    // 2. تحديث بيانات الطالب
-    let scoreIncrease = task.points_value || task.points; 
-    let newScore = (studentData.score || 0) + scoreIncrease;
-    let hifz_progress = studentData.hifz_progress || 0;
-    let murajaa_progress = studentData.murajaa_progress || 0;
-    
-    // المنطق التسلسلي (Hifz/Murajaa)
-    if (task.task_type === "Hifz تسلسلي") {
-        hifz_progress++;
-    } else if (task.task_type === "Murajaa تسلسلي") {
-        murajaa_progress++;
-    }
-
-    try {
-        const batch = db.batch();
-        
-        // تحديث وثيقة الطالب
-        const studentRef = db.collection('tasks').doc(studentId);
-        batch.update(studentRef, {
-            score: newScore,
-            tasks: updatedTasks,
-            hifz_progress: hifz_progress,
-            murajaa_progress: murajaa_progress
-        });
-        
-        await batch.commit();
-
-        await loadAllStudentsData();
-        showTeacherDashboard();
-        
-    } catch (error) {
-        console.error("خطأ في الموافقة على المهمة:", error);
-        alert("فشل في الموافقة على المهمة.");
-    }
-}
-
-// دالة رفض المهمة (المعلم) - لا تغيير
-async function rejectTask(studentId, taskIndex) {
-    if (!confirm("هل أنت متأكد من رفض المهمة؟ سيتم حذفها من قائمة الطالب.")) return;
-
-    const studentData = allStudentsData[studentId];
-    if (!studentData || !studentData.tasks || taskIndex >= studentData.tasks.length) return;
-
-    // 1. استبعاد المهمة المرفوضة من قائمة المهام باستخدام filter
-    const rejectedTaskDescription = studentData.tasks[taskIndex].description;
-    let updatedTasks = studentData.tasks.filter((_, index) => index !== taskIndex);
-    
-    try {
-        await db.collection('tasks').doc(studentId).update({
-            tasks: updatedTasks
-        });
-
-        await loadAllStudentsData();
-        showTeacherDashboard();
-        alert(`تم رفض وحذف المهمة "${rejectedTaskDescription}" بنجاح.`);
-        
-    } catch (error) {
-        console.error("خطأ في رفض المهمة:", error);
-        alert("فشل في رفض المهمة.");
-    }
-}
-
-// (باقي دوال المعلم: showTeacherDashboard, renderTeacherReviewList, renderLeaderboard, 
-// handleAddNewStudent, handleAddCurriculumTask, updateCurriculumStatusDisplay, 
-// handleAddBankTask, deleteBankTask, renderBankTasks, populateBulkTaskSelect, 
-// populateBulkStudentSelect, handleAddTask, handleAddBulkTask)
-
-// ... (تُوضع هنا باقي دوال المعلم من الكود السابق، لا تغيير عليها) ...
-function renderStudentRank() {
-    const rankContainer = document.getElementById('student-rank-info');
-    if (!rankContainer || !currentStudentId) return;
-
-    // الترتيب للجميع 
+    // تجهيز البيانات
     const studentsArray = Object.values(allStudentsData)
         .map(data => ({
-            id: data.id,
+            name: data.student_name,
             score: data.score || 0
         }));
 
     studentsArray.sort((a, b) => b.score - a.score);
 
-    const studentRank = studentsArray.findIndex(student => student.id === currentStudentId) + 1;
+    const studentsToShow = isMini ? studentsArray.slice(0, 3) : studentsArray; // عرض أفضل 3 للطالب
+    
+    targets.forEach(target => {
+        target.innerHTML = '';
+        
+        if (studentsToShow.length === 0) {
+            target.innerHTML = `<div class="alert alert-warning m-0">لا توجد بيانات طلاب.</div>`;
+            return;
+        }
 
-    if (studentRank > 0) {
-        rankContainer.innerHTML = `<i class="fas fa-trophy text-warning"></i> مرتبتك: ${studentRank} من ${studentsArray.length}`;
-    } else {
-         rankContainer.innerHTML = ``;
-    }
+        studentsToShow.forEach((student, index) => {
+            const rank = isMini ? index + 1 : studentsArray.findIndex(s => s.name === student.name && s.score === student.score) + 1;
+            
+            let icon = '';
+            if (rank === 1) icon = '<i class="fas fa-trophy text-warning me-2"></i>';
+            else if (rank === 2) icon = '<i class="fas fa-trophy text-secondary me-2"></i>';
+            else if (rank === 3) icon = '<i class="fas fa-trophy text-danger me-2"></i>';
+            else icon = `<span class="badge bg-light text-secondary me-2">${rank}</span>`;
+
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center';
+            item.innerHTML = `
+                <span>${icon} ${student.name}</span>
+                <span class="badge bg-primary rounded-pill">${student.score} نقطة</span>
+            `;
+            target.appendChild(item);
+        });
+    });
 }
 
+
+// (بقية الدوال: claimCurriculumTask, processTaskClaim, processTaskUndo, approveTask, rejectTask, 
+// showTeacherDashboard, handleAddNewStudent, handleAddCurriculumTask, updateCurriculumStatusDisplay, 
+// handleAddBankTask, deleteBankTask, renderBankTasks, populateBulkTaskSelect, 
+// populateBulkStudentSelect, handleAddTask, handleAddBulkTask)
+
+// ... (تُوضع هنا باقي دوال المعلم من الكود السابق، لا تغيير عليها) ...
 function showTeacherDashboard() {
     if (typeof showTeacherScreen === 'function') showTeacherScreen();
     
@@ -622,7 +491,7 @@ function showTeacherDashboard() {
 
 
     renderTeacherReviewList();
-    renderLeaderboard(); 
+    renderLeaderboard(false); // لوحة المعلم الكاملة
     updateCurriculumStatusDisplay();
     renderBankTasks(); 
     populateBulkTaskSelect();
@@ -669,53 +538,6 @@ function renderTeacherReviewList() {
     if (reviewCount === 0) {
         container.innerHTML = '<div class="alert alert-success m-0">لا توجد مهام تنتظر المراجعة.</div>';
     }
-}
-
-function renderLeaderboard() {
-    const container = document.getElementById('leaderboard-container');
-    const miniContainer = document.getElementById('leaderboard-container-mini');
-    
-    if (container) container.innerHTML = '';
-    if (miniContainer) miniContainer.innerHTML = '';
-    
-    const studentsArray = Object.values(allStudentsData)
-        .map(data => ({
-            name: data.student_name,
-            score: data.score || 0
-        }));
-
-    studentsArray.sort((a, b) => b.score - a.score);
-
-    const topStudents = studentsArray.slice(0, 5);
-
-    if (topStudents.length === 0) {
-        if (container) container.innerHTML = '<div class="alert alert-warning m-0">لا توجد بيانات طلاب لعرض لوحة الشرف.</div>';
-        if (miniContainer) miniContainer.innerHTML = '<div class="text-center text-muted">لا يوجد بيانات.</div>';
-        return;
-    }
-
-    topStudents.forEach((student, index) => {
-        let icon = '';
-        if (index === 0) icon = '<i class="fas fa-medal text-warning me-2"></i>';
-        else if (index === 1) icon = '<i class="fas fa-medal text-secondary me-2"></i>';
-        else if (index === 2) icon = '<i class="fas fa-medal text-danger me-2"></i>';
-        else icon = '<i class="fas fa-trophy text-info me-2"></i>';
-
-        const itemHtml = `
-            <span>${icon} ${index + 1}. ${student.name}</span>
-            <span class="badge bg-primary rounded-pill">${student.score} نقطة</span>
-        `;
-        
-        const itemTeacher = document.createElement('div');
-        itemTeacher.className = 'list-group-item d-flex justify-content-between align-items-center';
-        itemTeacher.innerHTML = itemHtml;
-        if (container) container.appendChild(itemTeacher);
-        
-        const itemMini = document.createElement('div');
-        itemMini.className = 'list-group-item d-flex justify-content-between align-items-center p-2';
-        itemMini.innerHTML = itemHtml;
-        if (miniContainer) miniContainer.appendChild(itemMini);
-    });
 }
 
 
@@ -1031,5 +853,175 @@ async function handleAddBulkTask(e) {
     } catch (error) {
         console.error("خطأ في إضافة المهمة الجماعية:", error);
         alert("فشل إضافة المهام الجماعية. تحقق من قواعد الأمان (Security Rules) ووجود الطلاب.");
+    }
+}
+
+
+// دوال تعديل حالة المهمة (لا تغيير)
+async function claimCurriculumTask(type, taskIdentifier, points, description) {
+    if (!currentStudentId) return alert("خطأ: لا يوجد رمز طالب نشط.");
+
+    const studentData = allStudentsData[currentStudentId];
+
+    let expectedIndex = 0;
+    if (type === 'Hifz') {
+        expectedIndex = studentData.hifz_progress || 0;
+    } else if (type === 'Murajaa') {
+        expectedIndex = studentData.murajaa_progress || 0;
+    }
+
+    if (taskIdentifier !== expectedIndex) {
+         alert("هذه ليست المهمة التسلسلية التالية المطلوبة. يرجى إكمال المهمة السابقة.");
+         return;
+    } 
+    const isClaimed = studentData.tasks.some(t =>
+        t.curriculum_id === taskIdentifier &&
+        t.status === "claimed" &&
+        t.task_type === `${type} تسلسلي`
+    );
+     if (isClaimed) {
+         alert("هذه المهمة قيد المراجعة بالفعل.");
+         return;
+    }
+
+
+    const taskDetails = {
+        description: description,
+        points_value: points,
+        task_type: `${type} تسلسلي`,
+        curriculum_id: taskIdentifier, 
+        status: "claimed",
+        claimed_date: new Date().toISOString()
+    };
+
+    try {
+        await db.collection('tasks').doc(currentStudentId).update({
+            tasks: firebase.firestore.FieldValue.arrayUnion(taskDetails)
+        });
+
+        await loadAllStudentsData();
+        await loadCurriculumLists();
+        loadStudentData(currentStudentId);
+        alert("تم إرسال المهمة للمراجعة!");
+
+    } catch (error) {
+        console.error("خطأ في المطالبة بالمهمة التسلسلية:", error);
+        alert("فشل إرسال المهمة. تحقق من قواعد الأمان (Security Rules).");
+    }
+}
+async function processTaskClaim(taskIndex) {
+    if (!currentStudentId) return;
+    const studentData = allStudentsData[currentStudentId];
+    if (!studentData || !studentData.tasks || taskIndex >= studentData.tasks.length) return;
+
+    let updatedTasks = [...studentData.tasks];
+    updatedTasks[taskIndex].status = "claimed";
+    updatedTasks[taskIndex].claimed_date = new Date().toISOString();
+
+    try {
+        await db.collection('tasks').doc(currentStudentId).update({
+            tasks: updatedTasks
+        });
+
+        await loadAllStudentsData();
+        loadStudentData(currentStudentId);
+        alert("تم إرسال المهمة للمراجعة!");
+
+    } catch (error) {
+        console.error("خطأ في المطالبة بالمهمة اليدوية:", error);
+        alert("فشل إرسال المهمة. تأكد من إعداد Firestore.");
+    }
+}
+async function processTaskUndo(taskIndex) {
+    if (!currentStudentId) return;
+    const studentData = allStudentsData[currentStudentId];
+    if (!studentData || !studentData.tasks || taskIndex >= studentData.tasks.length) return;
+    
+    if (!confirm("هل أنت متأكد من إلغاء هذه المهمة؟ سيتم حذفها من قائمة مهامك.")) {
+        return;
+    }
+
+    const removedTaskDescription = studentData.tasks[taskIndex].description;
+    
+    let updatedTasks = studentData.tasks.filter((_, index) => index !== taskIndex); 
+
+    try {
+        await db.collection('tasks').doc(currentStudentId).update({
+            tasks: updatedTasks
+        });
+        
+        await loadAllStudentsData(); 
+        loadStudentData(currentStudentId); 
+        alert(`تم حذف المهمة "${removedTaskDescription}" بنجاح.`);
+        
+    } catch (error) {
+        console.error("خطأ في حذف المهمة عند الإلغاء:", error);
+        alert("فشل حذف المهمة.");
+    }
+}
+async function approveTask(studentId, taskIndex) {
+    const studentData = allStudentsData[studentId];
+    if (!studentData || !studentData.tasks || taskIndex >= studentData.tasks.length) return;
+    
+    const task = studentData.tasks[taskIndex];
+    if (task.status !== "claimed") return;
+
+    let updatedTasks = [...studentData.tasks];
+    updatedTasks[taskIndex].status = "approved";
+    updatedTasks[taskIndex].approved_date = new Date().toISOString();
+
+    let scoreIncrease = task.points_value || task.points; 
+    let newScore = (studentData.score || 0) + scoreIncrease;
+    let hifz_progress = studentData.hifz_progress || 0;
+    let murajaa_progress = studentData.murajaa_progress || 0;
+    
+    if (task.task_type === "Hifz تسلسلي") {
+        hifz_progress++;
+    } else if (task.task_type === "Murajaa تسلسلي") {
+        murajaa_progress++;
+    }
+
+    try {
+        const batch = db.batch();
+        
+        const studentRef = db.collection('tasks').doc(studentId);
+        batch.update(studentRef, {
+            score: newScore,
+            tasks: updatedTasks,
+            hifz_progress: hifz_progress,
+            murajaa_progress: murajaa_progress
+        });
+        
+        await batch.commit();
+
+        await loadAllStudentsData();
+        showTeacherDashboard();
+        
+    } catch (error) {
+        console.error("خطأ في الموافقة على المهمة:", error);
+        alert("فشل في الموافقة على المهمة.");
+    }
+}
+async function rejectTask(studentId, taskIndex) {
+    if (!confirm("هل أنت متأكد من رفض المهمة؟ سيتم حذفها من قائمة الطالب.")) return;
+
+    const studentData = allStudentsData[studentId];
+    if (!studentData || !studentData.tasks || taskIndex >= studentData.tasks.length) return;
+
+    const rejectedTaskDescription = studentData.tasks[taskIndex].description;
+    let updatedTasks = studentData.tasks.filter((_, index) => index !== taskIndex);
+    
+    try {
+        await db.collection('tasks').doc(studentId).update({
+            tasks: updatedTasks
+        });
+
+        await loadAllStudentsData();
+        showTeacherDashboard();
+        alert(`تم رفض وحذف المهمة "${rejectedTaskDescription}" بنجاح.`);
+        
+    } catch (error) {
+        console.error("خطأ في رفض المهمة:", error);
+        alert("فشل في رفض المهمة.");
     }
 }
