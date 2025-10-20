@@ -1,23 +1,24 @@
-// //////////////////////////////////////////////////////
-// ملف app.js (الإصدار المُصلَّح والمُنظَّف من منطق الأطفال)
-// //////////////////////////////////////////////////////
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-// --- 0. الإعدادات الأولية وربط Firebase ---
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    // *** 🔴 تذكير: يجب تغيير هذا الـ Config ببيانات مشروعك الفعلية 🔴 ***
-    apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
-    authDomain: "studenttasksmanager.firebaseapp.com",
-    projectId: "studenttasksmanager",
-    storageBucket: "studenttasksmanager.firebasestorage.app", // تم ترك هذا لكنه غير مستخدم
-    messagingSenderId: "850350680089",
-    appId: "1:850350680089:web:51b71a710e938754bc6288",
-    measurementId: "G-7QC4FVZKZG"
+  apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
+  authDomain: "studenttasksmanager.firebaseapp.com",
+  projectId: "studenttasksmanager",
+  storageBucket: "studenttasksmanager.firebasestorage.app",
+  messagingSenderId: "850350680089",
+  appId: "1:850350680089:web:51b71a710e938754bc6288",
+  measurementId: "G-7QC4FVXKZG"
 };
 
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-// تم حذف Firebase Storage
-
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
 // --- 1. متغيرات الحالة العامة ---
 let allStudentsData = {};
@@ -969,3 +970,4 @@ async function handleAddBulkTask(e) {
         alert("فشل إضافة المهام الجماعية. تحقق من قواعد الأمان (Security Rules) ووجود الطلاب.");
     }
 }
+
