@@ -8,18 +8,24 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <style>
+        /* تحسينات التصميم للمهام */
         .task-card {
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 15px;
-            border-right: 5px solid; /* خط جانبي للتفرقة */
+            border-right: 5px solid; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             background-color: #ffffff;
+            transition: all 0.2s;
+        }
+        .task-card:hover {
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
         .hifz-card { border-right-color: #198754; /* Success */ }
         .murajaa-card { border-right-color: #0dcaf0; /* Info */ }
         .manual-card { border-right-color: #ffc107; /* Warning */ }
-        .claimed-card { opacity: 0.7; }
+        .claimed-card { opacity: 0.8; background-color: #fff9e6; } /* خلفية فاتحة للمراجعة */
+        
         .task-title {
             font-size: 1.1em;
             font-weight: bold;
@@ -27,7 +33,7 @@
             margin-bottom: 8px;
         }
         .task-points {
-            font-size: 1.2em;
+            font-size: 1.1em;
             font-weight: bold;
             color: #495057;
         }
@@ -39,9 +45,14 @@
             padding-bottom: 10px;
             margin-bottom: 10px;
         }
-        .task-actions {
-            margin-top: 10px;
+        .progress-section .alert {
+            /* تنميق خاص بتفاصيل المهمة التالية */
+            border-radius: 6px;
+            border: 1px solid;
+            padding: 10px;
         }
+        .progress-section .alert-success { border-color: #d1e7dd; }
+        .progress-section .alert-info { border-color: #cff4fc; }
     </style>
 </head>
 <body>
@@ -58,7 +69,7 @@
     <main class="container">
         <div id="app-screens">
             
-            <section id="login-screen" class="active-screen card p-4 shadow-sm">
+            <section id="login-screen" class="active-screen card p-4 shadow-lg">
                 <h2 class="card-title text-center mb-4">تسجيل الدخول</h2>
                 <form id="login-form">
                     <div class="mb-3">
@@ -72,34 +83,41 @@
             
             <section id="tasks-screen" class="d-none">
                 <div class="row mb-4">
-                    <div class="col-md-8">
-                        <div class="card p-3 shadow-sm h-100">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h2 id="student-info-name" class="h5 m-0 text-primary">أهلاً بك، [اسم الطالب]</h2>
-                                <span id="student-info-score" class="badge bg-success fs-6">نقاطك الحالية: 0</span>
+                    <div class="col-lg-12">
+                        <div class="card p-4 shadow-lg">
+                            <div class="row">
+                                <div class="col-md-6 mb-3 mb-md-0 border-end">
+                                    <h2 id="student-info-name" class="h5 m-0 text-primary mb-3">أهلاً بك، [اسم الطالب]</h2>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="fs-6 text-muted"><i class="fas fa-star text-warning me-1"></i> النقاط الحالية:</span>
+                                        <span id="student-info-score" class="badge bg-success fs-6">0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fs-6 text-muted"><i class="fas fa-trophy text-info me-1"></i> مرتبتك:</span>
+                                        <span id="student-rank-info" class="text-dark"> - </span>
+                                    </div>
+                                    
+                                    <h5 class="card-title mt-4 mb-3 border-top pt-3"><i class="fas fa-list-ol me-2"></i> لوحة الشرف (الأفضل)</h5>
+                                    <div class="list-group list-group-flush" id="leaderboard-container-mini">
+                                        </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h5 class="h5 text-dark mb-3"><i class="fas fa-chart-bar me-2"></i> مسارات الإنجاز:</h5>
+                                    <div id="progress-container">
+                                        </div>
+                                </div>
                             </div>
-                            <p id="student-rank-info" class="text-muted"><i class="fas fa-trophy text-warning"></i> مرتبتك: -</p>
-                            
-                            <div id="progress-container" class="mt-3">
-                                </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-4">
-                        <div class="card p-3 shadow-sm h-100">
-                            <h5 class="card-title mb-3"><i class="fas fa-list-ol me-2"></i> لوحة الشرف (الأفضل)</h5>
-                            <div class="list-group list-group-flush" id="leaderboard-container-mini">
-                                </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card p-3 shadow-sm">
-                    <h5 class="card-title mb-3"><i class="fas fa-clipboard-list me-2"></i> مهامك الإضافية والخاصة:</h5>
+                <div class="card p-3 shadow-lg">
+                    <h5 class="card-title mb-3"><i class="fas fa-clipboard-list me-2"></i> مهامك الإضافية والخاصة (1 نقطة):</h5>
                     <div id="tasks-container">
                         </div>
                     <div id="no-tasks-message" class="alert alert-info mt-3 d-none">
-                        لا توجد مهام إضافية نشطة حالياً.
+                        <i class="fas fa-info-circle me-2"></i> لا توجد مهام إضافية نشطة حالياً.
                     </div>
                 </div>
             </section>
@@ -131,6 +149,7 @@
 
                     <div class="col-lg-6">
                         <div class="accordion" id="teacherAccordion">
+
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="headingCurriculum">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCurriculum" aria-expanded="false" aria-controls="collapseCurriculum">
@@ -282,7 +301,6 @@
                         </div>
                     </div>
                 </div>
-
             </section>
 
         </div>
