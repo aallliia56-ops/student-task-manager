@@ -794,7 +794,6 @@ function renderLeaderboard() {
         `;
         container.appendChild(item);
     });
-}
 
 
 // دالة إضافة طالب جديد (مُعدّلة لإضافة فئة الطالب والتقدم)
@@ -1223,4 +1222,5 @@ async function handleAddBulkTask(e) {
         alert("فشل إضافة المهام الجماعية. تحقق من قواعد الأمان (Security Rules) ووجود الطلاب.");
     }
 }
+
 
