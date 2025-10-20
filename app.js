@@ -1,24 +1,23 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+// //////////////////////////////////////////////////////
+// ملف app.js (الإصدار المُصلَّح والمُنظَّف نهائياً)
+// لا يوجد به أي استدعاء لـ import
+// //////////////////////////////////////////////////////
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// --- 0. الإعدادات الأولية وربط Firebase ---
 const firebaseConfig = {
-  apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
-  authDomain: "studenttasksmanager.firebaseapp.com",
-  projectId: "studenttasksmanager",
-  storageBucket: "studenttasksmanager.firebasestorage.app",
-  messagingSenderId: "850350680089",
-  appId: "1:850350680089:web:51b71a710e938754bc6288",
-  measurementId: "G-7QC4FVXKZG"
+    // *** 🔴 تذكير: يجب تغيير هذا الـ Config ببيانات مشروعك الفعلية 🔴 ***
+    apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
+    authDomain: "studenttasksmanager.firebaseapp.com",
+    projectId: "studenttasksmanager",
+    storageBucket: "studenttasksmanager.firebasestorage.app", 
+    messagingSenderId: "850350680089",
+    appId: "1:850350680089:web:51b71a710e938754bc6288",
+    measurementId: "G-7QC4FVZKZG"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 
 // --- 1. متغيرات الحالة العامة ---
 let allStudentsData = {};
@@ -29,6 +28,36 @@ let curriculumLists = {};
 let taskBank = []; // بنك مهام واحد (للكبار/العاديين)
 const MANUAL_TASK_POINTS = 1; // نقاط المهام اليدوية/البنكية العادية
 
+
+// --- دوال عرض الشاشة (تم نقلها من utilities.js لعدم وجوده) ---
+function showLoginScreen() {
+    document.querySelectorAll('#app-screens section').forEach(section => {
+        section.classList.add('d-none');
+        section.classList.remove('active-screen');
+    });
+    document.getElementById('login-screen').classList.remove('d-none');
+    document.getElementById('login-screen').classList.add('active-screen');
+    document.getElementById('logout-btn').classList.add('d-none');
+    currentStudentId = null; 
+}
+function showTasksScreen(studentId) {
+    document.querySelectorAll('#app-screens section').forEach(section => {
+        section.classList.add('d-none');
+        section.classList.remove('active-screen');
+    });
+    document.getElementById('tasks-screen').classList.remove('d-none');
+    document.getElementById('tasks-screen').classList.add('active-screen');
+    document.getElementById('logout-btn').classList.remove('d-none');
+}
+function showTeacherScreen() {
+    document.querySelectorAll('#app-screens section').forEach(section => {
+        section.classList.add('d-none');
+        section.classList.remove('active-screen');
+    });
+    document.getElementById('teacher-screen').classList.remove('d-none');
+    document.getElementById('teacher-screen').classList.add('active-screen');
+    document.getElementById('logout-btn').classList.remove('d-none');
+}
 
 // --- 2. دالة معالجة تسجيل الدخول (الطالب والمعلم) ---
 const loginForm = document.getElementById('login-form');
@@ -143,10 +172,24 @@ function getCurrentCurriculumTasks(studentData) {
     }
 
     // 3. فلترة المهام اليدوية والبنكية العادية (pending/claimed)
+    const now = new Date();
     const pendingAndClaimedTasks = studentTasks.filter(t => 
-        (t.status === "pending" || t.status === "claimed")
+        (t.status === "pending" || t.status === "claimed") &&
+        isTaskReleased(t, now) // دالة مساعدة للتحقق من تاريخ ووقت الظهور
     );
     
+    // دالة مساعدة لتحديد ما إذا كانت المهمة قد ظهرت (للمهام اليدوية/البنكية)
+    function isTaskReleased(task, now) {
+        if (!task.release_date || !task.release_time) {
+            return true; // إذا لم يحدد المعلم تاريخ ووقت، تعتبر نشطة دائماً
+        }
+        
+        const releaseDateTimeString = `${task.release_date}T${task.release_time}:00`;
+        const releaseDate = new Date(releaseDateTimeString);
+        
+        return now >= releaseDate;
+    }
+
     // يتم دمج مهام المنهج النشطة مع المهام اليدوية/البنكية المعلنة أو المطالب بها
     const combinedTasks = pendingAndClaimedTasks.concat(activeTasks);
 
@@ -265,13 +308,13 @@ function renderTasks(studentData, taskList) {
     noTasksMessage.classList.add('d-none');
 
     // لضمان تحديد الـ Index الصحيح للمهام اليدوية/البنكية في دالة الحذف أو المطالبة
-    // نعتمد على مقارنة الكائن الكامل بدلاً من الاعتماد على الـ Index
     const getTaskDbIndex = (task) => {
         // نجد أول ظهور لهذه المهمة في قائمة المهام الأصلية التي لم تكتمل بعد
         return studentTasksInDb.findIndex(t =>
             t.description === task.description &&
-            t.points_value === task.points_value &&
-            t.status === task.status
+            t.points_value === (task.points || task.points_value) &&
+            t.status === task.status &&
+            (task.is_curriculum_task ? (t.curriculum_id === task.curriculum_id) : true) 
         );
     };
 
@@ -311,7 +354,7 @@ function renderTasks(studentData, taskList) {
             // مهام يدوية أو من البنك (الكلاسيكي)
             const dbIndex = getTaskDbIndex(task);
 
-            if (dbIndex === -1) return; // تم حل مشكلة تكرار المهام هنا
+            if (dbIndex === -1) return; // يمنع تكرار عرض المهام إذا لم يتم العثور على المؤشر
 
             if (task.status === "claimed") {
                 cardClass = 'manual-card claimed-card';
@@ -464,8 +507,6 @@ async function approveTask(studentId, taskIndex) {
     let hifz_progress = studentData.hifz_progress || 0;
     let murajaa_progress = studentData.murajaa_progress || 0;
     
-    // (تم حذف منطق تقدم الأطفال)
-
     // المنطق التسلسلي (Hifz/Murajaa)
     if (task.task_type === "Hifz تسلسلي") {
         hifz_progress++;
@@ -483,7 +524,6 @@ async function approveTask(studentId, taskIndex) {
             tasks: updatedTasks,
             hifz_progress: hifz_progress,
             murajaa_progress: murajaa_progress
-            // لا يوجد child_tasks_progress
         });
         
         await batch.commit();
@@ -545,7 +585,6 @@ function showTeacherDashboard() {
         addBankTaskForm.removeEventListener('submit', handleAddBankTask);
         addBankTaskForm.addEventListener('submit', handleAddBankTask);
     }
-    // تم حذف نموذج الأطفال
     
     const addTaskForm = document.getElementById('add-task-form');
     if (addTaskForm) {
@@ -970,4 +1009,3 @@ async function handleAddBulkTask(e) {
         alert("فشل إضافة المهام الجماعية. تحقق من قواعد الأمان (Security Rules) ووجود الطلاب.");
     }
 }
-
