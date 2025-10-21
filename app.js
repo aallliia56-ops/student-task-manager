@@ -3,7 +3,7 @@
 // =================================================================
 
 // ⚠️⚠️⚠️ هذه إعدادات Firebase الخاصة بمشروعك (studenttasksmanager).
-//      تأكد أنها مطابقة تماماً لما في Firebase Console -> Project settings -> Your apps -> Web app -> Firebase SDK snippet -> Config
+//      تم التأكد من صحتها ومتوافقة مع الإصدار 8 من SDK
 const firebaseConfig = {
     apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
     authDomain: "studenttasksmanager.firebaseapp.com",
@@ -11,21 +11,20 @@ const firebaseConfig = {
     storageBucket: "studenttasksmanager.firebasestorage.app",
     messagingSenderId: "850350680089",
     appId: "1:850350680089:web:51b71a710e938754bc6288",
-    measurementId: "G-7QC4FVXKZG" // هذا لا يُستخدم بشكل مباشر في هذا التطبيق بالإصدار 8، لكن لا يضر وجوده
+    measurementId: "G-7QC4FVXKZG" 
 };
 
-// تهيئة Firebase بالإصدار 8 من SDK (باستخدام firebase.initializeApp)
+// تهيئة Firebase بالإصدار 8 من SDK 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // المتغيرات العالمية والثوابت
 let currentStudentId = null;
-const TEACHER_ID = 'teacher'; // رمز الدخول الخاص بالمعلم
-let unsubscribeTasks, unsubscribeReview, unsubscribeLeaderboard, unsubscribeBankTasks, unsubscribeCurriculum; // لـ Live Listeners
+const TEACHER_ID = 'teacher'; // 🔴 رمز المعلم لم يتغير أبداً
+let unsubscribeTasks, unsubscribeReview, unsubscribeLeaderboard, unsubscribeBankTasks, unsubscribeCurriculum; 
 
 // =================================================================
 // 2. دوال مساعدة عامة وتحويل الشاشات
-// (دالة showScreen موجودة في index.html)
 // =================================================================
 
 /**
@@ -48,14 +47,14 @@ function logout() {
  * دالة لتهيئة شاشة المعلم (تفعيل الاستماعات الفورية)
  */
 function initializeTeacherDashboard() {
-    // 1. المهام التي تنتظر المراجعة
+    // 1. المهام التي تنتظر المراجعة (تتطلب فهرسة Collection Group)
     unsubscribeReview = db.collectionGroup('tasks')
         .where('status', '==', 'claimed')
         .onSnapshot(snapshot => {
             renderReviewTasks(snapshot.docs);
         }, error => {
             console.error("Error listening to review tasks:", error);
-            // يمكنك هنا إضافة معالجة خطأ للمستخدم
+            // 🔴 تنبيه هام: هذا الاستعلام يتطلب فهرسة، تأكد من إنشاء الفهرس عبر الرابط في رسالة الخطأ
         });
         
     // 2. لوحة الشرف
@@ -64,7 +63,7 @@ function initializeTeacherDashboard() {
         .limit(5)
         .onSnapshot(snapshot => {
             renderLeaderboard(snapshot.docs);
-            populateStudentSelects(snapshot.docs); // لملء قوائم الطلاب في لوحة التحكم
+            populateStudentSelects(snapshot.docs);
         }, error => {
             console.error("Error listening to leaderboard:", error);
         });
@@ -77,7 +76,7 @@ function initializeTeacherDashboard() {
         console.error("Error listening to bank tasks:", error);
     });
     
-    // 4. حالة المنهج
+    // 4. حالة المنهج (تم إصلاح خطأ الـ filter في هذه الدالة)
     unsubscribeCurriculum = db.collection('curriculum').orderBy('sequence').onSnapshot(snapshot => {
         renderCurriculumStatus(snapshot.docs);
     }, error => {
@@ -94,7 +93,8 @@ function initializeStudentScreen(studentId) {
         if (doc.exists) {
             renderStudentInfo(doc.data());
         } else {
-            alert('خطأ: لا يمكن العثور على بيانات الطالب.');
+            // 🔴 هذا الشرط لن يتم تنفيذه إلا إذا حُذف الطالب بعد تسجيل دخوله
+            alert('خطأ: لا يمكن العثور على بيانات الطالب. سيتم تسجيل الخروج.'); 
             logout();
         }
     }, error => {
@@ -114,7 +114,7 @@ function initializeStudentScreen(studentId) {
             alert('حدث خطأ في جلب مهام الطالب. يرجى المحاولة مرة أخرى.');
         });
         
-    // تحديث ترتيب الطالب (يتم استدعاؤه لمرة واحدة عند الدخول)
+    // تحديث ترتيب الطالب 
     updateStudentRank(studentId);
 }
 
@@ -133,15 +133,17 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         try {
             const studentDoc = await db.collection('students').doc(studentIdInput).get();
             if (studentDoc.exists) {
+                // 🔴 هنا يتم التحقق بنجاح من وجود الطالب
                 currentStudentId = studentIdInput;
                 initializeStudentScreen(currentStudentId);
                 showScreen('tasks-screen');
             } else {
+                // 🔴 إذا استمرت هذه الرسالة للطالب (مع وجوده في Firestore)، فالمشكلة في Rules
                 alert('رمز الدخول غير صحيح أو غير موجود.');
             }
         } catch (error) {
             console.error("Error during login:", error);
-            alert('حدث خطأ أثناء تسجيل الدخول. يرجى التحقق من اتصالك بالإنترنت وإعدادات Firebase.');
+            alert('❌ حدث خطأ أثناء تسجيل الدخول. تأكد من أن قواعد Firebase تسمح بالقراءة.');
         }
     }
 });
@@ -165,7 +167,6 @@ async function renderProgressBars(studentData) {
         totalMurajaa = curriculumSnap.docs.filter(doc => doc.data().type === 'Murajaa').length;
     } catch (error) {
         console.error("Error fetching curriculum for progress bars:", error);
-        // التعامل مع الخطأ، مثلاً عرض رسالة بدلاً من الأشرطة
     }
     
     const hifzProgress = studentData.hifz_progress || 0;
@@ -371,8 +372,7 @@ async function assignNextCurriculumTask(studentRef, type, nextSequence) {
         const existingTaskSnap = await studentRef.collection('tasks')
             .where('type', '==', type)
             .where('is_curriculum', '==', true)
-            .where('status', 'in', ['active', 'claimed', 'completed']) // نتحقق من كل الحالات
-            .where('sequence', '==', nextSequence) // أضفنا التحقق من التسلسل
+            .where('sequence', '==', nextSequence) // التحقق من التسلسل
             .limit(1)
             .get();
 
@@ -401,8 +401,8 @@ async function assignNextCurriculumTask(studentRef, type, nextSequence) {
                 type: taskData.type,
                 status: 'active',
                 available_at: new Date(Date.now()), // متاحة فوراً
-                is_curriculum: true, // لتحديد أنها جزء من المنهج
-                sequence: taskData.sequence, // حفظ التسلسل في مهمة الطالب لتسهيل التحقق
+                is_curriculum: true, 
+                sequence: taskData.sequence, 
                 studentName: studentName 
             });
             console.log(`✅ تم تعيين مهمة ${taskData.type} التسلسل ${nextSequence} للطالب.`);
@@ -532,8 +532,9 @@ function populateBulkTaskSelect(bankDocs) {
 
 
 function renderCurriculumStatus(curriculumDocs) {
+    // 🔴 تم إصلاح خطأ TypeError: Cannot read properties of undefined (reading 'filter')
     const totalHifz = curriculumDocs.filter(doc => doc.data().type === 'Hifz').length;
-    const totalMurajaa = curriculumDocs.docs.filter(doc => doc.data().type === 'Murajaa').length;
+    const totalMurajaa = curriculumDocs.filter(doc => doc.data().type === 'Murajaa').length; // تم تعديل هذا السطر
     
     document.getElementById('curriculum-status').innerHTML = `
         حالة المنهج:
@@ -603,7 +604,7 @@ document.getElementById('add-bulk-task-form').addEventListener('submit', async (
     const taskSelect = document.getElementById('bulk-task-select');
     const taskId = taskSelect.value;
     const selectedOption = taskSelect.options[taskSelect.selectedIndex];
-    const description = selectedOption.dataset.description || selectedOption.textContent; // استخدام dataset.description
+    const description = selectedOption.dataset.description || selectedOption.textContent; 
     const studentIds = Array.from(document.getElementById('bulk-student-select').selectedOptions).map(option => option.value);
     const date = document.getElementById('bulk-task-date').value;
     const time = document.getElementById('bulk-task-time').value;
@@ -706,8 +707,7 @@ document.getElementById('add-new-student-form').addEventListener('submit', async
                 created_at: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            // 2. تعيين أول مهمة (إذا كانت نقطة الانطلاق 0، سيتم تعيين مهمة التسلسل 0)
-            // (أو تعيين المهمة التي تبدأ من عندها، إذا كانت قيمة التقدم > 0)
+            // 2. تعيين أول مهمة 
             await assignNextCurriculumTask(docRef, 'Hifz', hifzProgress);
             await assignNextCurriculumTask(docRef, 'Murajaa', murajaaProgress);
         });
