@@ -64,7 +64,8 @@ if (loginForm) {
 async function loadAllStudentsData() {
     try {
         const tasksCollection = db.collection("tasks");
-        const querySnapshot = await tasksCollection.get();
+        // استخدام get() لتحميل البيانات مرة واحدة للمعلم ولوحة الشرف
+        const querySnapshot = await tasksCollection.get(); 
 
         allStudentsData = {};
 
@@ -123,7 +124,6 @@ function listenToStudentData(studentId) {
             
         } else {
             console.warn(`Student document ${studentId} not found.`);
-            // ربما يجب تسجيل خروج الطالب أو إظهار رسالة خطأ
         }
     }, (error) => {
         console.error("Error listening to student data:", error);
@@ -182,20 +182,24 @@ function getCurrentCurriculumTasks(studentData) {
     const murajaaTotal = murajaaList.length;
 
     if (murajaaTotal > 0) {
-        const startIndex = studentData.murajaa_progress || 0;
-        const endIndex = Math.min(startIndex + 3, murajaaTotal); // 🔑 الحد الأقصى 3 مهام
-
-        for (let i = startIndex; i < endIndex; i++) {
-            const nextMurajaaTask = murajaaList[i];
+        const currentMurajaaProgress = studentData.murajaa_progress || 0;
+        
+        // 🔑 حلقة لسحب المهام الثلاث المطلوبة للعرض مع اللوب (الالتفاف)
+        for (let offset = 0; offset < 3; offset++) {
+            const curriculumId = (currentMurajaaProgress + offset) % murajaaTotal; 
             
-            // 🔑 الشرط المُعدَّل للمراجعة: يختفي إذا كانت claimed (قيد المراجعة) أو approved (تمت الموافقة)
-            const isMurajaaActive = studentTasks.some(t =>
-                t.curriculum_id === i &&
-                (t.status === "claimed" || t.status === "approved") && 
+            const nextMurajaaTask = murajaaList[curriculumId];
+
+            if (!nextMurajaaTask) continue; 
+
+            // الشرط: المهمة تختفي إذا كانت في قائمة الطالب بحالة 'claimed' أو 'approved'.
+            const isMurajaaActiveAndClaimedOrApproved = studentTasks.some(t =>
+                t.curriculum_id === curriculumId &&
+                (t.status === "claimed" || t.status === "approved") &&
                 t.task_type === "Murajaa تسلسلي"
             );
 
-            if (!isMurajaaActive) {
+            if (!isMurajaaActiveAndClaimedOrApproved) {
                 activeTasks.push({ ...nextMurajaaTask, is_curriculum_task: true, curriculum_type: 'Murajaa' });
             }
         }
@@ -205,7 +209,20 @@ function getCurrentCurriculumTasks(studentData) {
     const pendingAndClaimedTasks = studentTasks.filter(t => t.status === "pending" || t.status === "claimed");
     const combinedTasks = pendingAndClaimedTasks.concat(activeTasks);
 
-    return combinedTasks;
+    // 🔑 إزالة المهام المكررة (مهم لمهام المراجعة لضمان عدم ظهورها بعد الإنجاز)
+    const uniqueCombinedTasks = [];
+    const seenTaskKeys = new Set();
+
+    combinedTasks.forEach(task => {
+        // مفتاح فريد يعتمد على: الوصف، النوع، معرف المنهج، الحالة (لتمييز الـ pending عن الـ claimed)
+        const key = `${task.description}-${task.task_type}-${task.curriculum_id || ''}-${task.status}`;
+        if (!seenTaskKeys.has(key)) {
+            uniqueCombinedTasks.push(task);
+            seenTaskKeys.add(key);
+        }
+    });
+
+    return uniqueCombinedTasks;
 }
 
 
@@ -270,7 +287,7 @@ function renderProgressBars(studentData) {
 
     const murajaaPercent = murajaaTotal > 0 ? Math.floor((murajaaProgress / murajaaTotal) * 100) : 0;
 
-    const nextMurajaa = curriculumLists.Murajaa[nextMurajaaIndex];
+    const nextMurajaa = murajaaTotal > 0 ? curriculumLists.Murajaa[nextMurajaaIndex % murajaaTotal] : null;
     
     if (murajaaTotal > 0) {
         progressContainer.innerHTML += `
@@ -283,7 +300,7 @@ function renderProgressBars(studentData) {
                         ${murajaaPercent}%
                     </div>
                 </div>
-                <small class="text-muted mt-2 d-block">المهمة التالية: ${nextMurajaa ? nextMurajaa.description.replace('مراجعة: ', '') : 'تم الانتهاء من دورة المراجعة الحالية (ستبدأ من جديد).'} (ID: ${murajaaProgress})</small>
+                <small class="text-muted mt-2 d-block">المهمة التالية (رقم التسلسل): ${nextMurajaa ? nextMurajaa.description.replace('مراجعة: ', '') : 'تم الانتهاء من دورة المراجعة الحالية (ستبدأ من جديد).'} (ID: ${murajaaProgress})</small>
             </div>
         `;
     }
@@ -335,7 +352,7 @@ function renderTasks(studentData, taskList) {
                 actionButton = `<button class="btn btn-warning btn-sm" disabled><i class="fas fa-hourglass-half"></i> قيد مراجعة المعلم</button>`;
             } 
             else if (currentStatus === "approved") {
-                // تم القبول (Approved)
+                // هذا الجزء لا يجب أن يحدث نظرياً الآن لأننا نزيل المهام الـ approved من العرض في `getCurrentCurriculumTasks`
                 cardClass += ' approved-card';
                 actionButton = `<button class="btn btn-success btn-sm" disabled><i class="fas fa-check-circle"></i> تم القبول</button>`; 
             }
@@ -409,21 +426,30 @@ async function claimCurriculumTask(type, curriculumId, points, description) {
              return;
         }
     } else if (type === 'Murajaa') {
-        const startIndex = studentData.murajaa_progress || 0;
-        const endIndex = Math.min(startIndex + 3, curriculumLists.Murajaa.length);
+        const murajaaTotal = curriculumLists.Murajaa.length;
+        const currentMurajaaProgress = studentData.murajaa_progress || 0;
+
+        // التحقق من أن الـ curriculumId هي ضمن المهام الثلاث المتاحة للعرض حالياً
+        let isIdAvailable = false;
+        for (let i = 0; i < 3; i++) {
+            if ((currentMurajaaProgress + i) % murajaaTotal === curriculumId) {
+                isIdAvailable = true;
+                break;
+            }
+        }
         
-        if (curriculumId < startIndex || curriculumId >= endIndex) {
+        if (!isIdAvailable) {
             alert("المهمة المطلوبة ليست ضمن المهام المتاحة حاليًا.");
             return;
         }
         
-        const isMurajaaClaimed = studentData.tasks.some(t =>
+        const isMurajaaClaimedOrApproved = studentData.tasks.some(t =>
             t.curriculum_id === curriculumId &&
-            t.status === "claimed" &&
+            (t.status === "claimed" || t.status === "approved") &&
             t.task_type === "Murajaa تسلسلي"
         );
-        if (isMurajaaClaimed) {
-             alert("تم المطالبة بهذه المهمة بالفعل وهي قيد المراجعة.");
+        if (isMurajaaClaimedOrApproved) {
+             alert("تم المطالبة بهذه المهمة بالفعل وهي قيد المراجعة أو تمت الموافقة عليها.");
              return;
         }
     }
@@ -557,7 +583,10 @@ async function approveTask(studentId, taskIndex) {
 
     // المنطق التسلسلي (Hifz)
     if (task.task_type === "Hifz تسلسلي") {
-        hifz_progress++;
+        // التحقق من أن هذه المهمة هي فعلاً مهمة التقدم
+        if (task.curriculum_id === hifz_progress) {
+             hifz_progress++;
+        }
     } 
 
     // المنطق التسلسلي (Murajaa): التقدم خطوة واحدة مع تفعيل اللوب
@@ -572,9 +601,9 @@ async function approveTask(studentId, taskIndex) {
         const studentRef = db.collection('tasks').doc(studentId);
         batch.update(studentRef, {
             score: newScore,
-            tasks: updatedTasks, // 👈 هذه القائمة تحوي الآن الـ "approved"
+            tasks: updatedTasks,
             hifz_progress: hifz_progress,
-            murajaa_progress: finalMurajaaProgress, // 👈 التقدم المحدث
+            murajaa_progress: finalMurajaaProgress, 
         });
         
         await batch.commit();
@@ -620,8 +649,6 @@ async function rejectTask(studentId, taskIndex) {
 function showTeacherDashboard() {
     if (typeof showTeacherScreen === 'function') showTeacherScreen();
     
-    // ... (بقية دوال المعلم كما هي) ...
-
     // ربط النماذج بـ Handlers
     const newStudentForm = document.getElementById('add-new-student-form');
     if (newStudentForm) {
