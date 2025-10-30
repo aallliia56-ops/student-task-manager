@@ -1,5 +1,5 @@
 // //////////////////////////////////////////////////////
-// ملف app.js النهائي والمستقر (حفظ 2، مراجعة 3، المراجعة تعاد)
+// ملف app.js النهائي والمستقر (حفظ 2، مراجعة 3، المراجعة تعاد، حل مشكلة التقدم)
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
@@ -488,27 +488,27 @@ async function processTaskUndo(taskIndex) {
 }
 
 
-// ✨ دالة مساعدة لفحص التسلسل المكتمل والموافقة عليه في المراجعة
-function checkAndUpdateMurajaaProgress(studentTasks) {
-    const murajaaTotal = curriculumLists.Murajaa.length;
-    let newProgress = 0;
-
-    // نبدأ من المؤشر 0 ونبحث عن أطول سلسلة متتالية معتمدة
-    for (let i = 0; i < murajaaTotal; i++) {
-        const taskApproved = studentTasks.some(t =>
-            t.curriculum_id === i &&
-            t.status === "approved" &&
-            t.task_type === "Murajaa تسلسلي"
-        );
-
-        if (taskApproved) {
-            newProgress = i + 1; // المهمة i اكتملت، التقدم التالي هو i+1
-        } else {
-            // وجدنا فجوة: التوقف عند أول مهمة غير مكتملة
-            break; 
-        }
+// ✨ الدالة المساعدة المُعدّلة لتقدم المراجعة
+function checkAndUpdateMurajaaProgress(studentData, taskApproved) {
+    // نحصل على المؤشر الحالي قبل إتمام هذه المهمة
+    const currentMurajaaProgress = studentData.murajaa_progress || 0;
+    
+    // إذا كانت المهمة المعتمدة ليست مهمة مراجعة تسلسلية، نُرجع التقدم الحالي
+    if (taskApproved.task_type !== "Murajaa تسلسلي") {
+        return currentMurajaaProgress;
     }
-    return newProgress;
+    
+    // نحصل على الـ ID للمهمة التي تم إنجازها الآن
+    const approvedCurriculumId = taskApproved.curriculum_id;
+
+    // الشرط الجديد: هل المهمة التي تم الموافقة عليها هي المهمة التي عليها الدور (تساوي قيمة المؤشر الحالي)؟
+    if (approvedCurriculumId === currentMurajaaProgress) {
+        // إذاً، تقدم المؤشر بمقدار 1
+        return currentMurajaaProgress + 1;
+    } 
+    
+    // إذا كانت المهمة المعتمدة ليست المهمة التي عليها الدور، يبقى المؤشر ثابتًا.
+    return currentMurajaaProgress;
 }
 
 
@@ -529,19 +529,20 @@ async function approveTask(studentId, taskIndex) {
     let scoreIncrease = task.points_value;
     let newScore = (studentData.score || 0) + scoreIncrease;
     let hifz_progress = studentData.hifz_progress || 0;
+    let finalMurajaaProgress = studentData.murajaa_progress || 0; // يتم تحديثه لاحقًا
 
     // المنطق التسلسلي (Hifz)
     if (task.task_type === "Hifz تسلسلي") {
         hifz_progress++;
     } 
 
-    // تطبيق الفحص النهائي لتقدم المراجعة بعد التعديل
-    let finalMurajaaProgress = studentData.murajaa_progress || 0;
-
+    // المنطق التسلسلي (Murajaa): التقدم فقط إذا كانت المهمة المعتمدة هي المهمة التي عليها الدور
     if (task.task_type === "Murajaa تسلسلي") {
-        // *** 🔑 الخطوة الحاسمة: تحديث البيانات مؤقتاً لإجراء الفحص ***
-        finalMurajaaProgress = checkAndUpdateMurajaaProgress(updatedTasks);
+        // *** 🔑 استخدام المنطق المُعدّل هنا ***
+        finalMurajaaProgress = checkAndUpdateMurajaaProgress(studentData, task);
     }
+    // ملاحظة: المهام اليدوية والبنكية لا تؤثر على التقدم التسلسلي
+
 
     try {
         const batch = db.batch();
@@ -552,7 +553,7 @@ async function approveTask(studentId, taskIndex) {
             score: newScore,
             tasks: updatedTasks, // 👈 هذه القائمة تحوي الآن الـ "approved"
             hifz_progress: hifz_progress,
-            murajaa_progress: finalMurajaaProgress, 
+            murajaa_progress: finalMurajaaProgress, // 👈 التقدم المحدث
         });
         
         await batch.commit();
