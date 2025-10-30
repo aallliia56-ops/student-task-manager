@@ -1,5 +1,5 @@
 // //////////////////////////////////////////////////////
-// ملف app.js النهائي والمستقر (مع التعديلات المطلوبة)
+// ملف app.js النهائي والمستقر (مع التعديلات المطلوبة واستكمال BulkTask)
 // //////////////////////////////////////////////////////
 
 // --- 0. الإعدادات الأولية وربط Firebase ---
@@ -935,6 +935,57 @@ async function handleAddTask(e) {
 async function handleAddBulkTask(e) {
     e.preventDefault();
 
-// تم حذف الكود الخاص بهذه الدالة لانتهاء الإدخال من المستخدم، لكن يجب أن يكون موجودًا في ملفك الأصلي
-// أو يُستكمل إذا أردت استكماله.
+    const selectedTask = document.getElementById('bulk-task-select').value;
+    const selectedStudentIds = Array.from(document.getElementById('bulk-student-select').selectedOptions).map(option => option.value);
+    const date = document.getElementById('bulk-task-date').value;
+    const time = document.getElementById('bulk-task-time').value;
+
+    if (!selectedTask || selectedStudentIds.length === 0) {
+        alert("الرجاء اختيار مهمة واحدة على الأقل وطلاب لإضافة المهام لهم.");
+        return;
+    }
+
+    const taskData = JSON.parse(selectedTask);
+
+    try {
+        const batch = db.batch();
+        let successfulAdds = 0;
+
+        for (const studentId of selectedStudentIds) {
+            if (allStudentsData[studentId]) { // التحقق من وجود الطالب
+                const taskDetails = {
+                    description: taskData.description,
+                    points_value: taskData.points,
+                    release_date: date,
+                    release_time: time,
+                    task_type: "بنك",
+                    status: "pending"
+                };
+
+                const studentRef = db.collection('tasks').doc(studentId);
+                batch.update(studentRef, {
+                    tasks: firebase.firestore.FieldValue.arrayUnion(taskDetails)
+                });
+                successfulAdds++;
+            }
+        }
+
+        if (successfulAdds > 0) {
+            await batch.commit();
+            alert(`تم إضافة المهمة "${taskData.description}" لـ ${successfulAdds} طلاب بنجاح.`);
+            e.target.reset();
+            await loadAllStudentsData(); // إعادة تحميل بيانات الطلاب لتحديث الواجهة
+            renderTeacherReviewList(); // تحديث لوحة المعلم بعد الإضافة
+            // إذا كان الطالب النشط الحالي من ضمن الذين تم إضافة المهام لهم
+            if (currentStudentId && selectedStudentIds.includes(currentStudentId)) {
+                loadStudentData(currentStudentId);
+            }
+        } else {
+            alert("لم يتم إضافة المهمة لأي طالب. تأكد من أن الطلاب المختارين موجودون.");
+        }
+
+    } catch (error) {
+        console.error("خطأ في إضافة المهمة الجماعية:", error);
+        alert("فشل إضافة المهام الجماعية. تحقق من قواعد الأمان (Security Rules) ووجود الطلاب.");
+    }
 }
