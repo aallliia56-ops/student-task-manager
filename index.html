@@ -363,14 +363,13 @@
     </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-<script type="module" src="app.js"></script>
+<script type="module" src="app.js"></script> 
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // الدوال الخاصة بالـ UI (منعاً للخلط مع دوال Firebase في app.js)
+    // الدوال الخاصة بالـ UI (موجودة في index.html لتبسيط فصل الاهتمامات)
+    // لاحظ أن هذه الدوال لا تتفاعل مباشرة مع Firebase، بل تتفاعل مع DOM
 
     function showTasksScreen(studentId) {
         document.getElementById('login-screen').classList.add('d-none');
@@ -391,10 +390,15 @@
         document.getElementById('teacher-screen').classList.add('d-none');
     }
 
+    // هذه الدالة ستستدعى دالة logout من app.js التي تتعامل مع مستمعي Firebase
     function logout() {
-        currentStudentId = null;
-        if (typeof studentDataListener === 'function') studentDataListener();
-        showLoginScreen();
+        if (window.appLogout) { // التأكد من أن دالة appLogout موجودة في النطاق العام بعد استيراد app.js
+            window.appLogout();
+        } else {
+            // كحل احتياطي بسيط في حال عدم تحميل app.js بشكل صحيح
+            currentStudentId = null;
+            showLoginScreen();
+        }
     }
     
     // إدارة تبويبات المعلم
@@ -408,6 +412,15 @@
             link.classList.remove('active');
         });
         document.getElementById(sectionId + '-tab').classList.add('active');
+        
+        // إذا كان تبويب لوحة الشرف نشطًا، أعد تحميله لضمان التحديث
+        if (sectionId === 'leaderboard' && typeof window.renderLeaderboard === 'function') {
+            window.renderLeaderboard();
+        }
+        // إذا كان تبويب إضافة مهام نشطًا، تأكد من تحديث قوائم الطلاب والمهام الجاهزة
+        if (sectionId === 'add-tasks' && typeof window.loadTeacherDashboard === 'function') {
+            window.loadTeacherDashboard(); // هذا سيعيد تحميل كل المستمعين بما فيهم الطلاب وبنك المهام
+        }
     }
     
     // إعداد الشاشة الأولية
@@ -416,4 +429,3 @@
 
 </body>
 </html>
-
