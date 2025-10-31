@@ -28,7 +28,7 @@ const studentMurajaaProgress = document.getElementById('student-murajaa-progress
 const studentTotalPoints = document.getElementById('student-total-points');
 const studentTasksDiv = document.getElementById('student-tasks');
 const logoutButtonStudent = document.getElementById('logout-button-student');
-const logoutButtonTeacher = document.getElementById('logout-button-teacher'); // أضف هذا السطر هنا
+const logoutButtonTeacher = document.getElementById('logout-button-teacher'); 
 
 const manageStudentsTab = document.getElementById('manage-students-tab');
 const addStudentTab = document.getElementById('add-student-tab');
@@ -39,8 +39,10 @@ const tabButtons = document.querySelectorAll('.tab-button');
 const studentList = document.getElementById('student-list');
 const newStudentCodeInput = document.getElementById('new-student-code');
 const newStudentNameInput = document.getElementById('new-student-name');
-const newStudentHifzStart = document.getElementById('new-student-hifz-start');
-const newStudentMurajaaStart = document.getElementById('new-student-murajaa-start');
+// العناصر الجديدة (يجب تعديل index.html لاستخدامها)
+const newStudentHifzStartSelect = document.getElementById('new-student-hifz-start-select'); // تم تغييرها من newStudentHifzStart
+const newStudentMurajaaStartSelect = document.getElementById('new-student-murajaa-start-select'); // تم تغييرها من newStudentMurajaaStart
+
 const registerStudentButton = document.getElementById('register-student-button');
 const registerStudentMessage = document.getElementById('register-student-message');
 
@@ -58,10 +60,10 @@ const murajaaCurriculumDisplay = document.getElementById('murajaa-curriculum-dis
 
 let currentUser = null; // Stores current logged-in user data
 
-// --- STATIC CURRICULUM DATA (الفكرة الأولى: منهج الحفظ والمراجعة) ---
+// =========================================================================
+// STATIC CURRICULUM DATA (المناهج التي أرسلتها أنت)
+// =========================================================================
 
-// منهج الحفظ الأصلي: من المرسلات إلى الأحقاف
-// كل عنصر هو مقطع حفظ واحد
 const HifzCurriculum = [
     // المرسلات
     { surah: 'المرسلات', start_ayah: 1, end_ayah: 15, points: 5, type: 'hifz', label: 'المرسلات (1-15)' },
@@ -286,8 +288,6 @@ const HifzCurriculum = [
     { surah: 'الأحقاف', start_ayah: 33, end_ayah: 35, points: 5, type: 'hifz', label: 'الأحقاف (33-35)' },
 ];
 
-// منهج المراجعة المتكامل: من الأحقاف إلى الناس (ترتيب تنازلي في المصحف)
-// كل عنصر هو وحدة مراجعة قد تكون سورة كاملة أو مجموعة مقسمة/مجمعة
 const MurajaaCurriculum = [
     // الأحقاف (مقسمة)
     { surah: 'الأحقاف', label: 'مراجعة الأحقاف (1-16)', points: 3, type: 'murajaa', hifz_start_index: 0, hifz_end_index: 4 }, // يمثل أول 5 مقاطع
@@ -376,7 +376,10 @@ const MurajaaCurriculum = [
     { surah: 'البلد إلى الناس', label: 'مراجعة البلد إلى الناس', points: 3, type: 'murajaa', hifz_start_index: -1, hifz_end_index: -1 },
 ];
 
-// --- Helper Functions ---
+// =========================================================================
+// Helper Functions
+// =========================================================================
+
 function showMessage(element, msg, type) {
     element.textContent = msg;
     element.className = `message ${type}`;
@@ -409,7 +412,492 @@ function generateUniqueId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 }
 
-// --- Authentication ---
+function getTaskDetails(type, index) {
+    let curriculum = type === 'hifz' ? HifzCurriculum : MurajaaCurriculum;
+    let details = curriculum[index - 1]; // Index is 0-based
+    if (details) {
+        return {
+            type: type,
+            description: details.label,
+            points: details.points,
+            index: index
+        };
+    }
+    return null;
+}
+
+// =========================================================================
+// New Feature: Populate Dropdowns (القوائم المنسدلة)
+// =========================================================================
+
+function populateCurriculumDropdowns() {
+    // 1. قائمة بداية الحفظ
+    // تتضمن خيار "لم يبدأ" (القيمة 0) ثم جميع مقاطع الحفظ
+    newStudentHifzStartSelect.innerHTML = '<option value="0">0 - لم يبدأ الحفظ بعد</option>';
+    HifzCurriculum.forEach((item, index) => {
+        const option = document.createElement('option');
+        // القيمة الفعلية هي (index + 1) لأن المنهج يبدأ من 1
+        option.value = index + 1;
+        // النص الظاهر للطالب/المعلم
+        option.textContent = `${index + 1} - ${item.label}`;
+        newStudentHifzStartSelect.appendChild(option);
+    });
+
+    // 2. قائمة بداية المراجعة
+    // تتضمن خيار "لم يبدأ" (القيمة 0) ثم جميع وحدات المراجعة
+    newStudentMurajaaStartSelect.innerHTML = '<option value="0">0 - لم يبدأ المراجعة بعد</option>';
+    MurajaaCurriculum.forEach((item, index) => {
+        const option = document.createElement('option');
+        // القيمة الفعلية هي (index + 1) لأن المنهج يبدأ من 1
+        option.value = index + 1;
+        // النص الظاهر للطالب/المعلم
+        option.textContent = `${index + 1} - ${item.label}`;
+        newStudentMurajaaStartSelect.appendChild(option);
+    });
+}
+
+// =========================================================================
+// Student Screen Functions
+// =========================================================================
+
+// ... (باقي الدوال الخاصة بشاشة الطالب)
+
+async function completeTask(studentId, taskIndex, taskType, taskPoints) {
+    try {
+        const studentRef = db.collection('students').doc(studentId);
+
+        await db.runTransaction(async (transaction) => {
+            const doc = await transaction.get(studentRef);
+            if (!doc.exists) {
+                throw "Student does not exist!";
+            }
+
+            const studentData = doc.data();
+            let newProgress = studentData[`current_${taskType}_progress`] || 0;
+            let newTotalPoints = studentData.total_points || 0;
+            let currentTasks = studentData.assigned_tasks || [];
+
+            // 1. تحقق من أن المهمة هي المهمة المتوقعة التالية في المنهج (حفظ أو مراجعة)
+            if (taskType === 'hifz' || taskType === 'murajaa') {
+                if (taskIndex !== newProgress + 1) {
+                    showMessage(document.getElementById('student-tasks'), 
+                        `هذه ليست مهمتك التالية في مسار ${taskType === 'hifz' ? 'الحفظ' : 'المراجعة'}. المهمة المتوقعة هي رقم ${newProgress + 1}.`, 
+                        'error');
+                    return; // يجب أن يتم معالجة هذا خارج الـ transaction أو بأسلوب آخر
+                }
+                // تحديث التقدم
+                newProgress = taskIndex; 
+            }
+            
+            // 2. إزالة المهمة من قائمة المهام المخصصة (سواء كانت من المنهج أو مهمة إضافية)
+            const taskIdentifier = `${taskType}-${taskIndex}`;
+            const taskIndexToRemove = currentTasks.findIndex(task => task.id === taskIdentifier);
+            
+            if (taskIndexToRemove > -1) {
+                currentTasks.splice(taskIndexToRemove, 1);
+            } else if (taskType !== 'hifz' && taskType !== 'murajaa') {
+                // إذا لم يتم العثور عليها، قد تكون مهمة فردية/جماعية عشوائية
+                 // هذا الجزء يحتاج إلى لوجيك معقد للبحث عن المهام الإضافية
+            }
+
+
+            // 3. تحديث البيانات
+            transaction.update(studentRef, {
+                assigned_tasks: currentTasks,
+                total_points: newTotalPoints + taskPoints,
+                [`current_${taskType}_progress`]: newProgress // تحديث التقدم فقط للحفظ والمراجعة
+            });
+        });
+
+        // إعادة تحميل الشاشة بعد النجاح
+        await loadStudentScreen(studentId);
+
+    } catch (error) {
+        console.error("Error completing task: ", error);
+        showMessage(document.getElementById('student-tasks'), `خطأ في إكمال المهمة: ${error.message || error}`, 'error');
+    }
+}
+
+function renderStudentTasks(studentData) {
+    studentTasksDiv.innerHTML = '';
+    const hifzProgress = studentData.current_hifz_progress || 0;
+    const murajaaProgress = studentData.current_murajaa_progress || 0;
+    
+    const studentId = studentData.code;
+
+    // 1. المهمة التلقائية للحفظ (المقطع التالي)
+    if (hifzProgress < HifzCurriculum.length) {
+        const nextHifzIndex = hifzProgress + 1;
+        const task = getTaskDetails('hifz', nextHifzIndex);
+        if (task) {
+            studentTasksDiv.innerHTML += `
+                <div class="task-item hifz">
+                    <div class="task-description">حفظ جديد: ${task.description}</div>
+                    <div class="task-points">النقاط: ${task.points}</div>
+                    <div class="task-actions">
+                        <button class="complete-btn" onclick="completeTask('${studentId}', ${nextHifzIndex}, 'hifz', ${task.points})">أكملت الحفظ</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // 2. المهمة التلقائية للمراجعة (الوحدة التالية)
+    if (murajaaProgress < MurajaaCurriculum.length) {
+        const nextMurajaaIndex = murajaaProgress + 1;
+        const task = getTaskDetails('murajaa', nextMurajaaIndex);
+        if (task) {
+            studentTasksDiv.innerHTML += `
+                <div class="task-item murajaa">
+                    <div class="task-description">مراجعة: ${task.description}</div>
+                    <div class="task-points">النقاط: ${task.points}</div>
+                    <div class="task-actions">
+                        <button class="complete-btn" onclick="completeTask('${studentId}', ${nextMurajaaIndex}, 'murajaa', ${task.points})">أكملت المراجعة</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    // 3. المهام المخصصة الأخرى (يتم عرضها إذا كانت موجودة في assigned_tasks)
+    const assignedTasks = studentData.assigned_tasks || [];
+    assignedTasks.forEach(task => {
+        // نستخدم index: 0 هنا لأنها مهمة مضافة وليست من المنهج التسلسلي
+        const taskTypeClass = task.type === 'bank' ? 'bank' : ''; 
+        studentTasksDiv.innerHTML += `
+            <div class="task-item ${taskTypeClass}">
+                <div class="task-description">مهمة إضافية: ${task.description}</div>
+                <div class="task-points">النقاط: ${task.points}</div>
+                <div class="task-actions">
+                    <button class="complete-btn" onclick="completeCustomTask('${studentId}', '${task.id}', ${task.points})">إكمال مهمة إضافية</button>
+                </div>
+            </div>
+        `;
+    });
+
+    if (studentTasksDiv.innerHTML === '') {
+        studentTasksDiv.innerHTML = '<p>لا توجد مهام حالية. رائع! يمكنك الانتظار أو مراجعة ما سبق.</p>';
+    }
+}
+
+async function completeCustomTask(studentId, taskId, taskPoints) {
+    try {
+        const studentRef = db.collection('students').doc(studentId);
+
+        await db.runTransaction(async (transaction) => {
+            const doc = await transaction.get(studentRef);
+            if (!doc.exists) {
+                throw "Student does not exist!";
+            }
+
+            const studentData = doc.data();
+            let currentTasks = studentData.assigned_tasks || [];
+            let newTotalPoints = studentData.total_points || 0;
+
+            // إزالة المهمة الإضافية باستخدام ID
+            const taskIndexToRemove = currentTasks.findIndex(task => task.id === taskId);
+            
+            if (taskIndexToRemove > -1) {
+                currentTasks.splice(taskIndexToRemove, 1);
+                
+                // تحديث البيانات
+                transaction.update(studentRef, {
+                    assigned_tasks: currentTasks,
+                    total_points: newTotalPoints + taskPoints,
+                });
+            } else {
+                showMessage(document.getElementById('student-tasks'), 'لم يتم العثور على هذه المهمة المخصصة.', 'error');
+                return;
+            }
+        });
+
+        // إعادة تحميل الشاشة بعد النجاح
+        await loadStudentScreen(studentId);
+        showMessage(document.getElementById('student-tasks'), 'تم إكمال المهمة الإضافية بنجاح! 🎉', 'success');
+
+
+    } catch (error) {
+        console.error("Error completing custom task: ", error);
+        showMessage(document.getElementById('student-tasks'), `خطأ في إكمال المهمة: ${error.message || error}`, 'error');
+    }
+}
+
+async function loadStudentScreen(code) {
+    try {
+        const doc = await db.collection('students').doc(code).get();
+        if (doc.exists) {
+            const data = doc.data();
+            currentUser = { id: code, name: data.name, role: 'student', data: data }; // تحديث بيانات المستخدم الحالي
+            hideAllScreens();
+            studentScreen.classList.remove('hidden');
+
+            const hifzProgress = data.current_hifz_progress || 0;
+            const murajaaProgress = data.current_murajaa_progress || 0;
+            
+            // عرض اسم الطالب
+            welcomeStudent.textContent = `مرحباً بك يا ${data.name}! (رمز: ${code})`;
+            
+            // عرض تقدم الحفظ
+            const hifzCurrentItem = getTaskDetails('hifz', hifzProgress);
+            const hifzDisplay = hifzProgress === 0 ? 'لم يبدأ بعد' : 
+                                hifzProgress === HifzCurriculum.length ? 'أكمل الحفظ' :
+                                `${hifzProgress} مقطع (آخر مقطع مكتمل: ${hifzCurrentItem ? hifzCurrentItem.description : 'غير محدد'})`;
+            studentHifzProgress.textContent = hifzDisplay;
+
+            // عرض تقدم المراجعة
+            const murajaaCurrentItem = getTaskDetails('murajaa', murajaaProgress);
+            const murajaaDisplay = murajaaProgress === 0 ? 'لم يبدأ بعد' : 
+                                murajaaProgress === MurajaaCurriculum.length ? 'أكمل المراجعة' :
+                                `${murajaaProgress} وحدة (آخر وحدة مكتملة: ${murajaaCurrentItem ? murajaaCurrentItem.description : 'غير محدد'})`;
+            studentMurajaaProgress.textContent = murajaaDisplay;
+
+            // عرض النقاط
+            studentTotalPoints.textContent = data.total_points || 0;
+
+            // عرض المهام المتاحة (التالية في المنهج + المهام المخصصة)
+            renderStudentTasks(data);
+
+        } else {
+            showMessage(authMessage, 'رمز غير صحيح أو غير مسجل كطالب.', 'error');
+        }
+    } catch (error) {
+        console.error("Error loading student screen:", error);
+        showMessage(authMessage, 'حدث خطأ أثناء الاتصال بالنظام.', 'error');
+    }
+}
+
+// =========================================================================
+// Teacher Screen Functions
+// =========================================================================
+
+// ... (دالة تبديل اللوحات)
+tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        const tab = button.getAttribute('data-tab') + '-tab';
+        setActiveTab(tab);
+    });
+});
+
+// ... (دالة عرض المناهج في لوحة المعلم)
+function displayCurriculumsInTeacherPanel() {
+    // عرض منهج الحفظ
+    hifzCurriculumDisplay.innerHTML = '';
+    HifzCurriculum.forEach((item, index) => {
+        hifzCurriculumDisplay.innerHTML += `
+            <div>
+                <strong>${index + 1}.</strong> ${item.label} (نقاط: ${item.points})
+            </div>
+        `;
+    });
+
+    // عرض منهج المراجعة
+    murajaaCurriculumDisplay.innerHTML = '';
+    MurajaaCurriculum.forEach((item, index) => {
+        murajaaCurriculumDisplay.innerHTML += `
+            <div>
+                <strong>${index + 1}.</strong> ${item.label} (نقاط: ${item.points})
+            </div>
+        `;
+    });
+}
+
+// ... (دالة تحميل الطلاب)
+async function loadStudentsForTeacher() {
+    studentList.innerHTML = '<li>جارٍ تحميل بيانات الطلاب...</li>';
+    try {
+        const snapshot = await db.collection('students').get();
+        studentList.innerHTML = ''; // Clear loading message
+
+        if (snapshot.empty) {
+            studentList.innerHTML = '<li>لا يوجد طلاب مسجلون بعد.</li>';
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const student = doc.data();
+            const hifz = student.current_hifz_progress || 0;
+            const murajaa = student.current_murajaa_progress || 0;
+            const points = student.total_points || 0;
+
+            studentList.innerHTML += `
+                <li>
+                    <span>
+                        <strong>${student.name}</strong> (${student.code})<br>
+                        الحفظ: ${hifz} | المراجعة: ${murajaa} | النقاط: ${points}
+                    </span>
+                    <span class="student-actions">
+                        <button onclick="deleteStudent('${student.code}', '${student.name}')" class="delete-btn">حذف</button>
+                    </span>
+                </li>
+            `;
+        });
+    } catch (error) {
+        console.error("Error loading students:", error);
+        studentList.innerHTML = '<li>خطأ في تحميل البيانات.</li>';
+    }
+}
+
+// ... (دالة حذف الطالب)
+async function deleteStudent(code, name) {
+    if (confirm(`هل أنت متأكد من حذف الطالب ${name} (${code})؟`)) {
+        try {
+            await db.collection('students').doc(code).delete();
+            showMessage(manageStudentsTab.querySelector('.message.hidden') || document.createElement('div'), 
+                        `تم حذف الطالب ${name} بنجاح.`, 'success');
+            loadStudentsForTeacher(); // Reload list
+        } catch (error) {
+            console.error("Error deleting student:", error);
+            showMessage(manageStudentsTab.querySelector('.message.hidden') || document.createElement('div'), 
+                        `فشل حذف الطالب: ${error.message}`, 'error');
+        }
+    }
+}
+
+
+// ... (دالة تسجيل الطالب)
+registerStudentButton.addEventListener('click', async () => {
+    const code = newStudentCodeInput.value.trim();
+    const name = newStudentNameInput.value.trim();
+    
+    // قراءة القيمة من القوائم المنسدلة الجديدة
+    const hifzStart = parseInt(newStudentHifzStartSelect.value); // يتم قراءة القيمة من الـ select
+    const murajaaStart = parseInt(newStudentMurajaaStartSelect.value); // يتم قراءة القيمة من الـ select
+
+    if (!code || !name) {
+        showMessage(registerStudentMessage, 'يرجى ملء جميع الحقول (الرمز والاسم).', 'error');
+        return;
+    }
+
+    if (hifzStart < 0 || hifzStart > HifzCurriculum.length || murajaaStart < 0 || murajaaStart > MurajaaCurriculum.length) {
+        showMessage(registerStudentMessage, 'قيمة بداية الحفظ أو المراجعة خارج النطاق المسموح به.', 'error');
+        return;
+    }
+
+    try {
+        const docRef = db.collection('students').doc(code);
+        const doc = await docRef.get();
+
+        if (doc.exists) {
+            showMessage(registerStudentMessage, `الرمز '${code}' مستخدم بالفعل.`, 'error');
+            return;
+        }
+
+        await docRef.set({
+            code: code,
+            name: name,
+            role: 'student', // مهم لتحديد نوع المستخدم
+            current_hifz_progress: hifzStart, // يتم تخزين رقم المقطع المكتمل
+            current_murajaa_progress: murajaaStart, // يتم تخزين رقم وحدة المراجعة المكتملة
+            total_points: 0,
+            assigned_tasks: []
+        });
+
+        showMessage(registerStudentMessage, `تم تسجيل الطالب "${name}" بنجاح!`, 'success');
+        
+        // مسح الحقول وإعادة تحميل قائمة الطلاب
+        newStudentCodeInput.value = '';
+        newStudentNameInput.value = '';
+        newStudentHifzStartSelect.value = '0'; // تعيين القيمة الافتراضية
+        newStudentMurajaaStartSelect.value = '0'; // تعيين القيمة الافتراضية
+        loadStudentsForTeacher();
+
+    } catch (error) {
+        console.error("Error registering student:", error);
+        showMessage(registerStudentMessage, `خطأ في التسجيل: ${error.message}`, 'error');
+    }
+});
+
+// ... (دالة تعيين المهام الفردية)
+assignIndividualTaskButton.addEventListener('click', async () => {
+    const studentCode = assignTaskStudentCode.value.trim();
+    const type = assignTaskType.value;
+    const description = assignTaskDescription.value.trim();
+    const points = parseInt(assignTaskPoints.value);
+
+    if (!studentCode || !description || isNaN(points) || points <= 0) {
+        showMessage(assignTaskMessage, 'يرجى إدخال رمز الطالب، وصف المهمة، ونقاط صحيحة.', 'error');
+        return;
+    }
+
+    try {
+        const studentRef = db.collection('students').doc(studentCode);
+        const doc = await studentRef.get();
+
+        if (!doc.exists) {
+            showMessage(assignTaskMessage, `الرمز '${studentCode}' غير مسجل كطالب.`, 'error');
+            return;
+        }
+
+        const newCustomTask = {
+            id: generateUniqueId(),
+            type: type,
+            description: description,
+            points: points,
+            assigned_at: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        await studentRef.update({
+            assigned_tasks: firebase.firestore.FieldValue.arrayUnion(newCustomTask)
+        });
+
+        showMessage(assignTaskMessage, `تم تعيين المهمة للطالب ${doc.data().name} بنجاح!`, 'success');
+        assignTaskStudentCode.value = '';
+        assignTaskDescription.value = '';
+        assignTaskPoints.value = '5';
+
+    } catch (error) {
+        console.error("Error assigning individual task:", error);
+        showMessage(assignTaskMessage, `خطأ في تعيين المهمة: ${error.message}`, 'error');
+    }
+});
+
+
+// ... (دالة تعيين المهام الجماعية)
+assignGroupTaskButton.addEventListener('click', async () => {
+    const type = assignTaskType.value;
+    const description = assignTaskDescription.value.trim();
+    const points = parseInt(assignTaskPoints.value);
+
+    if (!description || isNaN(points) || points <= 0) {
+        showMessage(assignTaskMessage, 'يرجى إدخال وصف المهمة والنقاط الصحيحة للمهمة الجماعية.', 'error');
+        return;
+    }
+
+    try {
+        const newCustomTask = {
+            id: generateUniqueId(),
+            type: type,
+            description: description,
+            points: points,
+            assigned_at: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        const batch = db.batch();
+        const studentsSnapshot = await db.collection('students').get();
+
+        studentsSnapshot.forEach(doc => {
+            const studentRef = db.collection('students').doc(doc.id);
+            batch.update(studentRef, {
+                assigned_tasks: firebase.firestore.FieldValue.arrayUnion(newCustomTask)
+            });
+        });
+
+        await batch.commit();
+        showMessage(assignTaskMessage, `تم تعيين المهمة الجماعية بنجاح لـ ${studentsSnapshot.size} طلاب!`, 'success');
+        assignTaskDescription.value = '';
+        assignTaskPoints.value = '5';
+
+    } catch (error) {
+        console.error("Error assigning group task:", error);
+        showMessage(assignTaskMessage, `خطأ في تعيين المهمة الجماعية: ${error.message}`, 'error');
+    }
+});
+
+
+// =========================================================================
+// Authentication (تابع دالة الدخول)
+// =========================================================================
+
 loginButton.addEventListener('click', async () => {
     const userCode = userCodeInput.value.trim();
     if (!userCode) {
@@ -423,524 +911,40 @@ loginButton.addEventListener('click', async () => {
         currentUser = { id: 'teacher', name: 'المعلم', role: 'teacher' };
         loadStudentsForTeacher();
         displayCurriculumsInTeacherPanel();
+        populateCurriculumDropdowns(); // 💡 ملء القوائم المنسدلة عند دخول المعلم
         setActiveTab('manage-students-tab'); // Default tab for teacher
     } else {
         try {
-            const studentDoc = await db.collection('students').doc(userCode).get();
-            if (studentDoc.exists) {
-                const studentData = studentDoc.data();
-                hideAllScreens();
-                studentScreen.classList.remove('hidden');
-                welcomeStudent.textContent = `أهلاً بك يا ${studentData.name}!`;
-                currentUser = { id: userCode, name: studentData.name, role: 'student', ...studentData };
-                
-                // Set up real-time listener for student's data and tasks
-                db.collection('students').doc(userCode).onSnapshot(docSnapshot => {
-                    if (docSnapshot.exists) {
-                        const updatedStudentData = docSnapshot.data();
-                        currentUser = { ...currentUser, ...updatedStudentData }; // Update current user data
-                        displayStudentProgress(updatedStudentData);
-                        displayStudentTasks(updatedStudentData);
-                    } else {
-                        // Student doc might have been deleted
-                        logoutUser();
-                    }
-                });
-            } else {
-                showMessage(authMessage, 'رمز الطالب غير صحيح.', 'error');
-            }
+            await loadStudentScreen(userCode);
         } catch (error) {
-            console.error('Error logging in as student:', error);
-            showMessage(authMessage, 'حدث خطأ أثناء تسجيل الدخول.', 'error');
+            // Error handled inside loadStudentScreen
         }
     }
 });
 
-logoutButtonStudent.addEventListener('click', logoutUser);
-logoutButtonTeacher.addEventListener('click', logoutUser);
+// =========================================================================
+// Logout Event Listeners
+// =========================================================================
 
-function logoutUser() {
+function logout() {
     currentUser = null;
+    hideAllScreens();
+    authScreen.classList.remove('hidden');
     userCodeInput.value = '';
-    hideAllScreens();
-    authScreen.classList.remove('hidden');
-    authMessage.classList.add('hidden'); // Hide any previous messages
+    showMessage(authMessage, 'تم تسجيل الخروج بنجاح.', 'success');
 }
 
-// --- Teacher Functions ---
-tabButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        setActiveTab(button.dataset.tab + '-tab');
-        // Specific reloads if needed
-        if (button.dataset.tab === 'manage-students') {
-            loadStudentsForTeacher();
-        } else if (button.dataset.tab === 'manage-curriculum') {
-            displayCurriculumsInTeacherPanel();
-        }
-    });
-});
+logoutButtonStudent.addEventListener('click', logout);
+logoutButtonTeacher.addEventListener('click', logout);
 
-async function loadStudentsForTeacher() {
-    studentList.innerHTML = '';
-    const snapshot = await db.collection('students').get();
-    if (snapshot.empty) {
-        studentList.innerHTML = '<p>لا يوجد طلاب مسجلون بعد.</p>';
-        return;
-    }
-    snapshot.forEach(doc => {
-        const student = doc.data();
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <div>
-                <strong>${student.name}</strong> (${student.id})<br>
-                <span>النقاط: ${student.totalPoints || 0}</span><br>
-                <span>الحفظ: المقطع ${student.hifz_progress || 0} من ${HifzCurriculum.length}</span><br>
-                <span>المراجعة: الوحدة ${student.murajaa_progress || 0} من ${MurajaaCurriculum.length}</span>
-            </div>
-            <div class="student-actions">
-                <button class="edit-btn" data-id="${student.id}">تعديل</button>
-                <button class="delete-btn" data-id="${student.id}">حذف</button>
-            </div>
-        `;
-        studentList.appendChild(li);
-    });
+// =========================================================================
+// INITIALIZATION
+// =========================================================================
 
-    // Add event listeners for edit and delete buttons
-    studentList.querySelectorAll('.edit-btn').forEach(button => {
-        button.addEventListener('click', (e) => editStudent(e.target.dataset.id));
-    });
-    studentList.querySelectorAll('.delete-btn').forEach(button => {
-        button.addEventListener('click', (e) => deleteStudent(e.target.dataset.id));
-    });
-}
+// يتم استدعاء دالة ملء القوائم المنسدلة عند تحميل الصفحة (إذا كان المعلم هو من سيبدأ)
+// ولكن الأفضل استدعاؤها بعد تسجيل الدخول لتجنب الأخطاء إذا كانت العناصر غير موجودة في الـ DOM قبل تسجيل الدخول
+// تم نقلها إلى دالة loginButton للمعلم.
 
-async function editStudent(studentId) {
-    // For simplicity, we'll prompt for new hifz/murajaa start.
-    // In a real app, this would be a dedicated form.
-    const studentDoc = await db.collection('students').doc(studentId).get();
-    if (!studentDoc.exists) {
-        alert('الطالب غير موجود.');
-        return;
-    }
-    const studentData = studentDoc.data();
-    const newHifzStart = prompt(`أدخل نقطة بداية الحفظ الجديدة للطالب ${studentData.name} (المقطع الحالي: ${studentData.hifz_progress || 0}):`);
-    const newMurajaaStart = prompt(`أدخل نقطة بداية المراجعة الجديدة للطالب ${studentData.name} (الوحدة الحالية: ${studentData.murajaa_progress || 0}):`);
-
-    if (newHifzStart !== null && newMurajaaStart !== null) {
-        const hifzVal = parseInt(newHifzStart);
-        const murajaaVal = parseInt(newMurajaaStart);
-
-        if (isNaN(hifzVal) || hifzVal < 0 || hifzVal > HifzCurriculum.length ||
-            isNaN(murajaaVal) || murajaaVal < 0 || murajaaVal > MurajaaCurriculum.length) {
-            alert('قيم غير صالحة. الرجاء إدخال أرقام صحيحة ضمن النطاق المسموح به.');
-            return;
-        }
-
-        try {
-            await db.collection('students').doc(studentId).update({
-                hifz_progress: hifzVal,
-                murajaa_progress: murajaaVal
-            });
-            alert('تم تحديث تقدم الطالب بنجاح.');
-            loadStudentsForTeacher(); // Refresh list
-        } catch (error) {
-            console.error('Error updating student progress:', error);
-            alert('حدث خطأ أثناء تحديث تقدم الطالب.');
-        }
-    }
-}
-
-
-async function deleteStudent(studentId) {
-    if (confirm(`هل أنت متأكد من حذف الطالب ${studentId}؟`)) {
-        try {
-            await db.collection('students').doc(studentId).delete();
-            showMessage(registerStudentMessage, 'تم حذف الطالب بنجاح.', 'success');
-            loadStudentsForTeacher(); // Refresh list
-        } catch (error) {
-            console.error('Error deleting student:', error);
-            showMessage(registerStudentMessage, 'حدث خطأ أثناء حذف الطالب.', 'error');
-        }
-    }
-}
-
-registerStudentButton.addEventListener('click', async () => {
-    const studentId = newStudentCodeInput.value.trim();
-    const studentName = newStudentNameInput.value.trim();
-    const hifzStart = parseInt(newStudentHifzStart.value);
-    const murajaaStart = parseInt(newStudentMurajaaStart.value);
-
-    if (!studentId || !studentName) {
-        showMessage(registerStudentMessage, 'الرجاء إدخال رمز واسم الطالب.', 'error');
-        return;
-    }
-    if (isNaN(hifzStart) || hifzStart < 0 || hifzStart > HifzCurriculum.length) {
-        showMessage(registerStudentMessage, `نقطة بداية الحفظ غير صحيحة. يجب أن تكون بين 0 و ${HifzCurriculum.length}.`, 'error');
-        return;
-    }
-    if (isNaN(murajaaStart) || murajaaStart < 0 || murajaaStart > MurajaaCurriculum.length) {
-        showMessage(registerStudentMessage, `نقطة بداية المراجعة غير صحيحة. يجب أن تكون بين 0 و ${MurajaaCurriculum.length}.`, 'error');
-        return;
-    }
-
-    try {
-        const studentRef = db.collection('students').doc(studentId);
-        const doc = await studentRef.get();
-        if (doc.exists) {
-            showMessage(registerStudentMessage, 'هذا الرمز مستخدم بالفعل. الرجاء اختيار رمز آخر.', 'error');
-            return;
-        }
-
-        await studentRef.set({
-            id: studentId,
-            name: studentName,
-            role: 'student',
-            totalPoints: 0,
-            hifz_progress: hifzStart, // Progress is the index of the LAST COMPLETED hifz task
-            murajaa_progress: murajaaStart, // Progress is the index of the LAST COMPLETED murajaa task
-            tasks: [] // Array for custom/assigned tasks
-        });
-        showMessage(registerStudentMessage, 'تم تسجيل الطالب بنجاح!', 'success');
-        newStudentCodeInput.value = '';
-        newStudentNameInput.value = '';
-        newStudentHifzStart.value = 1; // Reset to default
-        newStudentMurajaaStart.value = 1; // Reset to default
-    } catch (error) {
-        console.error('Error registering student:', error);
-        showMessage(registerStudentMessage, 'حدث خطأ أثناء تسجيل الطالب.', 'error');
-    }
-});
-
-function displayCurriculumsInTeacherPanel() {
-    hifzCurriculumDisplay.innerHTML = '';
-    MurajaaCurriculum.forEach((task, index) => {
-        const div = document.createElement('div');
-        div.innerHTML = `<span>${index + 1}. ${task.label} (مراجعة - ${task.points} نقاط)</span>`;
-        murajaaCurriculumDisplay.appendChild(div);
-    });
-
-    // Display Hifz curriculum in reverse order as per new progression (but still show from المرسلات to الأحقاف)
-    // The visual display can be in logical order for clarity, even if internal progression is reverse.
-    // For now, let's just display all hifz tasks in their defined array order.
-    hifzCurriculumDisplay.innerHTML = '';
-    HifzCurriculum.forEach((task, index) => {
-        const div = document.createElement('div');
-        div.innerHTML = `<span>${index + 1}. ${task.label} (حفظ - ${task.points} نقاط)</span>`;
-        hifzCurriculumDisplay.appendChild(div);
-    });
-}
-
-
-assignIndividualTaskButton.addEventListener('click', async () => {
-    await assignTask(false); // Assign to individual student
-});
-
-assignGroupTaskButton.addEventListener('click', async () => {
-    await assignTask(true); // Assign to all students (group)
-});
-
-async function assignTask(isGroupTask) {
-    const studentId = assignTaskStudentCode.value.trim();
-    const taskType = assignTaskType.value;
-    const taskDescription = assignTaskDescription.value.trim();
-    const taskPoints = parseInt(assignTaskPoints.value);
-
-    if (!isGroupTask && !studentId) {
-        showMessage(assignTaskMessage, 'الرجاء إدخال رمز الطالب للمهمة الفردية.', 'error');
-        return;
-    }
-    if (!taskDescription || isNaN(taskPoints) || taskPoints <= 0) {
-        showMessage(assignTaskMessage, 'الرجاء إدخال وصف وعدد نقاط صحيح للمهمة.', 'error');
-        return;
-    }
-
-    const task = {
-        id: generateUniqueId(),
-        description: taskDescription,
-        type: taskType,
-        points: taskPoints,
-        assignedDate: firebase.firestore.FieldValue.serverTimestamp(),
-        completed: false
-    };
-
-    try {
-        if (isGroupTask) {
-            const studentsSnapshot = await db.collection('students').get();
-            const batch = db.batch();
-            studentsSnapshot.forEach(doc => {
-                const studentRef = db.collection('students').doc(doc.id);
-                // Atomically add task to the tasks array
-                batch.update(studentRef, {
-                    tasks: firebase.firestore.FieldValue.arrayUnion(task)
-                });
-            });
-            await batch.commit();
-            showMessage(assignTaskMessage, 'تم تعيين المهمة جماعيًا بنجاح!', 'success');
-        } else {
-            const studentRef = db.collection('students').doc(studentId);
-            const studentDoc = await studentRef.get();
-            if (!studentDoc.exists) {
-                showMessage(assignTaskMessage, 'رمز الطالب غير صحيح.', 'error');
-                return;
-            }
-            await studentRef.update({
-                tasks: firebase.firestore.FieldValue.arrayUnion(task)
-            });
-            showMessage(assignTaskMessage, 'تم تعيين المهمة فرديًا بنجاح!', 'success');
-        }
-
-        assignTaskStudentCode.value = '';
-        assignTaskDescription.value = '';
-        assignTaskPoints.value = '5'; // Reset points
-    } catch (error) {
-        console.error('Error assigning task:', error);
-        showMessage(assignTaskMessage, 'حدث خطأ أثناء تعيين المهمة.', 'error');
-    }
-}
-
-
-// --- Student Functions ---
-function displayStudentProgress(studentData) {
-    const hifzLabel = HifzCurriculum[studentData.hifz_progress - 1] ? HifzCurriculum[studentData.hifz_progress - 1].label : 'لم تبدأ بعد';
-    const murajaaLabel = MurajaaCurriculum[studentData.murajaa_progress - 1] ? MurajaaCurriculum[studentData.murajaa_progress - 1].label : 'لم تبدأ بعد';
-
-    studentHifzProgress.textContent = hifzLabel;
-    studentMurajaaProgress.textContent = murajaaLabel;
-    studentTotalPoints.textContent = studentData.totalPoints || 0;
-}
-
-
-async function displayStudentTasks(studentData) {
-    studentTasksDiv.innerHTML = '';
-    const hifzProgressIndex = studentData.hifz_progress || 0; // Index of the LAST completed hifz task
-    const murajaaProgressIndex = studentData.murajaa_progress || 0; // Index of the LAST completed murajaa task
-
-    const tasksToDisplay = [];
-
-    // --- (الفكرة الثالثة: مهام الحفظ) ---
-    // الحفظ يبدأ من المرسلات (index 0) ويتجه للأحقاف (index 194)
-    // مهمتا حفظ تظهر للطالب، يجب إنجاز الأولى قبل الثانية
-
-    // المهمة الأولى للحفظ (يجب أن تكون المقطع التالي للحفظ)
-    if (hifzProgressIndex < HifzCurriculum.length) {
-        const nextHifzTask = HifzCurriculum[hifzProgressIndex]; // The next task to complete
-        if (nextHifzTask) {
-             tasksToDisplay.push({
-                type: 'hifz',
-                id: `hifz-${hifzProgressIndex + 1}`, // Unique ID for this specific curriculum task instance
-                description: `حفظ: ${nextHifzTask.label}`,
-                points: nextHifzTask.points,
-                index: hifzProgressIndex + 1, // Store its index for completion logic
-                isNextSequential: true // Indicates it's the very next required Hifz task
-            });
-        }
-    }
-
-    // المهمة الثانية للحفظ (إذا كانت متاحة)
-    if ((hifzProgressIndex + 1) < HifzCurriculum.length) {
-        const nextHifzTask2 = HifzCurriculum[hifzProgressIndex + 1];
-        if (nextHifzTask2) {
-             tasksToDisplay.push({
-                type: 'hifz',
-                id: `hifz-${hifzProgressIndex + 2}`,
-                description: `حفظ: ${nextHifzTask2.label}`,
-                points: nextHifzTask2.points,
-                index: hifzProgressIndex + 2,
-                isNextSequential: false // Not the immediate next, depends on the first one
-            });
-        }
-    }
-
-
-    // --- (الفكرة الثالثة: مهام المراجعة) ---
-    // المراجعة تبدأ من الأحقاف (index 0) وتتجه للناس (index 45) بشكل تنازلي في المصحف
-    // المهمتان الأنسب للمراجعة تظهر للطالب، بلا تسلسل إجباري بينهما
-
-    // IMPORTANT: The logic for selecting "most appropriate" murajaa tasks is complex
-    // and depends on factors like last reviewed date, review frequency, etc.
-    // For simplicity in this base code, we'll offer the next two *available* murajaa tasks
-    // in the defined MurajaaCurriculum order (which is already reversed by surah order for us).
-
-    // Important: murajaa_progress is the INDEX of the LAST COMPLETED murajaa task in the MurajaaCurriculum array
-    // To get the NEXT tasks, we look *forward* from this index.
-    // However, since murajaa should be *flexible*, we need a different approach.
-    // Let's offer the two tasks that have NOT been completed yet.
-    // This is a placeholder for a more sophisticated "smart" murajaa selection.
-
-    const completedMurajaaTasks = studentData.completedMurajaaIndices || []; // array of indices of completed murajaa units
-
-    // Find the first two *uncompleted* murajaa tasks
-    let murajaaCount = 0;
-    for (let i = 0; i < MurajaaCurriculum.length && murajaaCount < 2; i++) {
-        // Only offer tasks that haven't been completed yet by the student
-        // And tasks that are "behind" the current hifz progress (optional, but good for context)
-        // For simplicity for now, offer any uncompleted task starting from the murajaa_progress
-        if (!completedMurajaaTasks.includes(i) && i >= murajaaProgressIndex) {
-            const murajaaTask = MurajaaCurriculum[i];
-            tasksToDisplay.push({
-                type: 'murajaa',
-                id: `murajaa-${i + 1}`,
-                description: murajaaTask.label,
-                points: murajaaTask.points,
-                index: i + 1, // Store its index for completion logic
-                isNextSequential: false // Murajaa is not strictly sequential, but we offer next available
-            });
-            murajaaCount++;
-        }
-    }
-    
-    // --- (المهام الإضافية المعينة يدوياً) ---
-    studentData.tasks.filter(task => !task.completed).forEach(task => {
-        tasksToDisplay.push({
-            type: task.type,
-            id: task.id,
-            description: task.description,
-            points: task.points,
-            isAssigned: true // Flag to distinguish from curriculum tasks
-        });
-    });
-
-    if (tasksToDisplay.length === 0) {
-        studentTasksDiv.innerHTML = '<p>لا توجد مهام متاحة حاليًا. يرجى التواصل مع المعلم.</p>';
-        return;
-    }
-
-    tasksToDisplay.forEach(task => {
-        const taskElement = document.createElement('div');
-        taskElement.classList.add('task-item', task.type);
-        let completeButton = `<button class="complete-btn" data-id="${task.id}" data-type="${task.type}" data-index="${task.index || ''}">إنجاز</button>`;
-        
-        // Disable Hifz tasks that are not the immediate next sequential one
-        // (This applies to the second Hifz task shown if the first one is not completed)
-        if (task.type === 'hifz' && !task.isNextSequential) {
-            completeButton = `<button class="complete-btn" data-id="${task.id}" data-type="${task.type}" data-index="${task.index || ''}" disabled>إنجاز (أكمل المهمة السابقة)</button>`;
-        }
-        // If the *first* Hifz task is NOT `isNextSequential`, this means hifz_progress is at the end.
-        // But if hifz_progress == 0, the first task should be `isNextSequential`.
-        // We need to disable the second hifz task until the first is done.
-        if (task.type === 'hifz' && tasksToDisplay[0].type === 'hifz' && tasksToDisplay[0].id !== task.id && !tasksToDisplay[0].completed) {
-            // This is a simplification: assuming tasksToDisplay[0] is always the *first* hifz task
-            // More robust check needed if task order changes
-            if (!tasksToDisplay[0].isNextSequential) { // If the actual first one is NOT the next sequential (meaning student is past it)
-                 // This condition likely needs refinement for edge cases, but for simple 2 Hifz tasks it should work.
-            } else if (tasksToDisplay[0].isNextSequential && task.id === `hifz-${hifzProgressIndex + 2}`) {
-                 // If this is the second hifz task and the first one is still pending: disable it.
-                 completeButton = `<button class="complete-btn" data-id="${task.id}" data-type="${task.type}" data-index="${task.index || ''}" disabled>إنجاز (أكمل المقطع السابق أولاً)</button>`;
-            }
-        }
-
-
-        taskElement.innerHTML = `
-            <div class="task-description">${task.description}</div>
-            <div class="task-status">النوع: ${task.type === 'hifz' ? 'حفظ' : task.type === 'murajaa' ? 'مراجعة' : 'مهمة إضافية'}</div>
-            <div class="task-points">النقاط: ${task.points}</div>
-            <div class="task-actions">
-                ${completeButton}
-            </div>
-        `;
-        studentTasksDiv.appendChild(taskElement);
-    });
-
-    // Add event listeners for complete buttons
-    studentTasksDiv.querySelectorAll('.complete-btn').forEach(button => {
-        button.addEventListener('click', async (e) => {
-            const taskId = e.target.dataset.id;
-            const taskType = e.target.dataset.type;
-            const taskIndex = parseInt(e.target.dataset.index); // For curriculum tasks
-            
-            // Disable the button immediately to prevent double clicks
-            e.target.disabled = true;
-            e.target.textContent = 'جاري الإنجاز...';
-
-            await completeTask(studentData.id, taskId, taskType, taskIndex);
-        });
-    });
-}
-
-async function completeTask(studentId, taskId, taskType, taskIndex = -1) {
-    const studentRef = db.collection('students').doc(studentId);
-    let studentData = (await studentRef.get()).data();
-    let updatedPoints = studentData.totalPoints || 0;
-    
-    try {
-        if (taskType === 'hifz') {
-            const hifzProgress = studentData.hifz_progress || 0;
-            // Ensure the student is completing the correct sequential task
-            if (taskIndex !== (hifzProgress + 1)) {
-                alert('خطأ: يجب إنجاز مهام الحفظ بالتسلسل الصحيح.');
-                 // Re-enable button (if it was from the UI) and exit
-                 displayStudentTasks(studentData); // Refresh UI to re-enable/show correct state
-                return;
-            }
-
-            const hifzTask = HifzCurriculum[taskIndex - 1]; // Get task details from static curriculum
-            updatedPoints += hifzTask.points;
-
-            await studentRef.update({
-                hifz_progress: taskIndex, // Update progress to the completed index
-                totalPoints: updatedPoints,
-                // Add an entry to a history of completed tasks if needed, for now just progress update
-            });
-             alert(`أحسنت! تم إنجاز مهمة الحفظ: ${hifzTask.label}.`);
-
-        } else if (taskType === 'murajaa') {
-            const murajaaTask = MurajaaCurriculum[taskIndex - 1]; // Get task details from static curriculum
-
-            // Add murajaa task to a list of completed murajaa indices for the student
-            // This allows tracking which specific murajaa units have been completed
-            const completedMurajaaIndices = studentData.completedMurajaaIndices || [];
-            if (!completedMurajaaIndices.includes(taskIndex - 1)) { // Only add if not already completed
-                completedMurajaaIndices.push(taskIndex - 1);
-                updatedPoints += murajaaTask.points;
-
-                await studentRef.update({
-                    // No single murajaa_progress index, but a list of completed units
-                    completedMurajaaIndices: completedMurajaaIndices,
-                    totalPoints: updatedPoints,
-                    // Optionally update murajaa_progress to the highest index completed for display purposes if desired
-                    murajaa_progress: Math.max(...completedMurajaaIndices) + 1 || 0 // For display purposes, points to the "last" completed
-                });
-                alert(`ممتاز! تم إنجاز مهمة المراجعة: ${murajaaTask.label}.`);
-            } else {
-                alert('لقد قمت بإنجاز هذه المهمة بالفعل.');
-            }
-        } else { // Custom/Assigned tasks
-            const task = studentData.tasks.find(t => t.id === taskId);
-            if (task && !task.completed) {
-                updatedPoints += task.points;
-                // Update the specific task in the array
-                const updatedTasks = studentData.tasks.map(t => 
-                    t.id === taskId ? { ...t, completed: true, completedDate: firebase.firestore.FieldValue.serverTimestamp() } : t
-                );
-                await studentRef.update({
-                    tasks: updatedTasks,
-                    totalPoints: updatedPoints
-                });
-                alert(`رائع! تم إنجاز المهمة الإضافية: ${task.description}.`);
-            }
-        }
-        // No need to call displayStudentTasks directly here because the onSnapshot listener will handle it
-    } catch (error) {
-        console.error('Error completing task:', error);
-        alert('حدث خطأ أثناء إنجاز المهمة.');
-        // If an error occurs, re-enable the button
-        e.target.disabled = false;
-        e.target.textContent = 'إنجاز';
-    }
-}
-
-
-// --- Initial Load ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Optionally auto-login teacher for testing
-    // userCodeInput.value = 'teacher';
-    // loginButton.click();
-
-    // Or keep auth screen visible
-    hideAllScreens();
-    authScreen.classList.remove('hidden');
-});
-
-// Display curriculums on teacher screen load for the first time
-displayCurriculumsInTeacherPanel();
-
+// عرض شاشة الدخول أولاً
+hideAllScreens();
+authScreen.classList.remove('hidden');
