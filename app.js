@@ -1,26 +1,7 @@
-// استيراد الدوال التي تحتاجها من Firebase SDKs (v9+ Modular API)
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics"; // إذا كنت تستخدم Google Analytics
-import { 
-    getFirestore, 
-    collection, 
-    doc, 
-    getDoc, 
-    getDocs, // تم إضافة getDocs لـ queries
-    updateDoc, 
-    setDoc, 
-    deleteDoc, 
-    query, 
-    where, 
-    orderBy, 
-    limit, 
-    addDoc, 
-    serverTimestamp, 
-    arrayUnion,
-    runTransaction,
-    onSnapshot
-} from "firebase/firestore";
-
+// لم نعد بحاجة إلى عبارات الـ import هنا لأننا سنستخدم Firebase من الكائنات العامة
+// التي تم تحميلها عبر CDN في index.html.
+// يجب أن يكون الكود داخل app.js قادرًا على الوصول إلى firebase.initializeApp,
+// firebase.firestore, وما إلى ذلك.
 
 // تهيئة Firebase لمشروعك (هذه هي البيانات التي أرسلتها أنت)
 const firebaseConfig = {
@@ -34,16 +15,21 @@ const firebaseConfig = {
 };
 
 // تهيئة تطبيق Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app); // إذا كنت تستخدم Analytics
+// استخدام firebase.initializeApp المتاح عالميًا بعد تحميل "firebase-app-compat.js"
+const app = firebase.initializeApp(firebaseConfig);
+// استخدام firebase.analytics المتاح عالميًا بعد تحميل "firebase-analytics-compat.js"
+const analytics = firebase.analytics(); // إذا كنت تستخدم Analytics
 
 // تهيئة Firestore
-const db = getFirestore(app);
+// استخدام firebase.firestore المتاح عالميًا بعد تحميل "firebase-firestore-compat.js"
+const db = firebase.firestore(app);
 
-// مراجع لمجموعات البيانات باستخدام دالة collection()
-const studentsCollection = collection(db, 'students');
-const tasksBankCollection = collection(db, 'tasksBank');
-const curriculumCollection = collection(db, 'curriculum');
+// مراجع لمجموعات البيانات
+// لا نستخدم collection, doc, getDoc, updateDoc, setDoc, deleteDoc, query, where, orderBy, limit, addDoc, serverTimestamp, arrayUnion, runTransaction, onSnapshot
+// مباشرة من الاستيرادات، بل من كائن db الذي تم تهيئته.
+const studentsCollection = db.collection('students');
+const tasksBankCollection = db.collection('tasksBank');
+const curriculumCollection = db.collection('curriculum');
 
 let currentStudentId = null;
 let currentStudentData = null;
@@ -65,10 +51,10 @@ async function login(id) {
         window.showTeacherScreen(); // استدعاء دالة العرض من index.html
         await loadTeacherDashboard();
     } else {
-        const studentDocRef = doc(studentsCollection, id);
-        const studentDoc = await getDoc(studentDocRef);
+        const studentDocRef = studentsCollection.doc(id); // استخدام db.collection(...).doc(...)
+        const studentDoc = await studentDocRef.get(); // استخدام .get()
         
-        if (studentDoc.exists()) {
+        if (studentDoc.exists) { // استخدام .exists
             currentStudentId = id;
             currentStudentData = studentDoc.data();
             console.log("Logged in as student:", currentStudentData);
@@ -98,9 +84,9 @@ function setupStudentRealtimeListener(studentId) {
         studentDataListener(); 
     }
 
-    const studentDocRef = doc(studentsCollection, studentId);
-    studentDataListener = onSnapshot(studentDocRef, async (doc) => {
-        if (doc.exists()) {
+    const studentDocRef = studentsCollection.doc(studentId); // استخدام db.collection(...).doc(...)
+    studentDataListener = studentDocRef.onSnapshot(async (doc) => { // استخدام .onSnapshot
+        if (doc.exists) {
             currentStudentData = doc.data();
             console.log("Student data updated:", currentStudentData);
             await updateStudentDashboard();
@@ -135,11 +121,11 @@ async function renderCurriculumProgress() {
     const hifzProgress = currentStudentData.hifz_progress || 0;
     const murajaaProgress = currentStudentData.murajaa_progress || 0;
 
-    const hifzCurriculumQuery = query(curriculumCollection, where('type', '==', 'Hifz'), orderBy('id'));
-    const murajaaCurriculumQuery = query(curriculumCollection, where('type', '==', 'Murajaa'), orderBy('id'));
+    const hifzCurriculumQuery = curriculumCollection.where('type', '==', 'Hifz').orderBy('id'); // استخدام .where و .orderBy
+    const murajaaCurriculumQuery = curriculumCollection.where('type', '==', 'Murajaa').orderBy('id'); // استخدام .where و .orderBy
 
-    const hifzCurriculumSnapshot = await getDocs(hifzCurriculumQuery);
-    const murajaaCurriculumSnapshot = await getDocs(murajaaCurriculumQuery);
+    const hifzCurriculumSnapshot = await hifzCurriculumQuery.get(); // استخدام .get()
+    const murajaaCurriculumSnapshot = await murajaaCurriculumQuery.get(); // استخدام .get()
 
     const hifzCurriculum = hifzCurriculumSnapshot.docs.map(d => d.data());
     const murajaaCurriculum = murajaaCurriculumSnapshot.docs.map(d => d.data());
@@ -183,10 +169,6 @@ function renderTasks(studentData, taskList) {
     noTasksMessage.classList.add('d-none');
     document.getElementById('tasks-accordion').classList.remove('d-none');
 
-    let hifzCount = 0;
-    let murajaaCount = 0;
-    let otherCount = 0;
-
     taskList.forEach((task) => {
         let cardClass = 'manual-card';
         let iconHtml = '<i class="fas fa fa-star text-warning me-2"></i>';
@@ -200,12 +182,10 @@ function renderTasks(studentData, taskList) {
                 cardClass = 'hifz-card';
                 iconHtml = '<i class="fas fa-quran text-success me-2"></i>';
                 targetContainer = hifzContainer;
-                hifzCount++;
             } else if (task.curriculum_type === 'Murajaa') {
                 cardClass = 'murajaa-card';
                 iconHtml = '<i class="fas fa-redo-alt text-info me-2"></i>';
                 targetContainer = murajaaContainer;
-                murajaaCount++;
             }
 
             const taskActiveInDb = studentTasksInDb.find(t =>
@@ -232,7 +212,6 @@ function renderTasks(studentData, taskList) {
             );
             if (!taskInStudentData) return; // هذه المهمة ليست للطالب أو حالتها مختلفة
             const originalIndex = studentTasksInDb.indexOf(taskInStudentData);
-            otherCount++;
 
             if (task.status === "claimed") {
                 cardClass = 'manual-card claimed-card';
@@ -266,18 +245,18 @@ function renderTasks(studentData, taskList) {
 
 
 async function getCurrentCurriculumTasks(studentId) {
-    const studentDocRef = doc(studentsCollection, studentId);
-    const studentDoc = await getDoc(studentDocRef);
+    const studentDocRef = studentsCollection.doc(studentId); // استخدام db.collection(...).doc(...)
+    const studentDoc = await studentDocRef.get(); // استخدام .get()
 
-    if (!studentDoc.exists()) return [];
+    if (!studentDoc.exists) return [];
 
     const studentData = studentDoc.data();
     const hifzProgress = studentData.hifz_progress || 0;
     const murajaaProgress = studentData.murajaa_progress || 0;
     const studentTasks = studentData.tasks || [];
 
-    const curriculumQuery = query(curriculumCollection, orderBy('id'));
-    const curriculumSnapshot = await getDocs(curriculumQuery);
+    const curriculumQuery = curriculumCollection.orderBy('id'); // استخدام .orderBy
+    const curriculumSnapshot = await curriculumQuery.get(); // استخدام .get()
     const allCurriculumTasks = curriculumSnapshot.docs.map(d => d.data());
 
     const combinedTasks = [];
@@ -351,9 +330,9 @@ async function getCurrentCurriculumTasks(studentId) {
 window.claimCurriculumTask = async function(type, curriculumId, points, description) {
     if (!currentStudentId || !currentStudentData) return;
 
-    const studentDocRef = doc(studentsCollection, currentStudentId);
+    const studentDocRef = studentsCollection.doc(currentStudentId); // استخدام db.collection(...).doc(...)
     
-    const currentStudentDoc = await getDoc(studentDocRef);
+    const currentStudentDoc = await studentDocRef.get(); // استخدام .get()
     const studentTasks = currentStudentDoc.data().tasks || [];
 
     const isAlreadyClaimed = studentTasks.some(t => 
@@ -368,10 +347,10 @@ window.claimCurriculumTask = async function(type, curriculumId, points, descript
     }
 
     const newTask = {
-        task_id: doc(collection(db, 'dummy')).id, // لإنشاء ID فريد
+        task_id: studentsCollection.doc().id, // لإنشاء ID فريد
         description: description,
         points_value: points,
-        timestamp: serverTimestamp(),
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(), // استخدام firebase.firestore.FieldValue.serverTimestamp()
         status: "claimed",
         is_curriculum_task: true,
         curriculum_type: type,
@@ -379,8 +358,8 @@ window.claimCurriculumTask = async function(type, curriculumId, points, descript
         task_type: `${type} تسلسلي`
     };
 
-    await updateDoc(studentDocRef, {
-        tasks: arrayUnion(newTask)
+    await studentDocRef.update({ // استخدام .update()
+        tasks: firebase.firestore.FieldValue.arrayUnion(newTask) // استخدام firebase.firestore.FieldValue.arrayUnion()
     });
 
     alert('تم إنجاز المهمة بنجاح! في انتظار مراجعة المعلم.');
@@ -390,15 +369,15 @@ window.claimCurriculumTask = async function(type, curriculumId, points, descript
 window.processTaskClaim = async function(taskIndex) {
     if (!currentStudentId || !currentStudentData || taskIndex === undefined) return;
 
-    const studentDocRef = doc(studentsCollection, currentStudentId);
-    const currentStudentDoc = await getDoc(studentDocRef);
+    const studentDocRef = studentsCollection.doc(currentStudentId);
+    const currentStudentDoc = await studentDocRef.get();
     let tasks = currentStudentDoc.data().tasks || [];
 
     if (taskIndex >= 0 && taskIndex < tasks.length) {
         // إنشاء نسخة من المهمة وتغيير حالتها
         let updatedTasks = [...tasks];
         updatedTasks[taskIndex] = { ...updatedTasks[taskIndex], status: "claimed" }; 
-        await updateDoc(studentDocRef, { tasks: updatedTasks });
+        await studentDocRef.update({ tasks: updatedTasks }); // استخدام .update()
         alert('تم إنجاز المهمة، في انتظار مراجعة المعلم.');
     }
 };
@@ -406,14 +385,14 @@ window.processTaskClaim = async function(taskIndex) {
 window.processTaskUndo = async function(taskIndex) {
     if (!currentStudentId || !currentStudentData || taskIndex === undefined) return;
 
-    const studentDocRef = doc(studentsCollection, currentStudentId);
-    const currentStudentDoc = await getDoc(studentDocRef);
+    const studentDocRef = studentsCollection.doc(currentStudentId);
+    const currentStudentDoc = await studentDocRef.get();
     let tasks = currentStudentDoc.data().tasks || [];
 
     if (taskIndex >= 0 && taskIndex < tasks.length) {
         let updatedTasks = [...tasks];
         updatedTasks.splice(taskIndex, 1); 
-        await updateDoc(studentDocRef, { tasks: updatedTasks });
+        await studentDocRef.update({ tasks: updatedTasks }); // استخدام .update()
         alert('تم إلغاء المهمة.');
     }
 };
@@ -427,8 +406,8 @@ window.loadTeacherDashboard = async function() {
     teacherDataListeners.forEach(unsubscribe => unsubscribe());
     teacherDataListeners = [];
 
-    const studentsQuery = query(studentsCollection);
-    const reviewTasksListener = onSnapshot(studentsQuery, snapshot => {
+    const studentsQuery = studentsCollection; // استعلام لجلب جميع الطلاب
+    const reviewTasksListener = studentsQuery.onSnapshot(snapshot => { // استخدام .onSnapshot
         let pendingReviews = [];
         snapshot.forEach(d => {
             const student = d.data();
@@ -453,7 +432,7 @@ window.loadTeacherDashboard = async function() {
     }, error => console.error("Error fetching review tasks:", error));
     teacherDataListeners.push(reviewTasksListener);
 
-    const studentsListener = onSnapshot(studentsCollection, snapshot => { // استخدام onSnapshot
+    const studentsListener = studentsCollection.onSnapshot(snapshot => { // استخدام .onSnapshot
         const studentSelect = document.getElementById('bulk-student-select');
         studentSelect.innerHTML = '';
         snapshot.forEach(d => {
@@ -466,7 +445,7 @@ window.loadTeacherDashboard = async function() {
     }, error => console.error("Error fetching students for select:", error));
     teacherDataListeners.push(studentsListener);
 
-    const tasksBankListener = onSnapshot(tasksBankCollection, snapshot => { // استخدام onSnapshot
+    const tasksBankListener = tasksBankCollection.onSnapshot(snapshot => { // استخدام .onSnapshot
         const bulkTaskSelect = document.getElementById('bulk-task-select');
         const bankTasksList = document.getElementById('bank-tasks-list');
         bulkTaskSelect.innerHTML = '<option value="">اختر مهمة جاهزة</option>';
@@ -492,8 +471,8 @@ window.loadTeacherDashboard = async function() {
     }, error => console.error("Error fetching tasks bank:", error));
     teacherDataListeners.push(tasksBankListener);
 
-    const curriculumQuery = query(curriculumCollection, orderBy('id')); // استخدام query و orderBy
-    const curriculumListener = onSnapshot(curriculumQuery, snapshot => { // استخدام onSnapshot
+    const curriculumQuery = curriculumCollection.orderBy('id'); // استخدام .orderBy
+    const curriculumListener = curriculumQuery.onSnapshot(snapshot => { // استخدام .onSnapshot
         const curriculumStatus = document.getElementById('curriculum-status');
         curriculumStatus.innerHTML = '';
         snapshot.forEach(d => {
@@ -543,10 +522,10 @@ function renderReviewTasks(tasks) {
 }
 
 window.approveTask = async function(studentId, taskId, points, isCurriculum, curriculumType, curriculumId) {
-    const studentDocRef = doc(studentsCollection, studentId);
-    await runTransaction(db, async (transaction) => { // استخدام runTransaction مع db
+    const studentDocRef = studentsCollection.doc(studentId);
+    await db.runTransaction(async (transaction) => { // استخدام db.runTransaction
         const studentDoc = await transaction.get(studentDocRef);
-        if (!studentDoc.exists()) {
+        if (!studentDoc.exists) {
             throw "Student does not exist!";
         }
 
@@ -590,10 +569,10 @@ window.approveTask = async function(studentId, taskId, points, isCurriculum, cur
 };
 
 window.rejectTask = async function(studentId, taskId) {
-    const studentDocRef = doc(studentsCollection, studentId);
-    await runTransaction(db, async (transaction) => { // استخدام runTransaction مع db
+    const studentDocRef = studentsCollection.doc(studentId);
+    await db.runTransaction(async (transaction) => { // استخدام db.runTransaction
         const studentDoc = await transaction.get(studentDocRef);
-        if (!studentDoc.exists()) {
+        if (!studentDoc.exists) {
             throw "Student does not exist!";
         }
 
@@ -625,27 +604,27 @@ document.getElementById('add-task-form').addEventListener('submit', async (e) =>
     const date = document.getElementById('new-task-date').value;
     const time = document.getElementById('new-task-time').value;
 
-    const studentDocRef = doc(studentsCollection, studentId);
-    const studentDoc = await getDoc(studentDocRef);
+    const studentDocRef = studentsCollection.doc(studentId);
+    const studentDoc = await studentDocRef.get();
 
-    if (!studentDoc.exists()) {
+    if (!studentDoc.exists) {
         alert('الطالب بهذا الرمز غير موجود!');
         return;
     }
 
     const newTask = {
-        task_id: doc(collection(db, 'dummy')).id, // معرف فريد
+        task_id: studentsCollection.doc().id, // معرف فريد
         description: description,
         points_value: 1,
-        timestamp: serverTimestamp(),
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         status: "pending",
         is_curriculum_task: false,
         task_type: "Manual",
         due_date: date ? new Date(`${date}T${time || '23:59:59'}`) : null
     };
 
-    await updateDoc(studentDocRef, {
-        tasks: arrayUnion(newTask)
+    await studentDocRef.update({
+        tasks: firebase.firestore.FieldValue.arrayUnion(newTask)
     });
 
     alert('تم تعيين المهمة للطالب بنجاح!');
@@ -664,28 +643,28 @@ document.getElementById('add-bulk-task-form').addEventListener('submit', async (
         return;
     }
 
-    const taskDocRef = doc(tasksBankCollection, selectedTaskDocId);
-    const taskDoc = await getDoc(taskDocRef);
-    if (!taskDoc.exists()) {
+    const taskDocRef = tasksBankCollection.doc(selectedTaskDocId);
+    const taskDoc = await taskDocRef.get();
+    if (!taskDoc.exists) {
         alert('المهمة المختارة غير موجودة في البنك!');
         return;
     }
     const taskDescription = taskDoc.data().description;
 
     for (const studentId of selectedStudentIds) {
-        const studentDocRef = doc(studentsCollection, studentId);
+        const studentDocRef = studentsCollection.doc(studentId);
         const newTask = {
-            task_id: doc(collection(db, 'dummy')).id, // معرف فريد
+            task_id: studentsCollection.doc().id, // معرف فريد
             description: taskDescription,
             points_value: 1,
-            timestamp: serverTimestamp(),
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
             status: "pending",
             is_curriculum_task: false,
             task_type: "Bank",
             due_date: date ? new Date(`${date}T${time || '23:59:59'}`) : null
         };
-        await updateDoc(studentDocRef, {
-            tasks: arrayUnion(newTask)
+        await studentDocRef.update({
+            tasks: firebase.firestore.FieldValue.arrayUnion(newTask)
         });
     }
 
@@ -698,12 +677,12 @@ document.getElementById('add-curriculum-task-form').addEventListener('submit', a
     const type = document.getElementById('curriculum-type-select').value;
     const description = document.getElementById('curriculum-description').value;
 
-    const lastCurriculumTaskQuery = query(curriculumCollection, where('type', '==', type), orderBy('id', 'desc'), limit(1));
-    const lastCurriculumTaskSnapshot = await getDocs(lastCurriculumTaskQuery);
+    const lastCurriculumTaskQuery = curriculumCollection.where('type', '==', type).orderBy('id', 'desc').limit(1);
+    const lastCurriculumTaskSnapshot = await lastCurriculumTaskQuery.get();
     const newId = lastCurriculumTaskSnapshot.empty ? 1 : lastCurriculumTaskSnapshot.docs[0].data().id + 1;
     const points = (type === 'Hifz') ? 5 : 3;
 
-    await setDoc(doc(curriculumCollection, `${type}-${newId}`), { // استخدام setDoc و doc
+    await curriculumCollection.doc(`${type}-${newId}`).set({ // استخدام .doc().set()
         id: newId,
         type: type,
         description: description,
@@ -716,7 +695,7 @@ document.getElementById('add-curriculum-task-form').addEventListener('submit', a
 
 window.deleteCurriculumTask = async function(id, type) {
     if (confirm(`هل أنت متأكد من حذف مهمة ${type} رقم ${id}؟ هذا سيؤثر على تقدم الطلاب!`)) {
-        await deleteDoc(doc(curriculumCollection, `${type}-${id}`)); // استخدام deleteDoc و doc
+        await curriculumCollection.doc(`${type}-${id}`).delete(); // استخدام .doc().delete()
         alert('تم حذف المهمة من المنهج المركزي.');
     }
 };
@@ -725,9 +704,9 @@ document.getElementById('add-bank-task-form').addEventListener('submit', async (
     e.preventDefault();
     const description = document.getElementById('bank-task-description').value;
     
-    await addDoc(tasksBankCollection, { // استخدام addDoc
+    await tasksBankCollection.add({ // استخدام .add()
         description: description,
-        timestamp: serverTimestamp()
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
 
     alert('تمت إضافة المهمة لبنك المهام.');
@@ -736,7 +715,7 @@ document.getElementById('add-bank-task-form').addEventListener('submit', async (
 
 window.deleteBankTask = async function(taskId) {
     if (confirm('هل أنت متأكد من حذف هذه المهمة من البنك؟')) {
-        await deleteDoc(doc(tasksBankCollection, taskId)); // استخدام deleteDoc و doc
+        await tasksBankCollection.doc(taskId).delete(); // استخدام .doc().delete()
         alert('تم حذف المهمة من بنك المهام.');
     }
 };
@@ -748,20 +727,20 @@ document.getElementById('add-new-student-form').addEventListener('submit', async
     const initialHifzProgress = parseInt(document.getElementById('initial-hifz-progress').value);
     const initialMurajaaProgress = parseInt(document.getElementById('initial-murajaa-progress').value);
 
-    const studentDocRef = doc(studentsCollection, newStudentId); // استخدام doc
-    const studentDoc = await getDoc(studentDocRef); // استخدام getDoc
-    if (studentDoc.exists()) {
+    const studentDocRef = studentsCollection.doc(newStudentId); // استخدام .doc()
+    const studentDoc = await studentDocRef.get(); // استخدام .get()
+    if (studentDoc.exists) {
         alert('رمز الطالب هذا موجود بالفعل. يرجى اختيار رمز آخر.');
         return;
     }
 
-    await setDoc(studentDocRef, { // استخدام setDoc
+    await studentDocRef.set({ // استخدام .set()
         name: newStudentName,
         score: 0,
         tasks: [],
         hifz_progress: initialHifzProgress,
         murajaa_progress: initialMurajaaProgress,
-        created_at: serverTimestamp()
+        created_at: firebase.firestore.FieldValue.serverTimestamp()
     });
 
     alert(`تم تسجيل الطالب ${newStudentName} برمز ${newStudentId} بنجاح!`);
@@ -775,8 +754,8 @@ window.renderLeaderboard = async function() {
     const leaderboardContainer = document.getElementById('leaderboard-container');
     leaderboardContainer.innerHTML = 'جاري تحميل لوحة الشرف...';
 
-    const leaderboardQuery = query(studentsCollection, orderBy('score', 'desc'), limit(5)); // استخدام query و orderBy و limit
-    const querySnapshot = await getDocs(leaderboardQuery);
+    const leaderboardQuery = studentsCollection.orderBy('score', 'desc').limit(5); // استخدام .orderBy و .limit
+    const querySnapshot = await leaderboardQuery.get();
 
     leaderboardContainer.innerHTML = '';
     if (querySnapshot.empty) {
