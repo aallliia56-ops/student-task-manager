@@ -28,6 +28,7 @@ const studentMurajaaProgress = document.getElementById('student-murajaa-progress
 const studentTotalPoints = document.getElementById('student-total-points');
 const studentTasksDiv = document.getElementById('student-tasks');
 const logoutButtonStudent = document.getElementById('logout-button-student');
+const logoutButtonTeacher = document.getElementById('logout-button-teacher'); // أضف هذا السطر هنا
 
 const manageStudentsTab = document.getElementById('manage-students-tab');
 const addStudentTab = document.getElementById('add-student-tab');
@@ -942,3 +943,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Display curriculums on teacher screen load for the first time
 displayCurriculumsInTeacherPanel();
+
