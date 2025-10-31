@@ -7,10 +7,45 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
+        /* --- التنسيقات الأساسية --- */
         body {
-            background-color: #f8f9fa;
             font-family: 'Arial', sans-serif;
+            padding: 20px;
+            direction: rtl; 
+            text-align: right;
+            background-color: #f4f7f6;
+            color: #333;
         }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #007bff;
+        }
+
+        section {
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            margin: 20px auto;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        input[type="text"], input[type="date"], input[type="time"], select {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* --- تنسيقات مخصصة لمكونات Bootstrap (موجودة مسبقًا + إضافات) --- */
         .container-custom {
             max-width: 1000px;
             margin-top: 50px;
@@ -29,6 +64,10 @@
             padding: 15px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.05);
             transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-start;
         }
         .task-card:hover {
             transform: translateY(-2px);
@@ -51,6 +90,36 @@
             font-weight: bold;
             border-bottom: 3px solid #0d6efd;
         }
+        
+        /* تنسيقات الأكورديون Bootstrap */
+        .accordion-button:not(.collapsed) {
+            color: #0c5460;
+            background-color: #e2f4ff;
+            box-shadow: inset 0 -1px 0 rgba(0,0,0,.125);
+        }
+        .accordion-button {
+             padding: 1rem 1.25rem;
+             font-weight: bold;
+             text-align: right;
+        }
+        .accordion-item {
+            margin-bottom: 10px;
+            border: 1px solid rgba(0,0,0,.125);
+            border-radius: .25rem;
+        }
+        .accordion-item:first-of-type, .accordion-item:last-of-type {
+            border-radius: .25rem;
+        }
+
+        .completed-task {
+            background-color: #e9f8ed;
+            color: #555;
+        }
+        
+        .task-actions {
+            margin-top: 10px;
+        }
+
     </style>
 </head>
 <body>
@@ -84,11 +153,55 @@
 
         <h3 class="mb-3 text-secondary"><i class="fas fa-chart-line me-2"></i> مسار التقدم</h3>
         <div id="progress-container" class="card shadow-sm p-4 mb-4">
-            </div>
+        </div>
 
         <h3 class="mb-3 text-secondary"><i class="fas fa-clipboard-list me-2"></i> مهامك النشطة</h3>
-        <div id="tasks-container">
+        
+        <div id="tasks-accordion" class="accordion mb-4">
+            
+            <div class="accordion-item hifz-card" style="border-left: none;">
+                <h2 class="accordion-header" id="hifz-heading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#hifz-collapse" aria-expanded="false" aria-controls="hifz-collapse">
+                        <i class="fas fa-quran text-success me-3"></i> مهام الحفظ (تسلسلية - 5 نقاط)
+                    </button>
+                </h2>
+                <div id="hifz-collapse" class="accordion-collapse collapse" aria-labelledby="hifz-heading" data-bs-parent="#tasks-accordion">
+                    <div class="accordion-body p-3">
+                        <div id="hifz-tasks-list" class="task-list">
+                            </div>
+                    </div>
+                </div>
             </div>
+
+            <div class="accordion-item murajaa-card" style="border-left: none;">
+                <h2 class="accordion-header" id="murajaa-heading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#murajaa-collapse" aria-expanded="false" aria-controls="murajaa-collapse">
+                        <i class="fas fa-redo-alt text-info me-3"></i> مهام المراجعة (لوب متكرر - 3 نقاط)
+                    </button>
+                </h2>
+                <div id="murajaa-collapse" class="accordion-collapse collapse" aria-labelledby="murajaa-heading" data-bs-parent="#tasks-accordion">
+                    <div class="accordion-body p-3">
+                        <div id="murajaa-tasks-list" class="task-list">
+                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item manual-card" style="border-left: none;">
+                <h2 class="accordion-header" id="other-heading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#other-collapse" aria-expanded="false" aria-controls="other-collapse">
+                        <i class="fas fa-pencil-alt text-warning me-3"></i> مهام أخرى (يدوية/بنك - 1 نقطة)
+                    </button>
+                </h2>
+                <div id="other-collapse" class="accordion-collapse collapse" aria-labelledby="other-heading" data-bs-parent="#tasks-accordion">
+                    <div class="accordion-body p-3">
+                        <div id="other-tasks-list" class="task-list">
+                            </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
         <div id="no-tasks-message" class="alert alert-info d-none text-center">
             <i class="fas fa-hand-peace me-2"></i> لا توجد مهام نشطة حاليًا. ممتاز!
         </div>
@@ -280,6 +393,7 @@
 
     function logout() {
         currentStudentId = null;
+        if (typeof studentDataListener === 'function') studentDataListener();
         showLoginScreen();
     }
     
@@ -302,4 +416,3 @@
 
 </body>
 </html>
-
