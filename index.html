@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>إدارة مهام الطلاب</title>
     
-    <style>
+    
+<style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
@@ -13,11 +14,11 @@
             padding: 20px;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Adjust alignment to top */
+            align-items: flex-start;
             min-height: 100vh;
             color: #333;
-            direction: rtl; /* Arabic direction */
-            text-align: right; /* Align text to right for Arabic */
+            direction: rtl;
+            text-align: right;
         }
 
         #app-container {
@@ -27,7 +28,7 @@
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 800px;
-            margin: 20px 0; /* Add some vertical margin */
+            margin: 20px 0;
         }
 
         h1, h2, h3, h4 {
@@ -45,12 +46,12 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 16px;
-            box-sizing: border-box; /* Include padding in width */
+            box-sizing: border-box;
             background-color: #fcfcfc;
         }
 
         button {
-            background-color: #28a745; /* Green for primary actions */
+            background-color: #28a745;
             color: white;
             padding: 12px 25px;
             border: none;
@@ -58,7 +59,7 @@
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s ease;
-            margin-left: 10px; /* Space between buttons */
+            margin-left: 10px;
         }
 
         button:hover {
@@ -117,7 +118,7 @@
         }
 
         #logout-button-student, #logout-button-teacher {
-            background-color: #dc3545; /* Red for logout */
+            background-color: #dc3545;
         }
 
         #logout-button-student:hover, #logout-button-teacher:hover {
@@ -153,7 +154,7 @@
         }
 
         .task-item.completed {
-            background-color: #e6ffe6; /* Light green for completed tasks */
+            background-color: #e6ffe6;
             border-color: #b3ffb3;
             opacity: 0.8;
         }
@@ -179,12 +180,12 @@
 
         .task-actions {
             margin-top: 10px;
-            text-align: left; /* Align buttons to left */
+            text-align: left;
         }
         .task-actions button {
             margin-left: 0;
-            margin-right: 10px; /* Space between buttons if multiple */
-            background-color: #007bff; /* Blue for action buttons */
+            margin-right: 10px;
+            background-color: #007bff;
         }
         .task-actions button:hover {
             background-color: #0056b3;
@@ -193,7 +194,7 @@
         /* Teacher Tabs */
         .tabs {
             display: flex;
-            justify-content: flex-end; /* Align tabs to the right */
+            justify-content: flex-end;
             margin-bottom: 20px;
             border-bottom: 2px solid #eee;
         }
@@ -208,7 +209,7 @@
             font-size: 16px;
             transition: all 0.3s ease;
             border-radius: 8px 8px 0 0;
-            margin-left: 5px; /* Space between tab buttons */
+            margin-left: 5px;
         }
 
         .tab-button.active {
@@ -255,7 +256,7 @@
         }
 
         .student-actions button {
-            background-color: #dc3545; /* Red for delete */
+            background-color: #dc3545;
             padding: 8px 15px;
             font-size: 14px;
         }
@@ -273,7 +274,7 @@
         }
 
         #assign-individual-task-button, #assign-group-task-button {
-            background-color: #17a2b8; /* Info blue for assign tasks */
+            background-color: #17a2b8;
         }
         #assign-individual-task-button:hover, #assign-group-task-button:hover {
             background-color: #138496;
@@ -285,7 +286,7 @@
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
-            max-height: 200px; /* Limit height for scrolling */
+            max-height: 200px;
             overflow-y: auto;
         }
         #hifz-curriculum-display div, #murajaa-curriculum-display div {
@@ -296,10 +297,6 @@
             border-bottom: none;
         }
     </style>
-
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js"></script>
 </head>
 <body>
 
@@ -331,7 +328,8 @@
 
                 <h3>المهام الموكلة إليك:</h3>
                 <div id="student-tasks">
-                    </div>
+                    
+</div>
             </main>
         </div>
 
@@ -351,7 +349,8 @@
                 <div id="manage-students-tab" class="tab-content">
                     <h3>قائمة الطلاب</h3>
                     <ul id="student-list">
-                        </ul>
+                        
+</ul>
                 </div>
 
                 <div id="add-student-tab" class="tab-content hidden">
@@ -397,7 +396,8 @@
         </div>
     </div>
 
-    <script type="module" src="app.js"></script>
+    
+<script type="module" src="app.js"></script>
 
 </body>
 </html>
