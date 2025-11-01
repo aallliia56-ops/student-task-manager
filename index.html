@@ -277,7 +277,7 @@
             </div>
             <h3>المهام المتاحة لك:</h3>
             <div id="student-tasks">
-                </div>
+            </div>
             <button id="logout-button-student">تسجيل الخروج</button>
         </div>
 
@@ -307,14 +307,14 @@
                     <input type="text" id="new-student-name" placeholder="أدخل اسم الطالب" required>
                 </div>
                 <div class="form-group">
-                    <label for="new-student-hifz-start">نقطة بداية الحفظ (رقم المقطع التسلسلي، من 1 للمرسلات):</label>
-                    <input type="number" id="new-student-hifz-start" value="1" min="1" required>
-                    <small>الحفظ يبدأ من المرسلات (المقطع 1) حتى الأحقاف (المقطع 195).</small>
+                    <label for="new-student-hifz-start">نقطة بداية الحفظ:</label>
+                    <select id="new-student-hifz-start" required>
+                        </select>
                 </div>
                 <div class="form-group">
-                    <label for="new-student-murajaa-start">نقطة بداية المراجعة (رقم وحدة المراجعة التسلسلي، من 1 للأحقاف):</label>
-                    <input type="number" id="new-student-murajaa-start" value="1" min="1" required>
-                    <small>المراجعة تبدأ من الأحقاف (الوحدة 1) حتى الناس (الوحدة 46).</small>
+                    <label for="new-student-murajaa-start">نقطة بداية المراجعة:</label>
+                    <select id="new-student-murajaa-start" required>
+                        </select>
                 </div>
                 <button id="register-student-button">تسجيل الطالب</button>
                 <div id="register-student-message" class="message hidden"></div>
@@ -322,7 +322,7 @@
             
             <div id="manage-curriculum-tab" class="tab-content hidden">
                 <h3>إدارة المنهج المركزي</h3>
-                 <div class="manage-curriculum-grid">
+                   <div class="manage-curriculum-grid">
                     <div class="curriculum-section">
                         <h4>مسار الحفظ الأصلي (من المرسلات للأحقاف)</h4>
                         <p>هذا يمثل منهج الحفظ الجديد، كل مقطع يظهر كوحدة حفظ للطالب.</p>
@@ -335,8 +335,8 @@
                         <div class="curriculum-list" id="murajaa-curriculum-display">
                             </div>
                     </div>
-                 </div>
-                 <p class="message success">ملاحظة: المناهج أعلاه معرفة في الكود البرمجي بشكل ثابت لتتبع الاتفاقيات. لإضافة أو تعديل مهام، يرجى التواصل مع الدعم الفني.</p>
+                   </div>
+                   <p class="message success">ملاحظة: المناهج أعلاه معرفة في الكود البرمجي بشكل ثابت لتتبع الاتفاقيات. لإضافة أو تعديل مهام، يرجى التواصل مع الدعم الفني.</p>
 
             </div>
 
@@ -359,7 +359,7 @@
                     <textarea id="assign-task-description" rows="3" placeholder="أدخل وصف المهمة هنا..."></textarea>
                     <small>ملاحظة: للحفظ والمراجعة العاديين، النظام يحدد المهام تلقائياً. هذا الوصف للمهام الإضافية أو من بنك المهام.</small>
                 </div>
-                 <div class="form-group">
+                   <div class="form-group">
                     <label for="assign-task-points">النقاط:</label>
                     <input type="number" id="assign-task-points" value="5" min="1" required>
                 </div>
