@@ -1,18 +1,26 @@
 // ///////////////////////////////////////////////////////////////////////////////
 // هذا الملف يستخدم Firebase Modular SDK (الإصدار 9) مع عبارات import/export.
-// وهو مصمم للعمل مع ملف HTML الذي يحتوي على روابط CDN لـ Firebase
-// وعلامة <script type="module" src="app.js"></script>.
 // ///////////////////////////////////////////////////////////////////////////////
 
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, arrayUnion, writeBatch, FieldValue } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-// إذا كنت تستخدم getAnalytics، يمكنك إبقائها.
-// import { getAnalytics } from "firebase/analytics";
+// 💥 الحل النهائي: استيراد مباشر لروابط CDN الكاملة
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+import { 
+    getFirestore, 
+    collection, 
+    doc, 
+    getDoc, 
+    getDocs, 
+    setDoc, 
+    updateDoc, 
+    deleteDoc, 
+    arrayUnion, 
+    writeBatch 
+} from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
 
+
+// هذا الجزء هو نفسه الذي زودتني به سابقاً:
 // Your web app's Firebase configuration
-// تأكد أن هذه القيم هي نفسها التي حصلت عليها من لوحة تحكم Firebase لمشروعك.
 const firebaseConfig = {
     apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
     authDomain: "studenttasksmanager.firebaseapp.com",
@@ -27,7 +35,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app); // تهيئة Firestore بالطريقة الجديدة
 const auth = getAuth(app);     // تهيئة Auth بالطريقة الجديدة
-// const analytics = getAnalytics(app); // إذا كنت تستخدمها
 
 // --- DOM Elements ---
 const authScreen = document.getElementById('auth-screen');
@@ -40,7 +47,7 @@ const authMessage = document.getElementById('auth-message');
 
 const welcomeStudent = document.getElementById('welcome-student');
 const studentHifzProgress = document.getElementById('student-hifz-progress');
-const studentMurajaaProgress = document.getElementById('student-murajaa-progress');
+const studentMurajaaProgress = document = document.getElementById('student-murajaa-progress');
 const studentTotalPoints = document.getElementById('student-total-points');
 const studentTasksDiv = document.getElementById('student-tasks');
 const logoutButtonStudent = document.getElementById('logout-button-student');
