@@ -47,7 +47,7 @@ const authMessage = document.getElementById('auth-message');
 
 const welcomeStudent = document.getElementById('welcome-student');
 const studentHifzProgress = document.getElementById('student-hifz-progress');
-const studentMurajaaProgress = document = document.getElementById('student-murajaa-progress');
+const studentMurajaaProgress = document.getElementById('student-murajaa-progress');
 const studentTotalPoints = document.getElementById('student-total-points');
 const studentTasksDiv = document.getElementById('student-tasks');
 const logoutButtonStudent = document.getElementById('logout-button-student');
@@ -770,3 +770,4 @@ logoutButtonTeacher.addEventListener('click', logout);
 
 // --- Initialization on load ---
 populateCurriculumSelects();
+
