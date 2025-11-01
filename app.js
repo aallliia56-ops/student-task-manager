@@ -1,29 +1,26 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, arrayUnion, writeBatch, FieldValue } from "firebase/firestore"; // تم استيراد الدوال اللازمة لـ Firestore
+import { getAuth } from "firebase/auth"; // تم استيراد الدوال اللازمة لـ Auth
+// إذا كنت تستخدم getAnalytics، يمكنك إبقائها.
+// import { getAnalytics } from "firebase/analytics";
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
-  authDomain: "studenttasksmanager.firebaseapp.com",
-  projectId: "studenttasksmanager",
-  storageBucket: "studenttasksmanager.firebasestorage.app",
-  messagingSenderId: "850350680089",
-  appId: "1:850350680089:web:51b71a710e938754bc6288",
-  measurementId: "G-7QC4FVXKZG"
+    apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
+    authDomain: "studenttasksmanager.firebaseapp.com",
+    projectId: "studenttasksmanager",
+    storageBucket: "studenttasksmanager.firebasestorage.app",
+    messagingSenderId: "850350680089",
+    appId: "1:850350680089:web:51b71a710e938754bc6288",
+    measurementId: "G-7QC4FVXKZG"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-// Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const db = app.firestore();
-const auth = app.auth();
+const db = getFirestore(app); // تهيئة Firestore بالطريقة الجديدة
+const auth = getAuth(app);     // تهيئة Auth بالطريقة الجديدة
+// const analytics = getAnalytics(app); // إذا كنت تستخدمها
 
 // --- DOM Elements ---
 const authScreen = document.getElementById('auth-screen');
@@ -40,7 +37,7 @@ const studentMurajaaProgress = document.getElementById('student-murajaa-progress
 const studentTotalPoints = document.getElementById('student-total-points');
 const studentTasksDiv = document.getElementById('student-tasks');
 const logoutButtonStudent = document.getElementById('logout-button-student');
-const logoutButtonTeacher = document.getElementById('logout-button-teacher'); // أضف هذا السطر هنا
+const logoutButtonTeacher = document.getElementById('logout-button-teacher');
 
 const manageStudentsTab = document.getElementById('manage-students-tab');
 const addStudentTab = document.getElementById('add-student-tab');
@@ -51,10 +48,8 @@ const tabButtons = document.querySelectorAll('.tab-button');
 const studentList = document.getElementById('student-list');
 const newStudentCodeInput = document.getElementById('new-student-code');
 const newStudentNameInput = document.getElementById('new-student-name');
-// *** التغيير هنا: الحصول على عنصر الـ select
 const newStudentHifzStart = document.getElementById('new-student-hifz-start');
 const newStudentMurajaaStart = document.getElementById('new-student-murajaa-start');
-// *** نهاية التغيير
 
 const registerStudentButton = document.getElementById('register-student-button');
 const registerStudentMessage = document.getElementById('register-student-message');
@@ -73,8 +68,7 @@ const murajaaCurriculumDisplay = document.getElementById('murajaa-curriculum-dis
 
 let currentUser = null; // Stores current logged-in user data
 
-// --- STATIC CURRICULUM DATA (الفكرة الأولى: منهج الحفظ والمراجعة) ---
-
+// --- STATIC CURRICULUM DATA ---
 // منهج الحفظ الأصلي: من المرسلات إلى الأحقاف
 // كل عنصر هو مقطع حفظ واحد
 const HifzCurriculum = [
@@ -391,6 +385,7 @@ const MurajaaCurriculum = [
     { surah: 'البلد إلى الناس', label: 'مراجعة البلد إلى الناس', points: 3, type: 'murajaa', hifz_start_index: -1, hifz_end_index: -1 },
 ];
 
+
 // --- Helper Functions ---
 function showMessage(element, msg, type) {
     element.textContent = msg;
@@ -439,10 +434,10 @@ function populateCurriculumSelects() {
     newStudentMurajaaStart.innerHTML = murajaaOptions;
 }
 
-// --- Core App Functions (MOCK/Incomplete Firebase Operations) ---
+// --- Core App Functions (Firebase Operations) ---
 
 // Function to display student progress
-function displayStudentDashboard(student) {
+async function displayStudentDashboard(student) {
     welcomeStudent.textContent = `أهلاً بك يا ${student.name}`;
     
     // Get the actual curriculum items based on saved indices
@@ -469,7 +464,7 @@ function displayStudentDashboard(student) {
                 </button>
             </div>
         `;
-        // Attach event listener for task completion (simplified mock here)
+        // Attach event listener for task completion
         taskElement.querySelector('.complete-btn').addEventListener('click', () => completeTask(student.code, task.id, task.points));
 
         studentTasksDiv.appendChild(taskElement);
@@ -479,43 +474,45 @@ function displayStudentDashboard(student) {
     studentScreen.classList.remove('hidden');
 }
 
-// Simplified function for loading students for the teacher panel
+// Function for loading students for the teacher panel
 async function loadStudentsForTeacher() {
     studentList.innerHTML = '<li>جارٍ تحميل بيانات الطلاب...</li>';
     try {
-        const snapshot = await db.collection('students').get();
+        const studentsCol = collection(db, 'students');
+        const snapshot = await getDocs(studentsCol);
         if (snapshot.empty) {
             studentList.innerHTML = '<li>لا يوجد طلاب مسجلين بعد.</li>';
             return;
         }
 
         studentList.innerHTML = '';
-        snapshot.forEach(doc => {
-            const student = doc.data();
+        snapshot.forEach(documentSnapshot => {
+            const student = documentSnapshot.data();
             const listItem = document.createElement('li');
+            const hifzLabel = HifzCurriculum[student.hifz_progress] ? HifzCurriculum[student.hifz_progress].label : 'غير محدد';
             listItem.innerHTML = `
-                <span><strong>${student.name}</strong> (${student.code}) - الحفظ: ${HifzCurriculum[student.hifz_progress].label} | النقاط: ${student.total_points}</span>
+                <span><strong>${student.name}</strong> (${student.code}) - الحفظ: ${hifzLabel} | النقاط: ${student.total_points}</span>
                 <div class="student-actions">
                     <button class="delete-btn" data-code="${student.code}">حذف</button>
-                    </div>
+                </div>
             `;
             studentList.appendChild(listItem);
         });
 
-        // Add event listeners for delete buttons (mock)
+        // Add event listeners for delete buttons
         document.querySelectorAll('.delete-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                // Mock Deletion
+            button.addEventListener('click', async (e) => {
                 const code = e.target.dataset.code;
                 if (confirm(`هل أنت متأكد من حذف الطالب ذي الرمز ${code}؟`)) {
-                    db.collection('students').doc(code).delete()
-                        .then(() => {
-                            showMessage(authMessage, `تم حذف الطالب ${code} بنجاح.`, 'success');
-                            loadStudentsForTeacher(); // Reload list
-                        })
-                        .catch(error => {
-                            showMessage(authMessage, `خطأ في الحذف: ${error.message}`, 'error');
-                        });
+                    try {
+                        const studentDocRef = doc(db, 'students', code);
+                        await deleteDoc(studentDocRef);
+                        showMessage(authMessage, `تم حذف الطالب ${code} بنجاح.`, 'success');
+                        loadStudentsForTeacher(); // Reload list
+                    } catch (error) {
+                        showMessage(authMessage, `خطأ في الحذف: ${error.message}`, 'error');
+                        console.error("Error deleting student: ", error);
+                    }
                 }
             });
         });
@@ -540,15 +537,14 @@ function displayCurriculumsInTeacherPanel() {
 }
 
 
-// Simple mock for task completion
+// Function for task completion
 async function completeTask(studentCode, taskId, points) {
     try {
-        // Fetch student data
-        const studentRef = db.collection('students').doc(studentCode);
-        const doc = await studentRef.get();
-        if (!doc.exists) return;
+        const studentDocRef = doc(db, 'students', studentCode);
+        const docSnapshot = await getDoc(studentDocRef);
+        if (!docSnapshot.exists()) return;
         
-        const student = doc.data();
+        const student = docSnapshot.data();
         const taskIndex = student.tasks.findIndex(t => t.id === taskId);
 
         if (taskIndex !== -1 && !student.tasks[taskIndex].completed) {
@@ -563,7 +559,7 @@ async function completeTask(studentCode, taskId, points) {
             }
 
             // Update Firestore
-            await studentRef.update({
+            await updateDoc(studentDocRef, {
                 tasks: student.tasks,
                 total_points: student.total_points,
                 hifz_progress: student.hifz_progress,
@@ -578,6 +574,7 @@ async function completeTask(studentCode, taskId, points) {
 
     } catch (error) {
         console.error("Error completing task: ", error);
+        showMessage(authMessage, `حدث خطأ أثناء إنجاز المهمة: ${error.message}`, 'error');
     }
 }
 
@@ -600,9 +597,10 @@ loginButton.addEventListener('click', async () => {
     } else {
         try {
             // Student Login Logic
-            const doc = await db.collection('students').doc(userCode).get();
-            if (doc.exists) {
-                currentUser = doc.data();
+            const studentDocRef = doc(db, 'students', userCode);
+            const docSnapshot = await getDoc(studentDocRef);
+            if (docSnapshot.exists()) {
+                currentUser = docSnapshot.data();
                 displayStudentDashboard(currentUser);
             } else {
                 showMessage(authMessage, 'رمز الطالب غير صحيح. حاول مجدداً.', 'error');
@@ -623,21 +621,19 @@ tabButtons.forEach(button => {
         if (button.dataset.tab === 'manage-students') {
             loadStudentsForTeacher();
         }
-        // Ensure selects are populated every time (redundant but safe)
+        // Ensure selects are populated every time
         if (button.dataset.tab === 'add-student') {
              populateCurriculumSelects();
         }
     });
 });
 
-// Register Student Logic (العنصر الذي تم تعديله)
+// Register Student Logic
 registerStudentButton.addEventListener('click', async () => {
     const newStudentCode = newStudentCodeInput.value.trim();
     const newStudentName = newStudentNameInput.value.trim();
-    // *** التعديل هنا: استخدام قيمة الـ select التي تمثل الدليل (Index) مباشرة
     const hifzStartIndex = parseInt(newStudentHifzStart.value);
     const murajaaStartIndex = parseInt(newStudentMurajaaStart.value);
-    // *** نهاية التعديل
 
     if (!newStudentCode || !newStudentName) {
         showMessage(registerStudentMessage, 'الرجاء ملء جميع الحقول المطلوبة.', 'error');
@@ -655,20 +651,21 @@ registerStudentButton.addEventListener('click', async () => {
     }
 
     try {
-        // Check if student code already exists
-        const doc = await db.collection('students').doc(newStudentCode).get();
-        if (doc.exists) {
+        const studentDocRef = doc(db, 'students', newStudentCode);
+        const docSnapshot = await getDoc(studentDocRef);
+
+        if (docSnapshot.exists()) {
             showMessage(registerStudentMessage, `الرمز ${newStudentCode} مُسجل لطالب آخر. اختر رمزًا فريدًا.`, 'error');
             return;
         }
         
         // Add new student
-        await db.collection('students').doc(newStudentCode).set({
+        await setDoc(studentDocRef, {
             code: newStudentCode,
             name: newStudentName,
             role: 'student',
-            hifz_progress: hifzStartIndex, // حفظ الـ Index كنقطة بداية
-            murajaa_progress: murajaaStartIndex, // حفظ الـ Index كنقطة بداية
+            hifz_progress: hifzStartIndex,
+            murajaa_progress: murajaaStartIndex,
             total_points: 0,
             tasks: [
                 // Assign first tasks automatically (example)
@@ -691,7 +688,7 @@ registerStudentButton.addEventListener('click', async () => {
 });
 
 
-// Assign Task Logic (Individual/Group) - (Simplified Mock)
+// Assign Task Logic (Individual/Group)
 assignIndividualTaskButton.addEventListener('click', async () => {
     const code = assignTaskStudentCode.value.trim();
     const type = assignTaskType.value;
@@ -706,13 +703,14 @@ assignIndividualTaskButton.addEventListener('click', async () => {
     // Logic to assign task to a single student (using Firestore Update)
     const task = { id: generateUniqueId(), description, type, points, completed: false };
     try {
-        const studentRef = db.collection('students').doc(code);
-        await studentRef.update({
-            tasks: firebase.firestore.FieldValue.arrayUnion(task)
+        const studentDocRef = doc(db, 'students', code);
+        await updateDoc(studentDocRef, {
+            tasks: arrayUnion(task) // استخدام arrayUnion لإضافة عنصر إلى مصفوفة
         });
         showMessage(assignTaskMessage, `تم تعيين مهمة فردية للطالب ${code} بنجاح.`, 'success');
     } catch (error) {
-        showMessage(assignTaskMessage, `خطأ: الطالب ${code} غير موجود أو خطأ في الاتصال.`, 'error');
+        showMessage(assignTaskMessage, `خطأ: الطالب ${code} غير موجود أو خطأ في الاتصال. ${error.message}`, 'error');
+        console.error("Error assigning individual task: ", error);
     }
 });
 
@@ -729,18 +727,20 @@ assignGroupTaskButton.addEventListener('click', async () => {
     // Logic to assign task to all students (Batch Write recommended for real app)
     const task = { id: generateUniqueId(), description, type, points, completed: false };
     try {
-        const studentsSnapshot = await db.collection('students').get();
-        const batch = db.batch();
-        studentsSnapshot.forEach(doc => {
-            const studentRef = db.collection('students').doc(doc.id);
-            batch.update(studentRef, {
-                tasks: firebase.firestore.FieldValue.arrayUnion(task)
+        const studentsCol = collection(db, 'students');
+        const studentsSnapshot = await getDocs(studentsCol);
+        const batch = writeBatch(db); // استخدام writeBatch
+        studentsSnapshot.forEach(documentSnapshot => {
+            const studentDocRef = doc(db, 'students', documentSnapshot.id);
+            batch.update(studentDocRef, {
+                tasks: arrayUnion(task)
             });
         });
         await batch.commit();
         showMessage(assignTaskMessage, 'تم تعيين مهمة جماعية لجميع الطلاب بنجاح.', 'success');
     } catch (error) {
         showMessage(assignTaskMessage, `خطأ في تعيين المهمة الجماعية: ${error.message}`, 'error');
+        console.error("Error assigning group task: ", error);
     }
 });
 
@@ -760,4 +760,3 @@ logoutButtonTeacher.addEventListener('click', logout);
 // --- Initialization on load ---
 populateCurriculumSelects(); // Call once to fill the options immediately
 // Initial screen setup should be handled by CSS/HTML structure (auth-screen visible by default)
-
