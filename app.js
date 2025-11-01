@@ -1,12 +1,24 @@
-// Firebase Configuration (Replace with your actual config)
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
+  authDomain: "studenttasksmanager.firebaseapp.com",
+  projectId: "studenttasksmanager",
+  storageBucket: "studenttasksmanager.firebasestorage.app",
+  messagingSenderId: "850350680089",
+  appId: "1:850350680089:web:51b71a710e938754bc6288",
+  measurementId: "G-7QC4FVXKZG"
 };
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
 // Initialize Firebase
 const app = firebase.initializeApp(firebaseConfig);
@@ -748,3 +760,4 @@ logoutButtonTeacher.addEventListener('click', logout);
 // --- Initialization on load ---
 populateCurriculumSelects(); // Call once to fill the options immediately
 // Initial screen setup should be handled by CSS/HTML structure (auth-screen visible by default)
+
