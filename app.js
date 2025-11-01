@@ -1,89 +1,91 @@
-// ///////////////////////////////////////////////////////////////////////////////
-// هذا الملف يستخدم Firebase Modular SDK (الإصدار 9) مع عبارات import/export.
-// ///////////////////////////////////////////////////////////////////////////////
-
-// 💥 الحل النهائي: استيراد مباشر لروابط CDN الكاملة
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-import { 
-    getFirestore, 
-    collection, 
-    doc, 
-    getDoc, 
-    getDocs, 
-    setDoc, 
-    updateDoc, 
-    deleteDoc, 
-    arrayUnion, 
-    writeBatch 
-} from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
-
-
-// هذا الجزء هو نفسه الذي زودتني به سابقاً:
-// Your web app's Firebase configuration
+// Firebase Configuration (Replace with your actual Firebase config)
 const firebaseConfig = {
-    apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
-    authDomain: "studenttasksmanager.firebaseapp.com",
-    projectId: "studenttasksmanager",
-    storageBucket: "studenttasksmanager.firebasestorage.app",
-    messagingSenderId: "850350680089",
-    appId: "1:850350680089:web:51b71a710e938754bc6288",
-    measurementId: "G-7QC4FVXKZG"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app); // تهيئة Firestore بالطريقة الجديدة
-const auth = getAuth(app);     // تهيئة Auth بالطريقة الجديدة
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
 // --- DOM Elements ---
 const authScreen = document.getElementById('auth-screen');
-const studentScreen = document.getElementById('student-screen');
 const teacherScreen = document.getElementById('teacher-screen');
+const studentScreen = document.getElementById('student-screen');
 
-const userCodeInput = document.getElementById('user-code');
-const loginButton = document.getElementById('login-button');
 const authMessage = document.getElementById('auth-message');
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
+const loginButton = document.getElementById('login-button');
+const registerButton = document.getElementById('register-button');
 
-const welcomeStudent = document.getElementById('welcome-student');
-const studentHifzProgress = document.getElementById('student-hifz-progress');
-const studentMurajaaProgress = document.getElementById('student-murajaa-progress');
-const studentTotalPoints = document.getElementById('student-total-points');
-const studentTasksDiv = document.getElementById('student-tasks');
-const logoutButtonStudent = document.getElementById('logout-button-student');
+// Teacher Screen Elements
 const logoutButtonTeacher = document.getElementById('logout-button-teacher');
+const teacherTabButtons = document.querySelectorAll('#teacher-screen .tab-button');
+const teacherTabContents = document.querySelectorAll('#teacher-screen .tab-content');
 
 const manageStudentsTab = document.getElementById('manage-students-tab');
 const addStudentTab = document.getElementById('add-student-tab');
-const manageCurriculumTab = document.getElementById('manage-curriculum-tab');
 const assignTasksTab = document.getElementById('assign-tasks-tab');
-const tabButtons = document.querySelectorAll('.tab-button');
+const pendingTasksTab = document.getElementById('pending-tasks-tab'); // New
+const leaderboardTab = document.getElementById('leaderboard-tab'); // New
+const manageCurriculumTab = document.getElementById('manage-curriculum-tab');
 
+const manageStudentsMessage = document.getElementById('manage-students-message');
 const studentList = document.getElementById('student-list');
-const newStudentCodeInput = document.getElementById('new-student-code');
+
+const addStudentMessage = document.getElementById('add-student-message');
 const newStudentNameInput = document.getElementById('new-student-name');
-const newStudentHifzStart = document.getElementById('new-student-hifz-start');
-const newStudentMurajaaStart = document.getElementById('new-student-murajaa-start');
+const newStudentCodeInput = document.getElementById('new-student-code');
+const newStudentHifzStartSelect = document.getElementById('new-student-hifz-start');
+const newStudentMurajaaStartSelect = document.getElementById('new-student-murajaa-start');
+const newStudentHifzGoalStartSelect = document.getElementById('new-student-hifz-goal-start'); // New
+const newStudentHifzGoalEndSelect = document.getElementById('new-student-hifz-goal-end');   // New
+const addStudentButton = document.getElementById('add-student-button');
 
-const registerStudentButton = document.getElementById('register-student-button');
-const registerStudentMessage = document.getElementById('register-student-message');
+const assignTasksMessage = document.getElementById('assign-tasks-message');
+const assignTaskStudentSelect = document.getElementById('assign-task-student');
+const assignTaskTypeSelect = document.getElementById('assign-task-type');
+const hifzSectionSelectGroup = document.getElementById('hifz-section-select-group');
+const hifzSectionSelect = document.getElementById('hifz-section-select');
+const murajaaSectionSelectGroup = document.getElementById('murajaa-section-select-group');
+const murajaaSectionSelect = document.getElementById('murajaa-section-select');
+const assignTaskDescriptionTextarea = document.getElementById('assign-task-description');
+const assignTaskPointsInput = document.getElementById('assign-task-points');
+const assignTaskButton = document.getElementById('assign-task-button');
 
-const assignTaskStudentCode = document.getElementById('assign-task-student-code');
-const assignTaskType = document.getElementById('assign-task-type');
-const assignTaskDescription = document.getElementById('assign-task-description');
-const assignTaskPoints = document.getElementById('assign-task-points');
-const assignIndividualTaskButton = document.getElementById('assign-individual-task-button');
-const assignGroupTaskButton = document.getElementById('assign-group-task-button');
-const assignTaskMessage = document.getElementById('assign-task-message');
+const pendingTasksMessage = document.getElementById('pending-tasks-message'); // New
+const pendingTasksList = document.getElementById('pending-tasks-list');     // New
 
-const hifzCurriculumDisplay = document.getElementById('hifz-curriculum-display');
-const murajaaCurriculumDisplay = document.getElementById('murajaa-curriculum-display');
+const leaderboardMessage = document.getElementById('leaderboard-message'); // New
+const leaderboardList = document.getElementById('leaderboard-list');     // New
+
+const curriculumTypeSelect = document.getElementById('curriculum-type-select');
+const curriculumList = document.getElementById('curriculum-list');
+
+// Student Screen Elements
+const logoutButtonStudent = document.getElementById('logout-button-student');
+const studentNameDisplay = document.getElementById('student-name-display');
+const studentDashboardMessage = document.getElementById('student-dashboard-message');
+const studentTotalPointsDisplay = document.getElementById('student-total-points-display');
+const studentHifzProgressDisplay = document.getElementById('student-hifz-progress-display');
+const studentMurajaaProgressDisplay = document.getElementById('student-murajaa-progress-display');
+const studentTasksList = document.getElementById('student-tasks-list');
+const studentHifzGoalDisplay = document.getElementById('student-hifz-goal-display'); // New
+const hifzProgressBarContainer = document.getElementById('hifz-progress-bar-container'); // New
+const hifzProgressBar = document.getElementById('hifz-progress-bar'); // New
+const murajaaProgressBar = document.getElementById('murajaa-progress-bar'); // New
 
 
-let currentUser = null; // Stores current logged-in user data
+// --- Global Variables ---
+let currentUser = null; // Stores current user (student or teacher) data
+let userRole = null;    // 'teacher' or 'student'
 
-// --- STATIC CURRICULUM DATA ---
-// منهج الحفظ الأصلي: من المرسلات إلى الأحقاف
 const HifzCurriculum = [
     // المرسلات
     { surah: 'المرسلات', start_ayah: 1, end_ayah: 15, points: 5, type: 'hifz', label: 'المرسلات (1-15)' },
@@ -308,7 +310,6 @@ const HifzCurriculum = [
     { surah: 'الأحقاف', start_ayah: 33, end_ayah: 35, points: 5, type: 'hifz', label: 'الأحقاف (33-35)' },
 ];
 
-// منهج المراجعة المتكامل: من الأحقاف إلى الناس (ترتيب تنازلي في المصحف)
 const MurajaaCurriculum = [
     // الأحقاف (مقسمة)
     { surah: 'الأحقاف', label: 'مراجعة الأحقاف (1-16)', points: 3, type: 'murajaa', hifz_start_index: 0, hifz_end_index: 4 }, // يمثل أول 5 مقاطع
@@ -397,6 +398,10 @@ const MurajaaCurriculum = [
     { surah: 'البلد إلى الناس', label: 'مراجعة البلد إلى الناس', points: 3, type: 'murajaa', hifz_start_index: -1, hifz_end_index: -1 },
 ];
 
+// Helper to generate unique IDs
+function generateUniqueId() {
+    return db.collection('dummy').doc().id;
+}
 
 // --- Helper Functions ---
 function showMessage(element, msg, type) {
@@ -410,364 +415,841 @@ function showMessage(element, msg, type) {
 
 function hideAllScreens() {
     authScreen.classList.add('hidden');
-    studentScreen.classList.add('hidden');
     teacherScreen.classList.add('hidden');
+    studentScreen.classList.add('hidden');
 }
 
 function setActiveTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.add('hidden');
+    teacherTabButtons.forEach(button => {
+        if (button.dataset.tab + '-tab' === tabId) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
+        }
     });
-    document.getElementById(tabId).classList.remove('hidden');
 
-    tabButtons.forEach(button => {
-        button.classList.remove('active');
+    teacherTabContents.forEach(content => {
+        if (content.id === tabId) {
+            content.classList.remove('hidden');
+        } else {
+            content.classList.add('hidden');
+        }
     });
-    document.querySelector(`.tab-button[data-tab="${tabId.replace('-tab', '')}"]`).classList.add('active');
 }
 
-// Function to generate a simple unique ID for local tasks
-function generateUniqueId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-}
-
-// --- NEW FUNCTION: Populate Curriculum Selects ---
 function populateCurriculumSelects() {
-    // Populate Hifz Select (using index as value)
-    const hifzOptions = HifzCurriculum.map((item, index) =>
-        `<option value="${index}">${item.label} (الدليل: ${index})</option>`
-    ).join('');
-    newStudentHifzStart.innerHTML = hifzOptions;
+    // Populate Hifz Start/Progress Selects
+    newStudentHifzStartSelect.innerHTML = '';
+    newStudentHifzGoalStartSelect.innerHTML = ''; // For goal
+    newStudentHifzGoalEndSelect.innerHTML = '';   // For goal
+    hifzSectionSelect.innerHTML = '';
 
-    // Populate Murajaa Select (using index as value)
-    const murajaaOptions = MurajaaCurriculum.map((item, index) =>
-        `<option value="${index}">${item.label} (الدليل: ${index})</option>`
-    ).join('');
-    newStudentMurajaaStart.innerHTML = murajaaOptions;
-}
-
-// --- Core App Functions (Firebase Operations) ---
-
-// Function to display student progress
-async function displayStudentDashboard(student) {
-    welcomeStudent.textContent = `أهلاً بك يا ${student.name}`;
-    
-    // Get the actual curriculum items based on saved indices
-    const currentHifzItem = HifzCurriculum[student.hifz_progress];
-    const currentMurajaaItem = MurajaaCurriculum[student.murajaa_progress];
-
-    studentHifzProgress.textContent = currentHifzItem ? currentHifzItem.label : 'المنهج غير مُعين';
-    studentMurajaaProgress.textContent = currentMurajaaItem ? currentMurajaaItem.label : 'المنهج غير مُعين';
-    studentTotalPoints.textContent = student.total_points;
-
-    // Display tasks
-    studentTasksDiv.innerHTML = student.tasks.length === 0 ? '<p>لا توجد مهام حاليًا. وفقك الله.</p>' : '';
-    
-    student.tasks.forEach(task => {
-        const taskElement = document.createElement('div');
-        taskElement.className = `task-item ${task.type} ${task.completed ? 'completed' : ''}`;
-        taskElement.innerHTML = `
-            <div class="task-description">المهمة: ${task.description}</div>
-            <div class="task-points">النقاط: ${task.points}</div>
-            <div class="task-status">الحالة: <strong>${task.completed ? 'مُنجزة' : 'قيد الإنجاز'}</strong></div>
-            <div class="task-actions">
-                <button class="complete-btn" data-task-id="${task.id}" ${task.completed ? 'disabled' : ''}>
-                    إنجاز
-                </button>
-            </div>
-        `;
-        // Attach event listener for task completion
-        taskElement.querySelector('.complete-btn').addEventListener('click', () => completeTask(student.code, task.id, task.points));
-
-        studentTasksDiv.appendChild(taskElement);
+    HifzCurriculum.forEach((section, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = section.name;
+        newStudentHifzStartSelect.appendChild(option.cloneNode(true));
+        newStudentHifzGoalStartSelect.appendChild(option.cloneNode(true)); // For goal start
+        newStudentHifzGoalEndSelect.appendChild(option.cloneNode(true));   // For goal end
+        hifzSectionSelect.appendChild(option.cloneNode(true));
     });
 
-    hideAllScreens();
-    studentScreen.classList.remove('hidden');
+    // Populate Murajaa Start/Progress Selects
+    newStudentMurajaaStartSelect.innerHTML = '';
+    murajaaSectionSelect.innerHTML = '';
+
+    MurajaaCurriculum.forEach((section, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = section.name;
+        newStudentMurajaaStartSelect.appendChild(option.cloneNode(true));
+        murajaaSectionSelect.appendChild(option.cloneNode(true));
+    });
+
+    // Set default selected for goals to cover full range
+    if (newStudentHifzGoalStartSelect.options.length > 0) {
+        newStudentHifzGoalStartSelect.value = 0;
+    }
+    if (newStudentHifzGoalEndSelect.options.length > 0) {
+        newStudentHifzGoalEndSelect.value = HifzCurriculum.length - 1;
+    }
 }
 
-// Function for loading students for the teacher panel
-async function loadStudentsForTeacher() {
-    studentList.innerHTML = '<li>جارٍ تحميل بيانات الطلاب...</li>';
+
+// --- Curriculum Display for Teacher ---
+function displayCurriculumsInTeacherPanel() {
+    const selectedCurriculumType = curriculumTypeSelect.value;
+    const curriculumData = selectedCurriculumType === 'hifz' ? HifzCurriculum : MurajaaCurriculum;
+
+    curriculumList.innerHTML = '';
+    if (curriculumData.length === 0) {
+        curriculumList.innerHTML = '<p>لا يوجد منهج محدد.</p>';
+        return;
+    }
+
+    curriculumData.forEach((section, index) => {
+        const listItem = document.createElement('li');
+        listItem.className = 'task-item'; // Reusing task-item style
+        listItem.innerHTML = `
+            <div class="task-description">${index + 1}. ${section.name}</div>
+        `;
+        curriculumList.appendChild(listItem);
+    });
+}
+
+// --- Authentication ---
+async function registerTeacher(email, password) {
     try {
-        const studentsColRef = collection(db, 'students');
-        const snapshot = await getDocs(studentsColRef);
-        if (snapshot.empty) {
-            studentList.innerHTML = '<li>لا يوجد طلاب مسجلين بعد.</li>';
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        // Save teacher data to Firestore
+        await db.collection('users').doc(userCredential.user.uid).set({
+            email: email,
+            role: 'teacher'
+        });
+        showMessage(authMessage, 'تم تسجيل حساب المعلم بنجاح! يمكنك الآن تسجيل الدخول.', 'success');
+    } catch (error) {
+        showMessage(authMessage, `خطأ في التسجيل: ${error.message}`, 'error');
+        console.error("Registration error:", error);
+    }
+}
+
+async function loginUser(email, password) {
+    try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const userDoc = await db.collection('users').doc(userCredential.user.uid).get();
+        if (userDoc.exists) {
+            userRole = userDoc.data().role;
+            if (userRole === 'teacher') {
+                showTeacherScreen();
+            } else {
+                // This path shouldn't be reached if only teachers use email/password
+                // Students use code for login
+                showMessage(authMessage, 'فقط المعلمون يمكنهم تسجيل الدخول بهذا الحساب.', 'error');
+                await auth.signOut(); // Force logout
+            }
+        } else {
+            showMessage(authMessage, 'لا توجد بيانات مستخدم. يرجى الاتصال بالمسؤول.', 'error');
+            await auth.signOut();
+        }
+    } catch (error) {
+        showMessage(authMessage, `خطأ في تسجيل الدخول: ${error.message}`, 'error');
+        console.error("Login error:", error);
+    }
+}
+
+async function loginStudent(studentCode) {
+    try {
+        const studentsRef = db.collection('students');
+        const querySnapshot = await studentsRef.where('code', '==', studentCode).limit(1).get();
+
+        if (querySnapshot.empty) {
+            showMessage(authMessage, 'رمز الطالب غير صحيح. يرجى التحقق وإعادة المحاولة.', 'error');
             return;
         }
 
-        studentList.innerHTML = '';
-        snapshot.forEach(documentSnapshot => {
-            const student = documentSnapshot.data();
+        currentUser = querySnapshot.docs[0].data();
+        currentUser.id = querySnapshot.docs[0].id; // Store Firestore doc ID
+        userRole = 'student';
+        showStudentScreen();
+    } catch (error) {
+        showMessage(authMessage, `خطأ في تسجيل دخول الطالب: ${error.message}`, 'error');
+        console.error("Student Login error:", error);
+    }
+}
+
+function logoutUser() {
+    auth.signOut().then(() => {
+        currentUser = null;
+        userRole = null;
+        hideAllScreens();
+        authScreen.classList.remove('hidden');
+        emailInput.value = '';
+        passwordInput.value = '';
+        // Clear student code input if it was used for student login
+        const studentCodeInput = document.getElementById('student-code-login');
+        if (studentCodeInput) {
+            studentCodeInput.value = '';
+        }
+    }).catch((error) => {
+        console.error("Error signing out:", error);
+    });
+}
+
+// Check auth state on load
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        // Teacher logged in via email/password
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists && userDoc.data().role === 'teacher') {
+            userRole = 'teacher';
+            showTeacherScreen();
+        } else {
+            // Should not happen for email/password if only teachers register
+            logoutUser();
+        }
+    } else if (currentUser && userRole === 'student') {
+        // Student already logged in via code, keep student screen
+        showStudentScreen();
+    } else {
+        // No one logged in
+        hideAllScreens();
+        authScreen.classList.remove('hidden');
+        // Add student code input for direct student login
+        if (!document.getElementById('student-code-login')) {
+            const studentCodeFormGroup = document.createElement('div');
+            studentCodeFormGroup.className = 'form-group';
+            studentCodeFormGroup.innerHTML = `
+                <label for="student-code-login">أو أدخل رمز الطالب:</label>
+                <input type="text" id="student-code-login" placeholder="أدخل رمز الطالب للدخول" required>
+            `;
+            authScreen.insertBefore(studentCodeFormGroup, loginButton.parentNode);
+
+            const studentLoginButton = document.createElement('button');
+            studentLoginButton.id = 'student-login-button';
+            studentLoginButton.textContent = 'دخول الطالب';
+            studentLoginButton.style.backgroundColor = '#6c757d'; // Grey button
+            studentLoginButton.style.marginRight = '10px';
+            authScreen.insertBefore(studentLoginButton, loginButton.parentNode);
+
+            studentLoginButton.addEventListener('click', () => {
+                const studentCode = document.getElementById('student-code-login').value;
+                if (studentCode) {
+                    loginStudent(studentCode);
+                } else {
+                    showMessage(authMessage, 'الرجاء إدخال رمز الطالب.', 'error');
+                }
+            });
+        }
+    }
+});
+
+// --- Screen Display Functions ---
+function showTeacherScreen() {
+    hideAllScreens();
+    teacherScreen.classList.remove('hidden');
+    setActiveTab('manage-students-tab'); // Default tab
+    loadStudentsForTeacher();
+    populateCurriculumSelects(); // Populate selects for adding student/assigning tasks
+    displayCurriculumsInTeacherPanel(); // Display default curriculum
+}
+
+async function showStudentScreen() {
+    if (!currentUser || userRole !== 'student') {
+        logoutUser();
+        return;
+    }
+    hideAllScreens();
+    studentScreen.classList.remove('hidden');
+    displayStudentDashboard(currentUser);
+
+    // Setup real-time listener for student's data
+    // This will update the student dashboard whenever their data changes (e.g., teacher approves a task)
+    db.collection('students').doc(currentUser.id).onSnapshot((docSnapshot) => {
+        if (docSnapshot.exists) {
+            currentUser = docSnapshot.data();
+            currentUser.id = docSnapshot.id;
+            displayStudentDashboard(currentUser);
+        } else {
+            // Student document no longer exists or was deleted
+            logoutUser();
+        }
+    }, (error) => {
+        console.error("Error listening to student data:", error);
+        showMessage(studentDashboardMessage, `حدث خطأ أثناء تحديث بياناتك: ${error.message}`, 'error');
+    });
+}
+// --- Teacher Functions ---
+
+// Load all students for the teacher panel
+async function loadStudentsForTeacher() {
+    studentList.innerHTML = '<li>جارٍ تحميل الطلاب...</li>';
+    try {
+        const studentsRef = db.collection('students');
+        const querySnapshot = await studentsRef.orderBy('name', 'asc').get(); // Order by name for consistency
+
+        studentList.innerHTML = ''; // Clear previous list
+        if (querySnapshot.empty) {
+            studentList.innerHTML = '<p>لا يوجد طلاب مسجلون حاليًا.</p>';
+            return;
+        }
+
+        querySnapshot.forEach(doc => {
+            const student = doc.data();
             const listItem = document.createElement('li');
-            const hifzLabel = HifzCurriculum[student.hifz_progress] ? HifzCurriculum[student.hifz_progress].label : 'غير محدد';
+            listItem.className = 'student-item';
             listItem.innerHTML = `
-                <span><strong>${student.name}</strong> (${student.code}) - الحفظ: ${hifzLabel} | النقاط: ${student.total_points}</span>
-                <div class="student-actions">
-                    <button class="delete-btn" data-code="${student.code}">حذف</button>
+                <div class="student-details">
+                    <h4>${student.name} (${student.code})</h4>
+                    <p>النقاط: ${student.total_points || 0}</p>
+                    <p>الحفظ: ${HifzCurriculum[student.hifz_progress]?.name || 'غير محدد'}</p>
+                    <p>المراجعة: ${MurajaaCurriculum[student.murajaa_progress]?.name || 'غير محدد'}</p>
+                    <p>هدف الحفظ: ${
+                        (student.hifz_goal_start_index !== undefined && student.hifz_goal_end_index !== undefined)
+                        ? `${HifzCurriculum[student.hifz_goal_start_index]?.name || ''} إلى ${HifzCurriculum[student.hifz_goal_end_index]?.name || ''}`
+                        : 'لم يحدد'
+                    }</p>
                 </div>
+                <div class="student-actions">
+                    <button class="delete-student-btn" data-id="${doc.id}">حذف</button>
+                    </div>
             `;
             studentList.appendChild(listItem);
         });
 
         // Add event listeners for delete buttons
-        document.querySelectorAll('.delete-btn').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const code = e.target.dataset.code;
-                if (confirm(`هل أنت متأكد من حذف الطالب ذي الرمز ${code}؟`)) {
-                    try {
-                        const studentDocRef = doc(db, 'students', code);
-                        await deleteDoc(studentDocRef);
-                        showMessage(authMessage, `تم حذف الطالب ${code} بنجاح.`, 'success');
-                        loadStudentsForTeacher(); // Reload list
-                    } catch (error) {
-                        showMessage(authMessage, `خطأ في الحذف: ${error.message}`, 'error');
-                        console.error("Error deleting student: ", error);
-                    }
+        document.querySelectorAll('.delete-student-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+                const studentId = button.dataset.id;
+                if (confirm('هل أنت متأكد من حذف هذا الطالب؟ سيتم حذف جميع بياناته.')) {
+                    await db.collection('students').doc(studentId).delete();
+                    showMessage(manageStudentsMessage, 'تم حذف الطالب بنجاح.', 'success');
+                    loadStudentsForTeacher(); // Reload list
                 }
             });
         });
 
+        // Populate student select for assigning tasks
+        assignTaskStudentSelect.innerHTML = '<option value="">اختر الطالب</option>';
+        querySnapshot.forEach(doc => {
+            const student = doc.data();
+            const option = document.createElement('option');
+            option.value = doc.id; // Use doc.id for Firestore reference
+            option.textContent = `${student.name} (${student.code})`;
+            assignTaskStudentSelect.appendChild(option);
+        });
+
     } catch (error) {
-        studentList.innerHTML = '<li>حدث خطأ في تحميل بيانات الطلاب.</li>';
-        console.error("Error loading students: ", error);
+        showMessage(manageStudentsMessage, `خطأ في تحميل الطلاب: ${error.message}`, 'error');
+        console.error("Error loading students:", error);
     }
 }
 
-// Function to display the curriculum in the teacher panel
-function displayCurriculumsInTeacherPanel() {
-    // Display Hifz Curriculum
-    hifzCurriculumDisplay.innerHTML = HifzCurriculum.map((item, index) =>
-        `<div>(${index}) ${item.label} (${item.points} نقاط)</div>`
-    ).join('');
+// Add a new student
+async function addStudent() {
+    const name = newStudentNameInput.value.trim();
+    const code = newStudentCodeInput.value.trim();
+    const hifzStart = parseInt(newStudentHifzStartSelect.value);
+    const murajaaStart = parseInt(newStudentMurajaaStartSelect.value);
+    const hifzGoalStart = parseInt(newStudentHifzGoalStartSelect.value); // New
+    const hifzGoalEnd = parseInt(newStudentHifzGoalEndSelect.value);     // New
 
-    // Display Murajaa Curriculum
-    murajaaCurriculumDisplay.innerHTML = MurajaaCurriculum.map((item, index) =>
-        `<div>(${index}) ${item.label} (${item.points} نقاط)</div>`
-    ).join('');
+    if (!name || !code || isNaN(hifzStart) || isNaN(murajaaStart) || isNaN(hifzGoalStart) || isNaN(hifzGoalEnd)) {
+        showMessage(addStudentMessage, 'الرجاء تعبئة جميع الحقول بشكل صحيح.', 'error');
+        return;
+    }
+
+    try {
+        // Check for duplicate student code
+        const existingStudent = await db.collection('students').where('code', '==', code).limit(1).get();
+        if (!existingStudent.empty) {
+            showMessage(addStudentMessage, 'رمز الطالب هذا مستخدم بالفعل. الرجاء اختيار رمز آخر.', 'error');
+            return;
+        }
+
+        await db.collection('students').add({
+            name: name,
+            code: code,
+            hifz_progress: hifzStart,
+            murajaa_progress: murajaaStart,
+            total_points: 0,
+            tasks: [],
+            hifz_goal_start_index: hifzGoalStart, // New
+            hifz_goal_end_index: hifzGoalEnd,     // New
+            created_at: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showMessage(addStudentMessage, 'تم إضافة الطالب بنجاح!', 'success');
+        newStudentNameInput.value = '';
+        newStudentCodeInput.value = '';
+        populateCurriculumSelects(); // Reset selects
+        loadStudentsForTeacher(); // Reload student list
+    } catch (error) {
+        showMessage(addStudentMessage, `خطأ في إضافة الطالب: ${error.message}`, 'error');
+        console.error("Error adding student:", error);
+    }
 }
 
+// Assign a new task to a student
+async function assignTask() {
+    const studentId = assignTaskStudentSelect.value;
+    const taskType = assignTaskTypeSelect.value;
+    let description = assignTaskDescriptionTextarea.value.trim();
+    const points = parseInt(assignTaskPointsInput.value);
 
-// Function for task completion
-async function completeTask(studentCode, taskId, points) {
+    if (!studentId || !taskType || !description || isNaN(points) || points <= 0) {
+        showMessage(assignTasksMessage, 'الرجاء تعبئة جميع الحقول بشكل صحيح.', 'error');
+        return;
+    }
+
+    // Auto-fill description for Hifz/Murajaa
+    if (taskType === 'hifz' && hifzSectionSelect.value !== '') {
+        const sectionIndex = parseInt(hifzSectionSelect.value);
+        description = `حفظ ${HifzCurriculum[sectionIndex].name}`;
+    } else if (taskType === 'murajaa' && murajaaSectionSelect.value !== '') {
+        const sectionIndex = parseInt(murajaaSectionSelect.value);
+        description = `مراجعة ${MurajaaCurriculum[sectionIndex].name}`;
+    } else if ((taskType === 'hifz' || taskType === 'murajaa') && description === '') {
+         showMessage(assignTasksMessage, 'الرجاء اختيار مقطع للمهمة.', 'error');
+         return;
+    }
+
+
     try {
-        const studentDocRef = doc(db, 'students', studentCode);
-        const docSnapshot = await getDoc(studentDocRef);
+        const studentDocRef = db.collection('students').doc(studentId);
+        const studentDoc = await studentDocRef.get();
+        if (!studentDoc.exists) {
+            showMessage(assignTasksMessage, 'الطالب غير موجود.', 'error');
+            return;
+        }
+
+        const student = studentDoc.data();
+        const newTask = {
+            id: generateUniqueId(),
+            type: taskType,
+            description: description,
+            points: points,
+            completed: false, // All new tasks are initially not completed
+            assigned_at: firebase.firestore.FieldValue.serverTimestamp(),
+            // No 'status' field initially, it will be 'pending' when student completes it
+            // Optional: link to curriculum index if it's a hifz/murajaa task
+            curriculum_index: (taskType === 'hifz' && hifzSectionSelect.value !== '') ? parseInt(hifzSectionSelect.value) : 
+                              (taskType === 'murajaa' && murajaaSectionSelect.value !== '') ? parseInt(murajaaSectionSelect.value) : null
+        };
+
+        await studentDocRef.update({
+            tasks: firebase.firestore.FieldValue.arrayUnion(newTask)
+        });
+
+        showMessage(assignTasksMessage, 'تم تعيين المهمة بنجاح!', 'success');
+        assignTaskDescriptionTextarea.value = '';
+        assignTaskPointsInput.value = '10';
+        assignTaskTypeSelect.value = ''; // Reset select
+        hifzSectionSelectGroup.style.display = 'none';
+        murajaaSectionSelectGroup.style.display = 'none';
+    } catch (error) {
+        showMessage(assignTasksMessage, `خطأ في تعيين المهمة: ${error.message}`, 'error');
+        console.error("Error assigning task:", error);
+    }
+}
+
+// --- NEW FUNCTION: Load Pending Tasks for Teacher ---
+async function loadPendingTasks() {
+    pendingTasksList.innerHTML = '<li>جارٍ البحث عن مهام قيد المراجعة...</li>';
+    pendingTasksMessage.classList.add('hidden'); // Hide previous messages
+    
+    try {
+        const studentsColRef = db.collection('students');
+        const snapshot = await studentsColRef.get();
+        let pendingCount = 0;
+
+        pendingTasksList.innerHTML = '';
+        
+        snapshot.forEach(studentDoc => {
+            const student = studentDoc.data();
+            const studentId = studentDoc.id; // Get Firestore document ID
+            student.tasks.forEach(task => {
+                // نبحث عن المهام التي حالتها 'pending'
+                if (task.status === 'pending') {
+                    pendingCount++;
+                    const listItem = document.createElement('li');
+                    listItem.className = 'pending-task-item';
+                    listItem.innerHTML = `
+                        <div class="pending-task-details">
+                            <span>**الطالب:** ${student.name} (${student.code}) | **المهمة:** ${task.description} | **النقاط:** ${task.points}</span>
+                        </div>
+                        <div class="pending-task-actions">
+                            <button class="approve-btn" data-student-id="${studentId}" data-task-id="${task.id}" data-points="${task.points}" data-type="${task.type}" data-curriculum-index="${task.curriculum_index || -1}">موافقة</button>
+                            <button class="reject-btn" data-student-id="${studentId}" data-task-id="${task.id}">رفض</button>
+                        </div>
+                    `;
+                    pendingTasksList.appendChild(listItem);
+                }
+            });
+        });
+
+        if (pendingCount === 0) {
+            pendingTasksList.innerHTML = '<li style="color: green; font-weight: bold;">لا توجد مهام قيد المراجعة حاليًا.</li>';
+        }
+
+        // Add event listeners for approval/rejection
+        document.querySelectorAll('.approve-btn').forEach(button => {
+            button.addEventListener('click', () => approveTask(
+                button.dataset.studentId, 
+                button.dataset.taskId, 
+                parseInt(button.dataset.points), 
+                button.dataset.type,
+                parseInt(button.dataset.curriculumIndex) // Pass curriculum_index
+            ));
+        });
+
+        document.querySelectorAll('.reject-btn').forEach(button => {
+            button.addEventListener('click', () => rejectTask(
+                button.dataset.studentId, 
+                button.dataset.taskId
+            ));
+        });
+        
+    } catch (error) {
+        showMessage(pendingTasksMessage, 'خطأ في تحميل مهام المراجعة.', 'error');
+        console.error("Error loading pending tasks: ", error);
+    }
+}
+
+// --- Approve Task (TEACHER ACTION) ---
+async function approveTask(studentId, taskId, points, taskType, curriculumIndex) {
+    try {
+        const studentDocRef = db.collection('students').doc(studentId);
+        const docSnapshot = await studentDocRef.get();
         if (!docSnapshot.exists()) return;
         
         const student = docSnapshot.data();
         const taskIndex = student.tasks.findIndex(t => t.id === taskId);
 
-        if (taskIndex !== -1 && !student.tasks[taskIndex].completed) {
-            student.tasks[taskIndex].completed = true;
-            student.total_points += points;
+        if (taskIndex !== -1 && student.tasks[taskIndex].status === 'pending') {
+            student.tasks[taskIndex].status = 'approved'; // لتتبع أن المهمة تمت الموافقة عليها (اختياري)
+            student.tasks[taskIndex].completed = true;    // إكمال المهمة
+            student.total_points = (student.total_points || 0) + points;               // إضافة النقاط
             
-            // Auto advance progress for Hifz/Murajaa tasks (Simplified Logic)
-            if (student.tasks[taskIndex].type === 'hifz') {
-                student.hifz_progress = Math.min(student.hifz_progress + 1, HifzCurriculum.length - 1);
-            } else if (student.tasks[taskIndex].type === 'murajaa') {
-                 student.murajaa_progress = Math.min(student.murajaa_progress + 1, MurajaaCurriculum.length - 1);
+            // تحديث التقدم التلقائي بعد الموافقة، فقط إذا كانت المهمة تابعة للمنهج وتقدمت
+            if (taskType === 'hifz' && curriculumIndex !== -1 && student.hifz_progress <= curriculumIndex) {
+                student.hifz_progress = Math.min(curriculumIndex + 1, HifzCurriculum.length); // Advance to next section
+            } else if (taskType === 'murajaa' && curriculumIndex !== -1 && student.murajaa_progress <= curriculumIndex) {
+                 student.murajaa_progress = Math.min(curriculumIndex + 1, MurajaaCurriculum.length); // Advance to next section
             }
 
             // Update Firestore
-            await updateDoc(studentDocRef, {
+            await studentDocRef.update({
                 tasks: student.tasks,
                 total_points: student.total_points,
                 hifz_progress: student.hifz_progress,
                 murajaa_progress: student.murajaa_progress
             });
 
-            // Re-render dashboard
-            currentUser = student;
-            displayStudentDashboard(currentUser);
-            showMessage(authMessage, `تم إنجاز المهمة بنجاح! تم إضافة ${points} نقطة.`, 'success');
+            showMessage(pendingTasksMessage, `تمت الموافقة على مهمة الطالب ${student.name} وإضافة ${points} نقطة.`, 'success');
+            loadPendingTasks(); // إعادة تحميل قائمة المهام المعلقة
         }
 
     } catch (error) {
-        console.error("Error completing task: ", error);
-        showMessage(authMessage, `حدث خطأ أثناء إنجاز المهمة: ${error.message}`, 'error');
+        showMessage(pendingTasksMessage, `خطأ في الموافقة: ${error.message}`, 'error');
+        console.error("Error approving task: ", error);
     }
 }
 
+// --- Reject Task (TEACHER ACTION) ---
+async function rejectTask(studentId, taskId) {
+    try {
+        const studentDocRef = db.collection('students').doc(studentId);
+        const docSnapshot = await studentDocRef.get();
+        if (!docSnapshot.exists()) return;
+        
+        const student = docSnapshot.data();
+        const taskIndex = student.tasks.findIndex(t => t.id === taskId);
 
-// --- Authentication ---
-loginButton.addEventListener('click', async () => {
-    const userCode = userCodeInput.value.trim();
-    if (!userCode) {
-        showMessage(authMessage, 'الرجاء إدخال رمز الطالب أو المعلم.', 'error');
-        return;
+        if (taskIndex !== -1 && student.tasks[taskIndex].status === 'pending') {
+            student.tasks[taskIndex].status = 'rejected'; // حالة جديدة للرفض
+            // نعود بالحالة إلى لا شيء ليتمكن الطالب من المحاولة مجدداً
+            delete student.tasks[taskIndex].status; // Remove status so it can be re-sent
+            student.tasks[taskIndex].completed = false; // Ensure it's not marked completed
+            
+            // Update Firestore
+            await studentDocRef.update({
+                tasks: student.tasks,
+            });
+
+            showMessage(pendingTasksMessage, `تم رفض مهمة الطالب ${student.name}. سيتمكن من إعادة إرسالها.`, 'error');
+            loadPendingTasks(); // إعادة تحميل قائمة المهام المعلقة
+        }
+
+    } catch (error) {
+        showMessage(pendingTasksMessage, `خطأ في الرفض: ${error.message}`, 'error');
+        console.error("Error rejecting task: ", error);
+    }
+}
+
+// --- NEW FUNCTION: Load Leaderboard ---
+async function loadLeaderboard() {
+    leaderboardList.innerHTML = '<li>جارٍ تحميل الترتيب...</li>';
+    leaderboardMessage.classList.add('hidden');
+    try {
+        const studentsRef = db.collection('students');
+        // Order by total_points in descending order, then by name for tie-breaking
+        const querySnapshot = await studentsRef.orderBy('total_points', 'desc').orderBy('name', 'asc').get();
+
+        leaderboardList.innerHTML = '';
+        if (querySnapshot.empty) {
+            leaderboardList.innerHTML = '<li style="color: gray;">لا يوجد طلاب في الترتيب بعد.</li>';
+            return;
+        }
+
+        let rank = 1;
+        querySnapshot.forEach(doc => {
+            const student = doc.data();
+            const listItem = document.createElement('li');
+            listItem.className = 'leaderboard-item';
+            listItem.innerHTML = `
+                <div class="leaderboard-details">
+                    <span><strong>المركز ${rank}.</strong> ${student.name} (${student.code})</span>
+                </div>
+                <div>
+                    <span>النقاط: <strong>${student.total_points || 0}</strong></span>
+                </div>
+            `;
+            leaderboardList.appendChild(listItem);
+            rank++;
+        });
+
+    } catch (error) {
+        showMessage(leaderboardMessage, `خطأ في تحميل الترتيب: ${error.message}`, 'error');
+        console.error("Error loading leaderboard:", error);
+    }
+}
+
+// --- Student Functions ---
+
+// Display student dashboard
+async function displayStudentDashboard(student) {
+    studentNameDisplay.textContent = `أهلاً بك يا ${student.name}!`;
+    studentTotalPointsDisplay.textContent = student.total_points || 0;
+
+    // Display Hifz Progress
+    const currentHifzSection = HifzCurriculum[student.hifz_progress];
+    studentHifzProgressDisplay.textContent = currentHifzSection ? `وصلت إلى: ${currentHifzSection.name}` : 'لم تبدأ الحفظ بعد.';
+
+    // Display Murajaa Progress
+    const currentMurajaaSection = MurajaaCurriculum[student.murajaa_progress];
+    studentMurajaaProgressDisplay.textContent = currentMurajaaSection ? `وصلت إلى: ${currentMurajaaSection.name}` : 'لم تبدأ المراجعة بعد.';
+
+    // --- Calculate and Display Hifz Goal Progress ---
+    let hifzGoalPercentage = 0;
+    let hifzGoalText = 'لم يحدد لك المعلم هدفًا بعد.';
+    if (student.hifz_goal_start_index !== undefined && student.hifz_goal_end_index !== undefined && student.hifz_goal_start_index <= student.hifz_goal_end_index) {
+        const goalStart = student.hifz_goal_start_index;
+        const goalEnd = student.hifz_goal_end_index;
+        
+        const totalGoalSections = (goalEnd - goalStart) + 1;
+        
+        // Calculate sections completed within the goal
+        // min(current_progress, goal_end + 1) ensures we don't count progress beyond the goal end
+        // - goal_start ensures we count from the goal's beginning
+        const completedSectionsWithinGoal = Math.max(0, Math.min(student.hifz_progress, goalEnd + 1) - goalStart);
+        
+        hifzGoalPercentage = (totalGoalSections > 0) ? Math.floor((completedSectionsWithinGoal / totalGoalSections) * 100) : 0;
+        
+        hifzGoalText = `هدف الحفظ: من ${HifzCurriculum[goalStart]?.name || 'بداية الهدف'} إلى ${HifzCurriculum[goalEnd]?.name || 'نهاية الهدف'}`;
+    }
+    
+    studentHifzGoalDisplay.textContent = hifzGoalText;
+    hifzProgressBar.style.width = `${hifzGoalPercentage}%`;
+    hifzProgressBar.textContent = `${hifzGoalPercentage}%`;
+
+    // --- Display Limited Tasks ---
+    studentTasksList.innerHTML = ''; // Clear previous tasks
+
+    const availableHifzTasks = [];
+    const availableMurajaaTasks = [];
+    const availableGeneralTasks = [];
+
+    student.tasks.forEach(task => {
+        if (!task.completed && task.status !== 'pending') { // Only show active, non-pending tasks
+            if (task.type === 'hifz') {
+                availableHifzTasks.push(task);
+            } else if (task.type === 'murajaa') {
+                availableMurajaaTasks.push(task);
+            } else if (task.type === 'general') {
+                availableGeneralTasks.push(task);
+            }
+        }
+    });
+
+    // Sort hifz/murajaa tasks by curriculum_index to ensure correct order
+    availableHifzTasks.sort((a, b) => a.curriculum_index - b.curriculum_index);
+    availableMurajaaTasks.sort((a, b) => a.curriculum_index - b.curriculum_index);
+
+    let tasksToDisplay = [];
+
+    // Add up to 2 Hifz tasks that are relevant to current progress
+    let hifzTasksAdded = 0;
+    for (let i = 0; i < availableHifzTasks.length && hifzTasksAdded < 2; i++) {
+        const task = availableHifzTasks[i];
+        // Only show hifz tasks if their curriculum_index is at or after student's current progress
+        if (task.curriculum_index >= student.hifz_progress) {
+             tasksToDisplay.push(task);
+             hifzTasksAdded++;
+        }
     }
 
-    if (userCode === 'teacher') {
-        hideAllScreens();
-        teacherScreen.classList.remove('hidden');
-        currentUser = { id: 'teacher', name: 'المعلم', role: 'teacher' };
-        loadStudentsForTeacher();
-        displayCurriculumsInTeacherPanel();
-        setActiveTab('manage-students-tab'); // Default tab for teacher
-    } else {
-        try {
-            // Student Login Logic
-            const studentDocRef = doc(db, 'students', userCode);
-            const docSnapshot = await getDoc(studentDocRef);
-            if (docSnapshot.exists()) {
-                currentUser = docSnapshot.data();
-                displayStudentDashboard(currentUser);
-            } else {
-                showMessage(authMessage, 'رمز الطالب غير صحيح. حاول مجدداً.', 'error');
-            }
-        } catch (error) {
-            console.error("Login error: ", error);
-            showMessage(authMessage, 'حدث خطأ أثناء الاتصال بالخادم.', 'error');
+    // Add up to 2 Murajaa tasks that are relevant to current progress
+    let murajaaTasksAdded = 0;
+    for (let i = 0; i < availableMurajaaTasks.length && murajaaTasksAdded < 2; i++) {
+        const task = availableMurajaaTasks[i];
+         // Only show murajaa tasks if their curriculum_index is at or after student's current progress
+        if (task.curriculum_index >= student.murajaa_progress) {
+             tasksToDisplay.push(task);
+             murajaaTasksAdded++;
         }
+    }
+
+    // Add all general tasks
+    tasksToDisplay = tasksToDisplay.concat(availableGeneralTasks);
+
+
+    if (tasksToDisplay.length === 0 && student.tasks.filter(t => t.status === 'pending').length === 0) {
+        studentTasksList.innerHTML = '<p>لا توجد مهام حاليًا. وفقك الله.</p>';
+    } else if (student.tasks.filter(t => t.status === 'pending').length > 0) {
+        studentTasksList.innerHTML = '<p style="color: blue;">لديك مهام قيد المراجعة. انتظر موافقة المعلم.</p>';
+    }
+
+
+    tasksToDisplay.forEach(task => {
+        let statusText = 'قيد الإنجاز';
+        let buttonDisabled = '';
+        let buttonText = 'إنجاز';
+        let itemClass = '';
+
+        if (task.completed) {
+            statusText = 'مُنجزة';
+            buttonDisabled = 'disabled';
+            itemClass = 'completed';
+        } else if (task.status === 'pending') {
+            statusText = 'قيد مراجعة المعلم';
+            buttonDisabled = 'disabled';
+            buttonText = 'قيد المراجعة...';
+        }
+        
+        const taskElement = document.createElement('div');
+        taskElement.className = `task-item ${task.type} ${itemClass}`; 
+        taskElement.innerHTML = `
+            <div class="task-description">المهمة: ${task.description}</div>
+            <div class="task-points">النقاط: ${task.points}</div>
+            <div class="task-status">الحالة: <strong>${statusText}</strong></div>
+            <div class="task-actions">
+                <button class="complete-btn" data-task-id="${task.id}" ${buttonDisabled}>
+                    ${buttonText}
+                </button>
+            </div>
+        `;
+        // Attach event listener for task completion
+        taskElement.querySelector('.complete-btn').addEventListener('click', () => completeTask(student.id, task.id, task.points));
+
+        studentTasksList.appendChild(taskElement);
+    });
+}
+
+// Function for task completion (STUDENT SIDE) - changes task status to 'pending'
+async function completeTask(studentId, taskId, points) {
+    try {
+        const studentDocRef = db.collection('students').doc(studentId);
+        const docSnapshot = await studentDocRef.get();
+        if (!docSnapshot.exists()) return;
+        
+        const student = docSnapshot.data();
+        const taskIndex = student.tasks.findIndex(t => t.id === taskId);
+
+        if (taskIndex !== -1 && !student.tasks[taskIndex].completed && student.tasks[taskIndex].status !== 'pending') {
+            
+            student.tasks[taskIndex].status = 'pending'; 
+
+            await studentDocRef.update({
+                tasks: student.tasks,
+            });
+
+            // Re-render dashboard
+            currentUser = { ...student, id: studentId }; // Update current user
+            displayStudentDashboard(currentUser);
+            showMessage(studentDashboardMessage, `تم إرسال المهمة للمراجعة. انتظر موافقة المعلم.`, 'success');
+        }
+
+    } catch (error) {
+        console.error("Error setting task to pending: ", error);
+        showMessage(studentDashboardMessage, `حدث خطأ أثناء إرسال المهمة للمراجعة: ${error.message}`, 'error');
+    }
+}
+
+// --- Event Listeners ---
+
+// Auth Screen
+loginButton.addEventListener('click', () => {
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    if (email && password) {
+        loginUser(email, password);
+    } else {
+        showMessage(authMessage, 'الرجاء إدخال البريد الإلكتروني وكلمة المرور.', 'error');
     }
 });
 
-// --- Teacher Panel Logic ---
+registerButton.addEventListener('click', () => {
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    if (email && password) {
+        if (confirm('سيؤدي هذا إلى إنشاء حساب معلم. هل أنت متأكد؟')) {
+            registerTeacher(email, password);
+        }
+    } else {
+        showMessage(authMessage, 'الرجاء إدخال البريد الإلكتروني وكلمة المرور لإنشاء حساب المعلم.', 'error');
+    }
+});
 
-// Tab switching
-tabButtons.forEach(button => {
+// Teacher Screen
+logoutButtonTeacher.addEventListener('click', logoutUser);
+
+teacherTabButtons.forEach(button => {
     button.addEventListener('click', () => {
         setActiveTab(`${button.dataset.tab}-tab`);
+        
         if (button.dataset.tab === 'manage-students') {
             loadStudentsForTeacher();
+        } else if (button.dataset.tab === 'pending-tasks') {
+            loadPendingTasks(); // Load pending tasks when tab is clicked
+        } else if (button.dataset.tab === 'leaderboard') {
+            loadLeaderboard(); // Load leaderboard when tab is clicked
+        } else if (button.dataset.tab === 'manage-curriculum') {
+            displayCurriculumsInTeacherPanel();
         }
-        // Ensure selects are populated every time
-        if (button.dataset.tab === 'add-student') {
+        
+        // Ensure selects are populated every time for add student/assign tasks
+        if (button.dataset.tab === 'add-student' || button.dataset.tab === 'assign-tasks') {
              populateCurriculumSelects();
         }
     });
 });
 
-// Register Student Logic
-registerStudentButton.addEventListener('click', async () => {
-    const newStudentCode = newStudentCodeInput.value.trim();
-    const newStudentName = newStudentNameInput.value.trim();
-    const hifzStartIndex = parseInt(newStudentHifzStart.value);
-    const murajaaStartIndex = parseInt(newStudentMurajaaStart.value);
+addStudentButton.addEventListener('click', addStudent);
 
-    if (!newStudentCode || !newStudentName) {
-        showMessage(registerStudentMessage, 'الرجاء ملء جميع الحقول المطلوبة.', 'error');
-        return;
-    }
+// Assign Task tab selects
+assignTaskTypeSelect.addEventListener('change', () => {
+    const selectedType = assignTaskTypeSelect.value;
+    hifzSectionSelectGroup.style.display = 'none';
+    murajaaSectionSelectGroup.style.display = 'none';
+    assignTaskDescriptionTextarea.readOnly = false; // Enable for general tasks
 
-    if (hifzStartIndex < 0 || hifzStartIndex >= HifzCurriculum.length || isNaN(hifzStartIndex)) {
-        showMessage(registerStudentMessage, 'نقطة بداية الحفظ غير صالحة. الرجاء اختيار من القائمة.', 'error');
-        return;
-    }
-
-    if (murajaaStartIndex < 0 || murajaaStartIndex >= MurajaaCurriculum.length || isNaN(murajaaStartIndex)) {
-        showMessage(registerStudentMessage, 'نقطة بداية المراجعة غير صالحة. الرجاء اختيار من القائمة.', 'error');
-        return;
-    }
-
-    try {
-        const studentDocRef = doc(db, 'students', newStudentCode);
-        const docSnapshot = await getDoc(studentDocRef);
-
-        if (docSnapshot.exists()) {
-            showMessage(registerStudentMessage, `الرمز ${newStudentCode} مُسجل لطالب آخر. اختر رمزًا فريدًا.`, 'error');
-            return;
-        }
-        
-        // Add new student
-        await setDoc(studentDocRef, {
-            code: newStudentCode,
-            name: newStudentName,
-            role: 'student',
-            hifz_progress: hifzStartIndex,
-            murajaa_progress: murajaaStartIndex,
-            total_points: 0,
-            tasks: [
-                // Assign first tasks automatically (example)
-                { id: generateUniqueId(), description: `حفظ جديد: ${HifzCurriculum[hifzStartIndex].label}`, type: 'hifz', points: HifzCurriculum[hifzStartIndex].points, completed: false },
-                { id: generateUniqueId(), description: `مراجعة جديدة: ${MurajaaCurriculum[murajaaStartIndex].label}`, type: 'murajaa', points: MurajaaCurriculum[murajaaStartIndex].points, completed: false }
-            ],
-        });
-
-        showMessage(registerStudentMessage, `تم تسجيل الطالب ${newStudentName} بنجاح!`, 'success');
-        
-        // Clear inputs after successful registration
-        newStudentCodeInput.value = '';
-        newStudentNameInput.value = '';
-        
-    } catch (error) {
-        console.error("Registration error: ", error);
-        showMessage(registerStudentMessage, `خطأ في تسجيل الطالب: ${error.message}`, 'error');
+    if (selectedType === 'hifz') {
+        hifzSectionSelectGroup.style.display = 'block';
+        assignTaskDescriptionTextarea.readOnly = true; // Disable manual edit for hifz
+        assignTaskDescriptionTextarea.value = HifzCurriculum[parseInt(hifzSectionSelect.value)]?.name ? `حفظ ${HifzCurriculum[parseInt(hifzSectionSelect.value)].name}` : '';
+    } else if (selectedType === 'murajaa') {
+        murajaaSectionSelectGroup.style.display = 'block';
+        assignTaskDescriptionTextarea.readOnly = true; // Disable manual edit for murajaa
+        assignTaskDescriptionTextarea.value = MurajaaCurriculum[parseInt(murajaaSectionSelect.value)]?.name ? `مراجعة ${MurajaaCurriculum[parseInt(murajaaSectionSelect.value)].name}` : '';
+    } else {
+         assignTaskDescriptionTextarea.value = '';
     }
 });
 
-
-// Assign Task Logic (Individual/Group)
-assignIndividualTaskButton.addEventListener('click', async () => {
-    const code = assignTaskStudentCode.value.trim();
-    const type = assignTaskType.value;
-    const description = assignTaskDescription.value.trim();
-    const points = parseInt(assignTaskPoints.value);
-
-    if (!code || !description || isNaN(points) || points <= 0) {
-        showMessage(assignTaskMessage, 'الرجاء ملء رمز الطالب والوصف والنقاط بشكل صحيح.', 'error');
-        return;
-    }
-    
-    // Logic to assign task to a single student (using Firestore Update)
-    const task = { id: generateUniqueId(), description, type, points, completed: false };
-    try {
-        const studentDocRef = doc(db, 'students', code);
-        await updateDoc(studentDocRef, {
-            tasks: arrayUnion(task) // استخدام arrayUnion لإضافة عنصر إلى مصفوفة
-        });
-        showMessage(assignTaskMessage, `تم تعيين مهمة فردية للطالب ${code} بنجاح.`, 'success');
-    } catch (error) {
-        showMessage(assignTaskMessage, `خطأ: الطالب ${code} غير موجود أو خطأ في الاتصال. ${error.message}`, 'error');
-        console.error("Error assigning individual task: ", error);
+hifzSectionSelect.addEventListener('change', () => {
+    if (assignTaskTypeSelect.value === 'hifz') {
+        assignTaskDescriptionTextarea.value = `حفظ ${HifzCurriculum[parseInt(hifzSectionSelect.value)].name}`;
     }
 });
 
-assignGroupTaskButton.addEventListener('click', async () => {
-    const type = assignTaskType.value;
-    const description = assignTaskDescription.value.trim();
-    const points = parseInt(assignTaskPoints.value);
-
-    if (!description || isNaN(points) || points <= 0) {
-        showMessage(assignTaskMessage, 'الرجاء ملء الوصف والنقاط بشكل صحيح.', 'error');
-        return;
-    }
-    
-    // Logic to assign task to all students (Batch Write recommended for real app)
-    const task = { id: generateUniqueId(), description, type, points, completed: false };
-    try {
-        const studentsColRef = collection(db, 'students');
-        const studentsSnapshot = await getDocs(studentsColRef);
-        const batch = writeBatch(db); // استخدام writeBatch
-        studentsSnapshot.forEach(documentSnapshot => {
-            const studentDocRef = doc(db, 'students', documentSnapshot.id);
-            batch.update(studentDocRef, {
-                tasks: arrayUnion(task)
-            });
-        });
-        await batch.commit();
-        showMessage(assignTaskMessage, 'تم تعيين مهمة جماعية لجميع الطلاب بنجاح.', 'success');
-    } catch (error) {
-        showMessage(assignTaskMessage, `خطأ في تعيين المهمة الجماعية: ${error.message}`, 'error');
-        console.error("Error assigning group task: ", error);
+murajaaSectionSelect.addEventListener('change', () => {
+    if (assignTaskTypeSelect.value === 'murajaa') {
+        assignTaskDescriptionTextarea.value = `مراجعة ${MurajaaCurriculum[parseInt(murajaaSectionSelect.value)].name}`;
     }
 });
 
+assignTaskButton.addEventListener('click', assignTask);
 
-// --- Logout ---
-function logout() {
-    currentUser = null;
-    hideAllScreens();
-    authScreen.classList.remove('hidden');
-    userCodeInput.value = '';
-    showMessage(authMessage, 'تم تسجيل الخروج بنجاح.', 'success');
-}
+curriculumTypeSelect.addEventListener('change', displayCurriculumsInTeacherPanel);
 
-logoutButtonStudent.addEventListener('click', logout);
-logoutButtonTeacher.addEventListener('click', logout);
-
-// --- Initialization on load ---
-populateCurriculumSelects();
-
+// Student Screen
+logoutButtonStudent.addEventListener('click', logoutUser);
