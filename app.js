@@ -1,8 +1,18 @@
 // ///////////////////////////////////////////////////////////////////////////////
-// لا تستخدم عبارات "import" أو "export" هنا! سنستخدم المتغير العام "firebase"
+// هذا الملف يستخدم Firebase Modular SDK (الإصدار 9) مع عبارات import/export.
+// وهو مصمم للعمل مع ملف HTML الذي يحتوي على <script type="importmap">
+// وعلامة <script type="module" src="app.js"></script>.
 // ///////////////////////////////////////////////////////////////////////////////
 
-// Your web app's Firebase configuration (يبقى كما هو)
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, arrayUnion, writeBatch, FieldValue } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+// إذا كنت تستخدم getAnalytics، يمكنك إبقائها.
+// import { getAnalytics } from "firebase/analytics";
+
+// Your web app's Firebase configuration
+// تأكد أن هذه القيم هي نفسها التي حصلت عليها من لوحة تحكم Firebase لمشروعك.
 const firebaseConfig = {
     apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
     authDomain: "studenttasksmanager.firebaseapp.com",
@@ -13,13 +23,11 @@ const firebaseConfig = {
     measurementId: "G-7QC4FVXKZG"
 };
 
-// Initialize Firebase (سنستخدم الدوال التي سيتم تحميلها عبر CDN)
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore(); // طريقة الوصول للـ Firestore القديمة/المتوافقة
-const auth = firebase.auth();     // طريقة الوصول للـ Auth القديمة/المتوافقة
-
-// --- DOM Elements --- (بقية الكود الخاص بك يتبع هنا)
-// ...
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app); // تهيئة Firestore بالطريقة الجديدة
+const auth = getAuth(app);     // تهيئة Auth بالطريقة الجديدة
+// const analytics = getAnalytics(app); // إذا كنت تستخدمها
 
 // --- DOM Elements ---
 const authScreen = document.getElementById('auth-screen');
@@ -69,7 +77,6 @@ let currentUser = null; // Stores current logged-in user data
 
 // --- STATIC CURRICULUM DATA ---
 // منهج الحفظ الأصلي: من المرسلات إلى الأحقاف
-// كل عنصر هو مقطع حفظ واحد
 const HifzCurriculum = [
     // المرسلات
     { surah: 'المرسلات', start_ayah: 1, end_ayah: 15, points: 5, type: 'hifz', label: 'المرسلات (1-15)' },
@@ -205,7 +212,7 @@ const HifzCurriculum = [
     { surah: 'المجادلة', start_ayah: 11, end_ayah: 12, points: 5, type: 'hifz', label: 'المجادلة (11-12)' },
     { surah: 'المجادلة', start_ayah: 13, end_ayah: 16, points: 5, type: 'hifz', label: 'المجادلة (13-16)' },
     { surah: 'المجادلة', start_ayah: 17, end_ayah: 19, points: 5, type: 'hifz', label: 'المجادلة (17-19)' },
-    { surah: 'المجادلة', start_ayah: 20, end_ayah: 22, points: 5, type: 'hifz', label: 'المجادلة (20-22)' },
+    { surah: 'المجادلة', start_ayah: 4, end_ayah: 22, points: 5, type: 'hifz', label: 'المجادلة (20-22)' },
     // الحديد
     { surah: 'الحديد', start_ayah: 1, end_ayah: 6, points: 5, type: 'hifz', label: 'الحديد (1-6)' },
     { surah: 'الحديد', start_ayah: 7, end_ayah: 11, points: 5, type: 'hifz', label: 'الحديد (7-11)' },
@@ -295,7 +302,6 @@ const HifzCurriculum = [
 ];
 
 // منهج المراجعة المتكامل: من الأحقاف إلى الناس (ترتيب تنازلي في المصحف)
-// كل عنصر هو وحدة مراجعة قد تكون سورة كاملة أو مجموعة مقسمة/مجمعة
 const MurajaaCurriculum = [
     // الأحقاف (مقسمة)
     { surah: 'الأحقاف', label: 'مراجعة الأحقاف (1-16)', points: 3, type: 'murajaa', hifz_start_index: 0, hifz_end_index: 4 }, // يمثل أول 5 مقاطع
@@ -477,8 +483,8 @@ async function displayStudentDashboard(student) {
 async function loadStudentsForTeacher() {
     studentList.innerHTML = '<li>جارٍ تحميل بيانات الطلاب...</li>';
     try {
-        const studentsCol = collection(db, 'students');
-        const snapshot = await getDocs(studentsCol);
+        const studentsColRef = collection(db, 'students');
+        const snapshot = await getDocs(studentsColRef);
         if (snapshot.empty) {
             studentList.innerHTML = '<li>لا يوجد طلاب مسجلين بعد.</li>';
             return;
@@ -678,7 +684,6 @@ registerStudentButton.addEventListener('click', async () => {
         // Clear inputs after successful registration
         newStudentCodeInput.value = '';
         newStudentNameInput.value = '';
-        // Selects will retain the first option, which is fine
         
     } catch (error) {
         console.error("Registration error: ", error);
@@ -726,8 +731,8 @@ assignGroupTaskButton.addEventListener('click', async () => {
     // Logic to assign task to all students (Batch Write recommended for real app)
     const task = { id: generateUniqueId(), description, type, points, completed: false };
     try {
-        const studentsCol = collection(db, 'students');
-        const studentsSnapshot = await getDocs(studentsCol);
+        const studentsColRef = collection(db, 'students');
+        const studentsSnapshot = await getDocs(studentsColRef);
         const batch = writeBatch(db); // استخدام writeBatch
         studentsSnapshot.forEach(documentSnapshot => {
             const studentDocRef = doc(db, 'students', documentSnapshot.id);
@@ -757,6 +762,4 @@ logoutButtonStudent.addEventListener('click', logout);
 logoutButtonTeacher.addEventListener('click', logout);
 
 // --- Initialization on load ---
-populateCurriculumSelects(); // Call once to fill the options immediately
-// Initial screen setup should be handled by CSS/HTML structure (auth-screen visible by default)
-
+populateCurriculumSelects();
