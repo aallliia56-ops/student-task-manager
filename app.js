@@ -1,11 +1,8 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, arrayUnion, writeBatch, FieldValue } from "firebase/firestore"; // تم استيراد الدوال اللازمة لـ Firestore
-import { getAuth } from "firebase/auth"; // تم استيراد الدوال اللازمة لـ Auth
-// إذا كنت تستخدم getAnalytics، يمكنك إبقائها.
-// import { getAnalytics } from "firebase/analytics";
+// ///////////////////////////////////////////////////////////////////////////////
+// لا تستخدم عبارات "import" أو "export" هنا! سنستخدم المتغير العام "firebase"
+// ///////////////////////////////////////////////////////////////////////////////
 
-// Your web app's Firebase configuration
+// Your web app's Firebase configuration (يبقى كما هو)
 const firebaseConfig = {
     apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
     authDomain: "studenttasksmanager.firebaseapp.com",
@@ -16,11 +13,13 @@ const firebaseConfig = {
     measurementId: "G-7QC4FVXKZG"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app); // تهيئة Firestore بالطريقة الجديدة
-const auth = getAuth(app);     // تهيئة Auth بالطريقة الجديدة
-// const analytics = getAnalytics(app); // إذا كنت تستخدمها
+// Initialize Firebase (سنستخدم الدوال التي سيتم تحميلها عبر CDN)
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore(); // طريقة الوصول للـ Firestore القديمة/المتوافقة
+const auth = firebase.auth();     // طريقة الوصول للـ Auth القديمة/المتوافقة
+
+// --- DOM Elements --- (بقية الكود الخاص بك يتبع هنا)
+// ...
 
 // --- DOM Elements ---
 const authScreen = document.getElementById('auth-screen');
@@ -760,3 +759,4 @@ logoutButtonTeacher.addEventListener('click', logout);
 // --- Initialization on load ---
 populateCurriculumSelects(); // Call once to fill the options immediately
 // Initial screen setup should be handled by CSS/HTML structure (auth-screen visible by default)
+
