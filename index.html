@@ -108,7 +108,8 @@
         .form-group input[type="password"],
         .form-group input[type="email"],
         .form-group select,
-        .form-group textarea {
+        .form-group textarea,
+        .form-group input[type="number"] {
             width: calc(100% - 22px);
             padding: 10px;
             border: 1px solid #ddd;
@@ -177,10 +178,42 @@
         }
 
         .task-item.completed {
-            background-color: #e6ffe6; /* Light green for completed tasks */
+            background-color: #e6ffe6;
             border-color: #c3e6cb;
             opacity: 0.8;
         }
+        
+        /* Progress Cards Style */
+        .student-progress-cards {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .student-progress-cards .card {
+            flex: 1;
+            min-width: 250px;
+            background-color: #e8f5e9;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .student-progress-cards .card h2 {
+            color: #28a745;
+            font-size: 1.2em;
+            margin-top: 0;
+        }
+        
+        .student-progress-cards .card p {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            margin: 5px 0;
+        }
+
 
         .progress-bar-container {
             width: 100%;
@@ -205,33 +238,28 @@
 </head>
 <body>
     <div class="container">
+        
         <div id="auth-screen">
             <header>
                 <h1>نظام متابعة حلقات القرآن</h1>
             </header>
             <div id="auth-message" class="message hidden"></div>
+            
             <div class="form-group">
-                <label for="email">البريد الإلكتروني:</label>
-                <input type="email" id="email" placeholder="أدخل بريدك الإلكتروني" required>
+                <label for="login-code">رمز الدخول (للمعلم أو الطالب):</label>
+                <input type="text" id="login-code" placeholder="أدخل رمز الدخول (مثال: TEACHER1 أو A101)" required>
             </div>
-            <div class="form-group">
-                <label for="password">كلمة المرور:</label>
-                <input type="password" id="password" placeholder="أدخل كلمة المرور" required>
-            </div>
+            
             <button id="login-button">تسجيل الدخول</button>
-            <button id="register-button" style="background-color: #007bff; margin-right: 10px;">إنشاء حساب المعلم (مرة واحدة)</button>
         </div>
 
+        
         <div id="teacher-screen" class="hidden">
-    <main class="tab-content-container">
-        <div id="manage-students-tab" class="tab-content hidden"> 
-            </div>
-        </main>
-</div>
             <header>
                 <h1>لوحة تحكم المعلم</h1>
                 <button id="logout-button-teacher">تسجيل الخروج</button>
             </header>
+            
             <nav class="tabs">
                 <button class="tab-button active" data-tab="manage-students">إدارة الطلاب</button>
                 <button class="tab-button" data-tab="add-student">إضافة طالب</button>
@@ -251,6 +279,7 @@
                 <div id="add-student-tab" class="tab-content hidden">
                     <h3>إضافة طالب جديد</h3>
                     <div id="add-student-message" class="message hidden"></div>
+                    
                     <div class="form-group">
                         <label for="new-student-name">اسم الطالب:</label>
                         <input type="text" id="new-student-name" placeholder="أدخل اسم الطالب" required>
@@ -259,6 +288,8 @@
                         <label for="new-student-code">رمز الطالب (للدخول):</label>
                         <input type="text" id="new-student-code" placeholder="مثال: A101" required>
                     </div>
+                    
+                    <h4>نقاط بداية الطالب في المنهج</h4>
                     <div class="form-group">
                         <label for="new-student-hifz-start">نقطة بداية الحفظ في المنهج:</label>
                         <select id="new-student-hifz-start" required></select>
@@ -268,6 +299,8 @@
                         <select id="new-student-murajaa-start" required></select>
                     </div>
 
+                    
+                    <h4>تحديد هدف الحفظ الشخصي (لـ Progress Bar)</h4>
                     <div class="form-group">
                         <label for="new-student-hifz-goal-start">هدف الحفظ (البداية):</label>
                         <select id="new-student-hifz-goal-start"></select>
@@ -283,6 +316,7 @@
                 <div id="assign-tasks-tab" class="tab-content hidden">
                     <h3>تعيين مهمة جديدة</h3>
                     <div id="assign-tasks-message" class="message hidden"></div>
+                    
                     <div class="form-group">
                         <label for="assign-task-student">اختر الطالب:</label>
                         <select id="assign-task-student" required></select>
@@ -296,7 +330,8 @@
                             <option value="general">عامة</option>
                         </select>
                     </div>
-                     <div class="form-group" id="hifz-section-select-group" style="display:none;">
+                     
+                    <div class="form-group" id="hifz-section-select-group" style="display:none;">
                         <label for="hifz-section-select">اختر مقطع الحفظ (من المنهج):</label>
                         <select id="hifz-section-select"></select>
                     </div>
@@ -304,23 +339,27 @@
                         <label for="murajaa-section-select">اختر مقطع المراجعة (من المنهج):</label>
                         <select id="murajaa-section-select"></select>
                     </div>
+                    
                     <div class="form-group">
                         <label for="assign-task-description">وصف المهمة (تلقائي للحفظ والمراجعة):</label>
-                        <textarea id="assign-task-description" rows="3" placeholder="أدخل وصف المهمة (مثال: حفظ سورة البقرة من آية 1 إلى 5)" required></textarea>
+                        <textarea id="assign-task-description" rows="3" placeholder="أدخل وصف المهمة (مثال: تحضير درس التجويد)" required></textarea>
                     </div>
                     <div class="form-group">
                         <label for="assign-task-points">النقاط:</label>
                         <input type="number" id="assign-task-points" min="1" value="10" required>
                     </div>
+                    
                     <button id="assign-task-button">تعيين المهمة</button>
                 </div>
 
+                
                 <div id="pending-tasks-tab" class="tab-content hidden">
                     <h3>المهام المرسلة للمراجعة</h3>
                     <div id="pending-tasks-message" class="message hidden"></div>
                     <ul id="pending-tasks-list" class="student-list"></ul>
                 </div>
 
+                
                 <div id="leaderboard-tab" class="tab-content hidden">
                     <h3>الترتيب العام للطلاب</h3>
                     <div id="leaderboard-message" class="message hidden"></div>
@@ -341,6 +380,7 @@
             </main>
         </div>
 
+        
         <div id="student-screen" class="hidden">
             <header>
                 <h1 id="student-name-display"></h1>
@@ -377,10 +417,8 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
-
