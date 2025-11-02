@@ -896,7 +896,8 @@ async function reviewTask(studentCode, taskId, action) {
             message = `تم رفض مهمة ${task.description} للطالب ${student.name}. وتم إعادتها إلى قائمة مهامه المعينة.`;
             successType = 'error';
         }
-
+student.displayed_hifz_bonus_tasks = student.displayed_hifz_bonus_tasks || [];
+student.displayed_murajaa_bonus_tasks = student.displayed_murajaa_bonus_tasks || [];
         // 3. حفظ التغييرات في Firestore (tasks, total_points, progress, bonus fields)
         await updateDoc(studentDocRef, {
             tasks: student.tasks,
@@ -1149,3 +1150,4 @@ loadCurriculumFromFirestore().then(() => {
     // بعد تحميل المنهج، يمكن للمستخدمين البدء في التفاعل
     console.log("App ready. Curriculum loaded.");
 });
+
