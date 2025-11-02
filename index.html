@@ -6,6 +6,7 @@
     <title>إدارة مهام الطلاب</title>
     
     <style>
+        /* CSS Styles (All styles are kept as you provided) */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
@@ -327,7 +328,7 @@
 
                 <h3>المهام الموكلة إليك:</h3>
                 <div id="student-tasks">
-                    </div>
+                </div>
             </main>
         </div>
 
@@ -347,7 +348,7 @@
                 <div id="manage-students-tab" class="tab-content">
                     <h3>قائمة الطلاب</h3>
                     <ul id="student-list">
-                        </ul>
+                    </ul>
                 </div>
 
                 <div id="add-student-tab" class="tab-content hidden">
@@ -392,6 +393,14 @@
             </main>
         </div>
     </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    
+    <script src="firebase-config.js"></script> 
 
     <script type="module" src="app.js"></script>
 
