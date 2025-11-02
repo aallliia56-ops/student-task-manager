@@ -1,400 +1,466 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة مهام الطلاب</title>
-    
-    <style>
-        /* CSS Styles (All styles are kept as you provided) */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            color: #333;
-            direction: rtl;
-            text-align: right;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة مهام الطلاب</title>
+    
+    <style>
+        /* CSS Styles (All styles are kept as you provided) */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            color: #333;
+            direction: rtl;
+            text-align: right;
+        }
+
+        #app-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            margin: 20px 0;
+        }
+
+        h1, h2, h3, h4 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: calc(100% - 20px);
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background-color: #fcfcfc;
+        }
+
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            margin-left: 10px;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            display: block;
+            text-align: center;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .message.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
         }
 
-        #app-container {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 800px;
-            margin: 20px 0;
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- Screens Specific Styles --- */
+        #auth-screen, #student-screen, #teacher-screen {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #student-screen header, #teacher-screen header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        #student-screen header h1, #teacher-screen header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        #logout-button-student, #logout-button-teacher {
+            background-color: #dc3545;
+        }
+
+        #logout-button-student:hover, #logout-button-teacher:hover {
+            background-color: #c82333;
+        }
+
+        /* Student Dashboard Cards */
+        .progress-card {
+            background-color: #e9f5ef;
+            border: 1px solid #d1ecf1;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .progress-card h3, .progress-card h4 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .task-item {
+            background-color: #f8f9fa;
+            border: 1px solid #e2e6ea;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .task-item.completed {
+            background-color: #e6ffe6;
+            border-color: #b3ffb3;
+            opacity: 0.8;
+        }
+        
+        /* New Styles for Pending Tasks in Student View (Visual Cue) */
+        .task-item.pending {
+            background-color: #fff3cd; /* Yellowish background */
+            border-color: #ffeeba;
+            opacity: 0.95;
         }
 
-        h1, h2, h3, h4 {
-            color: #2c3e50;
-            margin-top: 0;
-            margin-bottom: 15px;
+
+        .task-item .task-description {
+            font-size: 17px;
+            font-weight: 500;
+            color: #34495e;
+        }
+
+        .task-item .task-points, .task-item .task-status {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .task-item .task-status strong {
+            color: #28a745;
+        }
+
+        .task-item.completed .task-status strong {
+            color: #155724;
+        }
+        
+        .task-item.pending .task-status strong {
+            color: #856404; /* Darker yellow/brown for pending */
         }
 
-        input[type="text"],
-        input[type="number"],
-        select {
-            width: calc(100% - 20px);
-            padding: 12px;
-            margin-bottom: 15px;
+        .task-actions {
+            margin-top: 10px;
+            text-align: left;
+        }
+        .task-actions button {
+            margin-left: 0;
+            margin-right: 10px;
+            background-color: #007bff;
+        }
+        .task-actions button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Teacher Tabs */
+        .tabs {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab-button {
+            background-color: #f0f0f0;
+            color: #555;
+            padding: 10px 20px;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            border-radius: 8px 8px 0 0;
+            margin-left: 5px;
+        }
+
+        .tab-button.active {
+            background-color: #2c3e50;
+            color: white;
+            border-bottom: 2px solid #28a745;
+        }
+
+        .tab-button:hover:not(.active) {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+
+        .tab-content-container {
+            margin-top: 20px;
+        }
+
+        .tab-content {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #fdfdfd;
+        }
+
+        #student-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        #student-list li {
+            background-color: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+        }
+
+        #student-list li strong {
+            color: #28a745;
+        }
+
+        .student-actions button {
+            background-color: #dc3545;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+
+        .student-actions button:hover {
+            background-color: #c82333;
+        }
+
+        /* Specific for add-student-tab */
+        #add-student-tab label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        #assign-individual-task-button, #assign-group-task-button {
+            background-color: #17a2b8;
+        }
+        #assign-individual-task-button:hover, #assign-group-task-button:hover {
+            background-color: #138496;
+        }
+
+        #hifz-curriculum-display, #murajaa-curriculum-display {
+            background-color: #f0f8ff;
+            border: 1px solid #cce5ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        #hifz-curriculum-display div, #murajaa-curriculum-display div {
+            padding: 5px 0;
+            border-bottom: 1px dashed #e0e0e0;
+        }
+        #hifz-curriculum-display div:last-child, #murajaa-curriculum-display div:last-child {
+            border-bottom: none;
+        }
+
+        /* ⭐⭐ NEW Styles for Review Tasks ⭐⭐ */
+        .review-student-section {
+            border: 2px solid #3498db; /* Blue Border */
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #ecf0f1;
+        }
+
+        .task-review-item {
+            background-color: #ffffff;
             border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-            background-color: #fcfcfc;
-        }
-
-        button {
-            background-color: #28a745;
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
-            margin-left: 10px;
-        }
-
-        button:hover {
-            background-color: #218838;
-        }
-
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-
-        .message {
-            padding: 10px;
-            margin-top: 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            display: block;
-            text-align: center;
-        }
-
-        .message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* --- Screens Specific Styles --- */
-        #auth-screen, #student-screen, #teacher-screen {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        #student-screen header, #teacher-screen header {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
+            gap: 10px;
         }
 
-        #student-screen header h1, #teacher-screen header h1 {
+        .task-review-item p {
             margin: 0;
-            font-size: 28px;
+            flex-grow: 1;
         }
 
-        #logout-button-student, #logout-button-teacher {
-            background-color: #dc3545;
-        }
-
-        #logout-button-student:hover, #logout-button-teacher:hover {
-            background-color: #c82333;
-        }
-
-        /* Student Dashboard Cards */
-        .progress-card {
-            background-color: #e9f5ef;
-            border: 1px solid #d1ecf1;
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .progress-card h3, .progress-card h4 {
-            margin: 0;
-            color: #2c3e50;
-        }
-
-        .task-item {
-            background-color: #f8f9fa;
-            border: 1px solid #e2e6ea;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .task-item.completed {
-            background-color: #e6ffe6;
-            border-color: #b3ffb3;
-            opacity: 0.8;
-        }
-
-        .task-item .task-description {
-            font-size: 17px;
-            font-weight: 500;
-            color: #34495e;
-        }
-
-        .task-item .task-points, .task-item .task-status {
+        .review-actions button {
+            padding: 8px 12px;
             font-size: 14px;
-            color: #555;
-        }
-
-        .task-item .task-status strong {
-            color: #28a745;
-        }
-
-        .task-item.completed .task-status strong {
-            color: #155724;
-        }
-
-        .task-actions {
-            margin-top: 10px;
-            text-align: left;
-        }
-        .task-actions button {
-            margin-left: 0;
-            margin-right: 10px;
-            background-color: #007bff;
-        }
-        .task-actions button:hover {
-            background-color: #0056b3;
-        }
-
-        /* Teacher Tabs */
-        .tabs {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #eee;
-        }
-
-        .tab-button {
-            background-color: #f0f0f0;
-            color: #555;
-            padding: 10px 20px;
-            border: none;
-            border-bottom: 2px solid transparent;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            border-radius: 8px 8px 0 0;
             margin-left: 5px;
         }
-
-        .tab-button.active {
-            background-color: #2c3e50;
-            color: white;
-            border-bottom: 2px solid #28a745;
+        
+        .approve-btn {
+            background-color: #28a745; /* Green */
         }
-
-        .tab-button:hover:not(.active) {
-            background-color: #e0e0e0;
-            color: #333;
+        .reject-btn {
+            background-color: #dc3545; /* Red */
         }
-
-        .tab-content-container {
-            margin-top: 20px;
-        }
-
-        .tab-content {
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 20px;
-            background-color: #fdfdfd;
-        }
-
-        #student-list {
-            list-style: none;
-            padding: 0;
-        }
-
-        #student-list li {
-            background-color: #e8f5e9;
-            border: 1px solid #c8e6c9;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 15px;
-        }
-
-        #student-list li strong {
-            color: #28a745;
-        }
-
-        .student-actions button {
-            background-color: #dc3545;
-            padding: 8px 15px;
-            font-size: 14px;
-        }
-
-        .student-actions button:hover {
-            background-color: #c82333;
-        }
-
-        /* Specific for add-student-tab */
-        #add-student-tab label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        #assign-individual-task-button, #assign-group-task-button {
-            background-color: #17a2b8;
-        }
-        #assign-individual-task-button:hover, #assign-group-task-button:hover {
-            background-color: #138496;
-        }
-
-        #hifz-curriculum-display, #murajaa-curriculum-display {
-            background-color: #f0f8ff;
-            border: 1px solid #cce5ff;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        #hifz-curriculum-display div, #murajaa-curriculum-display div {
-            padding: 5px 0;
-            border-bottom: 1px dashed #e0e0e0;
-        }
-        #hifz-curriculum-display div:last-child, #murajaa-curriculum-display div:last-child {
-            border-bottom: none;
-        }
-    </style>
+        .approve-btn:hover { background-color: #218838; }
+        .reject-btn:hover { background-color: #c82333; }
+    </style>
 </head>
 <body>
 
-    <div id="app-container">
-        <div id="auth-screen">
-            <h2>تسجيل الدخول</h2>
-            <input type="text" id="user-code" placeholder="أدخل رمز الطالب/المعلم">
-            <button id="login-button">دخول</button>
-            <p id="auth-message" class="message hidden"></p>
-        </div>
+    <div id="app-container">
+        <div id="auth-screen">
+            <h2>تسجيل الدخول</h2>
+            <input type="text" id="user-code" placeholder="أدخل رمز الطالب/المعلم">
+            <button id="login-button">دخول</button>
+            <p id="auth-message" class="message hidden"></p>
+        </div>
 
-        <div id="student-screen" class="hidden">
-            <header>
-                <h1 id="welcome-student"></h1>
-                <button id="logout-button-student">تسجيل الخروج</button>
-            </header>
-            <main>
-                <div class="progress-card">
-                    <h3>نقاطي الكلية: <span id="student-total-points">0</span></h3>
-                </div>
-                <div class="progress-card">
-                    <h4>تقدم الحفظ الحالي:</h4>
-                    <p id="student-hifz-progress">المنهج غير مُعين</p>
-                </div>
-                <div class="progress-card">
-                    <h4>تقدم المراجعة الحالي:</h4>
-                    <p id="student-murajaa-progress">المنهج غير مُعين</p>
-                </div>
+        <div id="student-screen" class="hidden">
+            <header>
+                <h1 id="welcome-student"></h1>
+                <button id="logout-button-student">تسجيل الخروج</button>
+            </header>
+            <main>
+                <div class="progress-card">
+                    <h3>نقاطي الكلية: <span id="student-total-points">0</span></h3>
+                </div>
+                <div class="progress-card">
+                    <h4>تقدم الحفظ الحالي:</h4>
+                    <p id="student-hifz-progress">المنهج غير مُعين</p>
+                </div>
+                <div class="progress-card">
+                    <h4>تقدم المراجعة الحالي:</h4>
+                    <p id="student-murajaa-progress">المنهج غير مُعين</p>
+                </div>
 
-                <h3>المهام الموكلة إليك:</h3>
-                <div id="student-tasks">
+                <h3>المهام الموكلة إليك:</h3>
+                <div id="student-tasks">
+                </div>
+            </main>
+        </div>
+
+        <div id="teacher-screen" class="hidden">
+            <header>
+                <h1>لوحة تحكم المعلم</h1>
+                <button id="logout-button-teacher">تسجيل الخروج</button>
+            </header>
+            <nav class="tabs">
+                <button class="tab-button active" data-tab="manage-students">إدارة الطلاب</button>
+                <button class="tab-button" data-tab="add-student">إضافة طالب</button>
+                <button class="tab-button" data-tab="assign-tasks">تعيين مهام</button>
+                <button class="tab-button" data-tab="review-tasks">مراجعة المهام 📝</button>                 <button class="tab-button" data-tab="manage-curriculum">عرض المنهج</button>
+            </nav>
+
+            <main class="tab-content-container">
+                <div id="manage-students-tab" class="tab-content">
+                    <h3>قائمة الطلاب</h3>
+                    <ul id="student-list">
+                    </ul>
+                </div>
+
+                <div id="add-student-tab" class="tab-content hidden">
+                    <h3>تسجيل طالب جديد</h3>
+                    <input type="text" id="new-student-code" placeholder="رمز الطالب الجديد (مثلاً s101)">
+                    <input type="text" id="new-student-name" placeholder="اسم الطالب">
+                    
+                    <label for="new-student-hifz-start">نقطة بداية الحفظ:</label>
+                    <select id="new-student-hifz-start"></select>
+                    
+                    <label for="new-student-murajaa-start">نقطة بداية المراجعة:</label>
+                    <select id="new-student-murajaa-start"></select>
+                    
+                    <button id="register-student-button">تسجيل</button>
+                    <p id="register-student-message" class="message hidden"></p>
+                </div>
+                
+                <div id="assign-tasks-tab" class="tab-content hidden">
+                    <h3>تعيين مهمة</h3>
+                    <input type="text" id="assign-task-student-code" placeholder="رمز الطالب الفردي (أو اتركه فارغاً للجميع)">
+                    <select id="assign-task-type">
+                        <option value="general">عامة</option>
+                        <option value="hifz">حفظ</option>
+                        <option value="murajaa">مراجعة</option>
+                    </select>
+                    <input type="text" id="assign-task-description" placeholder="وصف المهمة (مثلاً: حل واجب الفقه)">
+                    <input type="number" id="assign-task-points" placeholder="نقاط المهمة">
+                    
+                    <button id="assign-individual-task-button">تعيين فردي</button>
+                    <button id="assign-group-task-button">تعيين جماعي (لجميع الطلاب)</button>
+                    <p id="assign-task-message" class="message hidden"></p>
+                </div>
+
+                <div id="review-tasks-tab" class="tab-content hidden">
+                    <h3>مهام بانتظار المراجعة والتصديق</h3>
+                    <p class="message info">يتم هنا عرض جميع المهام التي أرسلها الطلاب بانتظار موافقتك لإضافة النقاط.</p>
+                    <div id="pending-tasks-list">
+                        <p>جارٍ تحميل المهام...</p>
+                    </div>
                 </div>
-            </main>
-        </div>
+                                <div id="manage-curriculum-tab" class="tab-content hidden">
+                    <h3>منهج الحفظ:</h3>
+                    <div id="hifz-curriculum-display"></div>
+                    
+                    <h3>منهج المراجعة:</h3>
+                    <div id="murajaa-curriculum-display"></div>
+                </div>
 
-        <div id="teacher-screen" class="hidden">
-            <header>
-                <h1>لوحة تحكم المعلم</h1>
-                <button id="logout-button-teacher">تسجيل الخروج</button>
-            </header>
-            <nav class="tabs">
-                <button class="tab-button active" data-tab="manage-students">إدارة الطلاب</button>
-                <button class="tab-button" data-tab="add-student">إضافة طالب</button>
-                <button class="tab-button" data-tab="assign-tasks">تعيين مهام</button>
-                <button class="tab-button" data-tab="manage-curriculum">عرض المنهج</button>
-            </nav>
+            </main>
+        </div>
+    </div>
 
-            <main class="tab-content-container">
-                <div id="manage-students-tab" class="tab-content">
-                    <h3>قائمة الطلاب</h3>
-                    <ul id="student-list">
-                    </ul>
-                </div>
-
-                <div id="add-student-tab" class="tab-content hidden">
-                    <h3>تسجيل طالب جديد</h3>
-                    <input type="text" id="new-student-code" placeholder="رمز الطالب الجديد (مثلاً s101)">
-                    <input type="text" id="new-student-name" placeholder="اسم الطالب">
-                    
-                    <label for="new-student-hifz-start">نقطة بداية الحفظ:</label>
-                    <select id="new-student-hifz-start"></select>
-                    
-                    <label for="new-student-murajaa-start">نقطة بداية المراجعة:</label>
-                    <select id="new-student-murajaa-start"></select>
-                    
-                    <button id="register-student-button">تسجيل</button>
-                    <p id="register-student-message" class="message hidden"></p>
-                </div>
-                
-                <div id="assign-tasks-tab" class="tab-content hidden">
-                    <h3>تعيين مهمة</h3>
-                    <input type="text" id="assign-task-student-code" placeholder="رمز الطالب الفردي (أو اتركه فارغاً للجميع)">
-                    <select id="assign-task-type">
-                        <option value="general">عامة</option>
-                        <option value="hifz">حفظ</option>
-                        <option value="murajaa">مراجعة</option>
-                    </select>
-                    <input type="text" id="assign-task-description" placeholder="وصف المهمة (مثلاً: حل واجب الفقه)">
-                    <input type="number" id="assign-task-points" placeholder="نقاط المهمة">
-                    
-                    <button id="assign-individual-task-button">تعيين فردي</button>
-                    <button id="assign-group-task-button">تعيين جماعي (لجميع الطلاب)</button>
-                    <p id="assign-task-message" class="message hidden"></p>
-                </div>
-
-                <div id="manage-curriculum-tab" class="tab-content hidden">
-                    <h3>منهج الحفظ:</h3>
-                    <div id="hifz-curriculum-display"></div>
-                    
-                    <h3>منهج المراجعة:</h3>
-                    <div id="murajaa-curriculum-display"></div>
-                </div>
-
-            </main>
-        </div>
-    </div>
-
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js"></script>
 
 </body>
 </html>
