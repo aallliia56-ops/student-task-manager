@@ -4,17 +4,17 @@
 
 // 💥 الحل النهائي: استيراد مباشر لروابط CDN الكاملة
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-import { 
-    getFirestore, 
-    collection, 
-    doc, 
-    getDoc, 
-    getDocs, 
-    setDoc, 
-    updateDoc, 
-    deleteDoc, 
-    arrayUnion, 
-    writeBatch 
+import {
+    getFirestore,
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    setDoc,
+    updateDoc,
+    deleteDoc,
+    arrayUnion,
+    writeBatch
 } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
 
@@ -82,11 +82,11 @@ const murajaaCurriculumDisplay = document.getElementById('murajaa-curriculum-dis
 
 let currentUser = null; // Stores current logged-in user data
 
-// --- STATIC CURRICULUM DATA ---
-// تأكد أن تهيئة Firebase Firestore موجودة هنا في ملف app.js
-// مثال: const db = firebase.firestore();
-
-// المنهج الذي زودتني به:
+// =========================================================================================
+// 💡💡💡 هنا يجب أن تضع مصفوفات المنهج إذا كنت تنوي تشغيل دالة الترحيل migrateCurriculumToFirestore()
+//     مرة أخرى.
+//     إذا كنت قد رحّلت المنهج إلى Firestore بالفعل بنجاح، يمكنك حذف هذه المتغيرات.
+// =========================================================================================
 const HifzCurriculum = [
     // المرسلات
     { surah: 'المرسلات', start_ayah: 1, end_ayah: 15, points: 5, type: 'hifz', label: 'المرسلات (1-15)' },
@@ -196,7 +196,7 @@ const HifzCurriculum = [
     { surah: 'الصف', start_ayah: 5, end_ayah: 6, points: 5, type: 'hifz', label: 'الصف (5-6)' },
     { surah: 'الصف', start_ayah: 7, end_ayah: 9, points: 5, type: 'hifz', label: 'الصف (7-9)' },
     { surah: 'الصف', start_ayah: 10, end_ayah: 13, points: 5, type: 'hifz', label: 'الصف (10-13)' },
-    { surah: 'الصف', start_ayah: 14, end_ayah: 14, points: 5, type: 'hifz', label: 'الصف (14-14)' },
+    { surah: 'الصف', start_ayah: 14, end_ayah: 14, points: 5, type: 'hifz', label: 'الصاف (14-14)' },
     // الممتحنة
     { surah: 'الممتحنة', start_ayah: 1, end_ayah: 2, points: 5, type: 'hifz', label: 'الممتحنة (1-2)' },
     { surah: 'الممتحنة', start_ayah: 3, end_ayah: 4, points: 5, type: 'hifz', label: 'الممتحنة (3-4)' },
@@ -398,13 +398,16 @@ const MurajaaCurriculum = [
     // البلد إلى الناس
     { surah: 'البلد إلى الناس', label: 'مراجعة البلد إلى الناس', points: 3, type: 'murajaa', hifz_start_index: -1, hifz_end_index: -1 },
 ];
-// ===============================================
-// تأكد أن تهيئة Firebase Firestore موجودة هنا في ملف app.js
-// مثال: const db = firebase.firestore();
-// ===============================================
+// =========================================================================================
 
+
+// --- NEW CURRICULUM STATE ---
+let globalHifzCurriculum = []; // سيتم تخزين منهج الحفظ هنا من Firestore
+let globalMurajaaCurriculum = []; // سيتم تخزين منهج المراجعة هنا من Firestore
 
 // ====== دالة ترحيل المنهج إلى Firestore (تشغيل مرة واحدة فقط) ======
+// 💡💡💡 تأكد أن مصفوفات HifzCurriculum و MurajaaCurriculum أعلاه تحتوي على بيانات المنهج الأصلية
+//     قبل تشغيل هذه الدالة من الـ Console.
 async function migrateCurriculumToFirestore() {
     console.log("Starting curriculum migration to Firestore...");
 
@@ -414,7 +417,7 @@ async function migrateCurriculumToFirestore() {
         return;
     }
 
-    const curriculumCollection = db.collection('curriculumItems');
+    const curriculumCollection = collection(db, 'curriculumItems'); // استخدام collection بالطريقة الجديدة
     let hifzOrder = 0;
     let murajaaOrder = 0;
 
@@ -422,7 +425,8 @@ async function migrateCurriculumToFirestore() {
     for (const item of HifzCurriculum) {
         try {
             // إضافة حقل order لكل مهمة حفظ
-            await curriculumCollection.add({ ...item, order: hifzOrder++ });
+            const docRef = doc(curriculumCollection); // إنشاء DocumentReference مع ID تلقائي
+            await setDoc(docRef, { ...item, order: hifzOrder++ }); // استخدام setDoc مع docRef
             console.log(`Adding Hifz: ${item.label}`);
         } catch (error) {
             console.error(`Error adding Hifz item ${item.label}:`, error);
@@ -430,12 +434,11 @@ async function migrateCurriculumToFirestore() {
     }
 
     // ترحيل مهام المراجعة
-    // ملاحظة: مهام المراجعة لديك تحتوي على hifz_start_index و hifz_end_index
-    // هذه الحقول ستحفظ كما هي، ويمكن استخدامها لاحقًا لربط المراجعة بالحفظ.
     for (const item of MurajaaCurriculum) {
         try {
             // إضافة حقل order لكل مهمة مراجعة
-            await curriculumCollection.add({ ...item, order: murajaaOrder++ });
+            const docRef = doc(curriculumCollection); // إنشاء DocumentReference مع ID تلقائي
+            await setDoc(docRef, { ...item, order: murajaaOrder++ }); // استخدام setDoc مع docRef
             console.log(`Adding Murajaa: ${item.label}`);
         } catch (error) {
             console.error(`Error adding Murajaa item ${item.label}:`, error);
@@ -446,6 +449,8 @@ async function migrateCurriculumToFirestore() {
     alert("Curriculum migration complete! Check your browser console for details and Firebase Console to verify.");
 }
 // =================================================================
+
+
 // --- Helper Functions ---
 function showMessage(element, msg, type) {
     element.textContent = msg;
@@ -479,30 +484,60 @@ function generateUniqueId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 }
 
+// --- Core App Functions (Firebase Operations) ---
+
+/**
+ * تجلب منهج الحفظ والمراجعة من Firestore وتخزنهما محليًا.
+ */
+async function loadCurriculumFromFirestore() {
+    console.log("Loading curriculum from Firestore...");
+    try {
+        const curriculumColRef = collection(db, 'curriculumItems');
+        // جلب جميع الوثائق وترتيبها حسب حقل 'order'
+        // ملاحظة: يتطلب إضافة فهرس (Index) في Firebase Console لهذا الاستعلام
+        const snapshot = await getDocs(curriculumColRef);
+
+        const allItems = [];
+        snapshot.forEach(doc => {
+            allItems.push(doc.data());
+        });
+
+        // فرز البيانات محليًا للتأكد من الترتيب (يفضل الترتيب عبر Firestore باستخدام Index)
+        allItems.sort((a, b) => a.order - b.order);
+
+        // تقسيم البيانات إلى حفظ ومراجعة بناءً على حقل 'type'
+        globalHifzCurriculum = allItems.filter(item => item.type === 'hifz');
+        globalMurajaaCurriculum = allItems.filter(item => item.type === 'murajaa');
+
+        console.log(`Curriculum loaded. Hifz items: ${globalHifzCurriculum.length}, Murajaa items: ${globalMurajaaCurriculum.length}`);
+    } catch (error) {
+        console.error("Error loading curriculum from Firestore:", error);
+    }
+}
+
+
 // --- NEW FUNCTION: Populate Curriculum Selects ---
 function populateCurriculumSelects() {
     // Populate Hifz Select (using index as value)
-    const hifzOptions = HifzCurriculum.map((item, index) =>
+    const hifzOptions = globalHifzCurriculum.map((item, index) =>
         `<option value="${index}">${item.label} (الدليل: ${index})</option>`
     ).join('');
     newStudentHifzStart.innerHTML = hifzOptions;
 
     // Populate Murajaa Select (using index as value)
-    const murajaaOptions = MurajaaCurriculum.map((item, index) =>
+    const murajaaOptions = globalMurajaaCurriculum.map((item, index) =>
         `<option value="${index}">${item.label} (الدليل: ${index})</option>`
     ).join('');
     newStudentMurajaaStart.innerHTML = murajaaOptions;
 }
 
-// --- Core App Functions (Firebase Operations) ---
-
 // Function to display student progress
 async function displayStudentDashboard(student) {
     welcomeStudent.textContent = `أهلاً بك يا ${student.name}`;
-    
+
     // Get the actual curriculum items based on saved indices
-    const currentHifzItem = HifzCurriculum[student.hifz_progress];
-    const currentMurajaaItem = MurajaaCurriculum[student.murajaa_progress];
+    const currentHifzItem = globalHifzCurriculum[student.hifz_progress]; // <--- تم التعديل
+    const currentMurajaaItem = globalMurajaaCurriculum[student.murajaa_progress]; // <--- تم التعديل
 
     studentHifzProgress.textContent = currentHifzItem ? currentHifzItem.label : 'المنهج غير مُعين';
     studentMurajaaProgress.textContent = currentMurajaaItem ? currentMurajaaItem.label : 'المنهج غير مُعين';
@@ -510,7 +545,7 @@ async function displayStudentDashboard(student) {
 
     // Display tasks
     studentTasksDiv.innerHTML = student.tasks.length === 0 ? '<p>لا توجد مهام حاليًا. وفقك الله.</p>' : '';
-    
+
     student.tasks.forEach(task => {
         const taskElement = document.createElement('div');
         taskElement.className = `task-item ${task.type} ${task.completed ? 'completed' : ''}`;
@@ -548,8 +583,7 @@ async function loadStudentsForTeacher() {
         studentList.innerHTML = '';
         snapshot.forEach(documentSnapshot => {
             const student = documentSnapshot.data();
-            const listItem = document.createElement('li');
-            const hifzLabel = HifzCurriculum[student.hifz_progress] ? HifzCurriculum[student.hifz_progress].label : 'غير محدد';
+            const hifzLabel = globalHifzCurriculum[student.hifz_progress] ? globalHifzCurriculum[student.hifz_progress].label : 'غير محدد'; // <--- تم التعديل
             listItem.innerHTML = `
                 <span><strong>${student.name}</strong> (${student.code}) - الحفظ: ${hifzLabel} | النقاط: ${student.total_points}</span>
                 <div class="student-actions">
@@ -586,12 +620,12 @@ async function loadStudentsForTeacher() {
 // Function to display the curriculum in the teacher panel
 function displayCurriculumsInTeacherPanel() {
     // Display Hifz Curriculum
-    hifzCurriculumDisplay.innerHTML = HifzCurriculum.map((item, index) =>
+    hifzCurriculumDisplay.innerHTML = globalHifzCurriculum.map((item, index) => // <--- تم التعديل
         `<div>(${index}) ${item.label} (${item.points} نقاط)</div>`
     ).join('');
 
     // Display Murajaa Curriculum
-    murajaaCurriculumDisplay.innerHTML = MurajaaCurriculum.map((item, index) =>
+    murajaaCurriculumDisplay.innerHTML = globalMurajaaCurriculum.map((item, index) => // <--- تم التعديل
         `<div>(${index}) ${item.label} (${item.points} نقاط)</div>`
     ).join('');
 }
@@ -603,19 +637,19 @@ async function completeTask(studentCode, taskId, points) {
         const studentDocRef = doc(db, 'students', studentCode);
         const docSnapshot = await getDoc(studentDocRef);
         if (!docSnapshot.exists()) return;
-        
+
         const student = docSnapshot.data();
         const taskIndex = student.tasks.findIndex(t => t.id === taskId);
 
         if (taskIndex !== -1 && !student.tasks[taskIndex].completed) {
             student.tasks[taskIndex].completed = true;
             student.total_points += points;
-            
+
             // Auto advance progress for Hifz/Murajaa tasks (Simplified Logic)
             if (student.tasks[taskIndex].type === 'hifz') {
-                student.hifz_progress = Math.min(student.hifz_progress + 1, HifzCurriculum.length - 1);
+                student.hifz_progress = Math.min(student.hifz_progress + 1, globalHifzCurriculum.length - 1); // <--- تم التعديل
             } else if (student.tasks[taskIndex].type === 'murajaa') {
-                   student.murajaa_progress = Math.min(student.murajaa_progress + 1, MurajaaCurriculum.length - 1);
+                student.murajaa_progress = Math.min(student.murajaa_progress + 1, globalMurajaaCurriculum.length - 1); // <--- تم التعديل
             }
 
             // Update Firestore
@@ -664,6 +698,8 @@ loginButton.addEventListener('click', async () => {
                 displayStudentDashboard(currentUser);
             } else {
                 showMessage(authMessage, 'رمز الطالب غير صحيح. حاول مجدداً.', 'error');
+                console.warn(`Attempted login with invalid code: ${userCode}`);
+                showMessage(authMessage, 'حدث خطأ أثناء الاتصال بالخادم.', 'error');
             }
         } catch (error) {
             console.error("Login error: ", error);
@@ -702,12 +738,14 @@ registerStudentButton.addEventListener('click', async () => {
         return;
     }
 
-    if (hifzStartIndex < 0 || hifzStartIndex >= HifzCurriculum.length || isNaN(hifzStartIndex)) {
+    // <--- تم التعديل: التحقق من globalHifzCurriculum
+    if (hifzStartIndex < 0 || hifzStartIndex >= globalHifzCurriculum.length || isNaN(hifzStartIndex)) {
         showMessage(registerStudentMessage, 'نقطة بداية الحفظ غير صالحة. الرجاء اختيار من القائمة.', 'error');
         return;
     }
 
-    if (murajaaStartIndex < 0 || murajaaStartIndex >= MurajaaCurriculum.length || isNaN(murajaaStartIndex)) {
+    // <--- تم التعديل: التحقق من globalMurajaaCurriculum
+    if (murajaaStartIndex < 0 || murajaaStartIndex >= globalMurajaaCurriculum.length || isNaN(murajaaStartIndex)) {
         showMessage(registerStudentMessage, 'نقطة بداية المراجعة غير صالحة. الرجاء اختيار من القائمة.', 'error');
         return;
     }
@@ -720,14 +758,16 @@ registerStudentButton.addEventListener('click', async () => {
             showMessage(registerStudentMessage, `الرمز ${newStudentCode} مُسجل لطالب آخر. اختر رمزًا فريدًا.`, 'error');
             return;
         }
-        
+
         // Assign first tasks automatically
         const initialTasks = [];
-        if (HifzCurriculum[hifzStartIndex]) {
-            initialTasks.push({ id: generateUniqueId(), description: `حفظ جديد: ${HifzCurriculum[hifzStartIndex].label}`, type: 'hifz', points: HifzCurriculum[hifzStartIndex].points, completed: false });
+        // <--- تم التعديل: استخدام globalHifzCurriculum
+        if (globalHifzCurriculum[hifzStartIndex]) {
+            initialTasks.push({ id: generateUniqueId(), description: `حفظ جديد: ${globalHifzCurriculum[hifzStartIndex].label}`, type: 'hifz', points: globalHifzCurriculum[hifzStartIndex].points, completed: false });
         }
-        if (MurajaaCurriculum[murajaaStartIndex]) {
-            initialTasks.push({ id: generateUniqueId(), description: `مراجعة جديدة: ${MurajaaCurriculum[murajaaStartIndex].label}`, type: 'murajaa', points: MurajaaCurriculum[murajaaStartIndex].points, completed: false });
+        // <--- تم التعديل: استخدام globalMurajaaCurriculum
+        if (globalMurajaaCurriculum[murajaaStartIndex]) {
+            initialTasks.push({ id: generateUniqueId(), description: `مراجعة جديدة: ${globalMurajaaCurriculum[murajaaStartIndex].label}`, type: 'murajaa', points: globalMurajaaCurriculum[murajaaStartIndex].points, completed: false });
         }
 
 
@@ -743,11 +783,11 @@ registerStudentButton.addEventListener('click', async () => {
         });
 
         showMessage(registerStudentMessage, `تم تسجيل الطالب ${newStudentName} بنجاح!`, 'success');
-        
+
         // Clear inputs after successful registration
         newStudentCodeInput.value = '';
         newStudentNameInput.value = '';
-        
+
     } catch (error) {
         console.error("Registration error: ", error);
         showMessage(registerStudentMessage, `خطأ في تسجيل الطالب: ${error.message}`, 'error');
@@ -766,7 +806,7 @@ assignIndividualTaskButton.addEventListener('click', async () => {
         showMessage(assignTaskMessage, 'الرجاء ملء رمز الطالب والوصف والنقاط بشكل صحيح.', 'error');
         return;
     }
-    
+
     // Logic to assign task to a single student (using Firestore Update)
     const task = { id: generateUniqueId(), description, type, points, completed: false };
     try {
@@ -790,7 +830,7 @@ assignGroupTaskButton.addEventListener('click', async () => {
         showMessage(assignTaskMessage, 'الرجاء ملء الوصف والنقاط بشكل صحيح.', 'error');
         return;
     }
-    
+
     // Logic to assign task to all students (Batch Write recommended for real app)
     const task = { id: generateUniqueId(), description, type, points, completed: false };
     try {
@@ -824,8 +864,10 @@ function logout() {
 logoutButtonStudent.addEventListener('click', logout);
 logoutButtonTeacher.addEventListener('click', logout);
 
+
 // --- Initialization on load ---
-// No need to call populateCurriculumSelects here, as it's called when the tab is activated
-// populateCurriculumSelects();
-
-
+// 💥 التشغيل الأولي: جلب المنهج قبل أي عملية أخرى
+loadCurriculumFromFirestore().then(() => {
+    // بعد تحميل المنهج، يمكن للمستخدمين البدء في التفاعل
+    console.log("App ready. Curriculum loaded.");
+});
