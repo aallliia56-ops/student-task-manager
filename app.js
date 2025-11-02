@@ -90,11 +90,6 @@ let currentUser = null; // Stores current logged-in user data
 let globalHifzCurriculum = []; // سيتم تخزين منهج الحفظ هنا من Firestore
 let globalMurajaaCurriculum = []; // سيتم تخزين منهج المراجعة هنا من Firestore
 
-// ====== دالة ترحيل المنهج إلى Firestore (تشغيل مرة واحدة فقط) ======
-// **ملاحظة: لقد تم حذف دالة migrateCurriculumToFirestore() هنا لأنها لم تعد لازمة**
-// =================================================================
-
-
 // --- Helper Functions ---
 function showMessage(element, msg, type) {
     element.textContent = msg;
@@ -137,8 +132,6 @@ async function loadCurriculumFromFirestore() {
     console.log("Loading curriculum from Firestore...");
     try {
         const curriculumColRef = collection(db, 'curriculumItems');
-        // جلب جميع الوثائق وترتيبها حسب حقل 'order'
-        // ملاحظة: يتطلب إضافة فهرس (Index) في Firebase Console لهذا الاستعلام
         const snapshot = await getDocs(curriculumColRef);
 
         const allItems = [];
@@ -159,7 +152,6 @@ async function loadCurriculumFromFirestore() {
     }
 }
 
-
 // --- NEW FUNCTION: Populate Curriculum Selects ---
 function populateCurriculumSelects() {
     // Populate Hifz Select (using index as value)
@@ -175,65 +167,428 @@ function populateCurriculumSelects() {
     newStudentMurajaaStart.innerHTML = murajaaOptions;
 }
 
+// =======================================================
+// ⭐⭐ دوال لوحة قيادة الطالب (Student Dashboard Functions) - مُعدّل ⭐⭐
+// =======================================================
+
 /**
- * دالة لعرض المهام الموكلة إلى الطالب الحالي.
- * المُنطق المُعدل: يتم عرض المهام بحالتي "assigned" و "pending" فقط.
- * يتم إخفاء المهام التي حالتها "completed" (تم قبولها وتصديقها من المعلم).
+ * دالة لمعالجة إظهار أو إخفاء المهام الإضافية وتحديث Firestore.
+ * @param {string} type نوع المنهج ('hifz' أو 'murajaa').
+ * @param {number} index دليل المقطع في المنهج.
+ * @param {('add'|'remove')} action الإجراء المطلوب.
  */
-function renderStudentTasks(student) {
-    const tasksContainer = document.getElementById('student-tasks');
-    tasksContainer.innerHTML = ''; 
-    
-    // 💥💥 التعديل الرئيسي: تصفية المهام المكتملة 
-    // عرض المهام التي ليست 'completed' (أي: 'assigned' أو 'pending')
-    const activeTasks = student.tasks.filter(task => task.status !== 'completed');
+async function toggleBonusTask(type, index, action) {
+    if (!currentUser || currentUser.role !== 'student') return;
 
-    if (!student || student.tasks.length === 0) {
-        tasksContainer.innerHTML = '<p class="message info">لا توجد مهام موكلة إليك حاليًا. وفقك الله.</p>';
-        return;
-    }
-    
-    if (activeTasks.length === 0) {
-        tasksContainer.innerHTML = '<p class="message success">جميع مهامك الحالية مُنجزة أو قيد المراجعة. أحسنت!</p>';
-        return;
-    }
-
-    activeTasks.forEach(task => {
-        const taskItem = document.createElement('div');
-        taskItem.className = `task-item ${task.type} ${task.status}`;
-
-        let statusText = '';
-        let buttonHTML = '';
-
-        if (task.status === 'assigned') {
-            // المهمة مُعينة وبانتظار الإنجاز
-            statusText = 'بانتظار الإنجاز';
-            buttonHTML = `<button class="complete-btn" data-task-id="${task.id}">أنجزت المهمة ✅</button>`;
-        } else if (task.status === 'pending') {
-            // المهمة قيد المراجعة بعد إنجازها من قبل الطالب
-            statusText = 'قيد المراجعة (بانتظار تصديق المعلم)';
-            buttonHTML = `<button class="complete-btn" disabled>قيد المراجعة...</button>`;
-        } 
+    try {
+        const studentDocRef = doc(db, 'students', currentUser.code);
+        let bonusField; 
         
-        // المهام ذات حالة 'completed' لا تصل إلى هنا بسبب التصفية أعلاه
+        if (type === 'hifz') {
+            bonusField = 'displayed_hifz_bonus_tasks';
+        } else if (type === 'murajaa') {
+            bonusField = 'displayed_murajaa_bonus_tasks';
+        } else {
+            return;
+        }
+        
+        let newBonusArray = currentUser[bonusField] || [];
 
+        if (action === 'add') {
+            // قيد الحد الأقصى (2)
+            if (newBonusArray.length < 2 && !newBonusArray.includes(index)) {
+                newBonusArray.push(index);
+                showMessage(authMessage, `تم إظهار مهمة إضافية.`, 'info');
+            } else {
+                 showMessage(authMessage, `لا يمكن إظهار المزيد من المهام الإضافية.`, 'error');
+                 return;
+            }
+        } else if (action === 'remove') {
+            newBonusArray = newBonusArray.filter(i => i !== index);
+             showMessage(authMessage, `تم إخفاء المهمة الإضافية.`, 'info');
+        }
+
+        // تحديث Firestore و currentUser
+        await updateDoc(studentDocRef, {
+            [bonusField]: newBonusArray
+        });
+        currentUser[bonusField] = newBonusArray;
+
+        // إعادة عرض لوحة الطالب لتحديث الواجهة
+        displayStudentDashboard(currentUser);
+
+    } catch (error) {
+        console.error(`Error toggling bonus task (${action}):`, error);
+        showMessage(authMessage, `حدث خطأ في تحديث المهام الإضافية: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * دالة لإنجاز المهام التي تعتمد على تقدم المنهج (Hifz/Murajaa) - إرسال للمراجعة.
+ * @param {string} studentCode رمز الطالب.
+ * @param {string} type نوع المهمة (يجب أن يكون 'hifz' أو 'murajaa').
+ */
+async function completeCurriculumTask(studentCode, type) {
+    try {
+        const studentDocRef = doc(db, 'students', studentCode);
+        const docSnapshot = await getDoc(studentDocRef);
+        if (!docSnapshot.exists()) return;
+
+        const student = docSnapshot.data();
+        let progressIndex, curriculumArray;
+        
+        if (type === 'hifz') {
+            progressIndex = student.hifz_progress;
+            curriculumArray = globalHifzCurriculum;
+        } else if (type === 'murajaa') {
+            progressIndex = student.murajaa_progress;
+            curriculumArray = globalMurajaaCurriculum;
+        } else {
+             showMessage(authMessage, 'نوع مهمة غير مدعوم في هذا الإجراء.', 'error');
+             return;
+        }
+
+        const taskItem = curriculumArray[progressIndex];
+        
+        // 1. التحقق من عدم وجود مهمة رئيسية أخرى (Hifz/Murajaa) في حالة 'pending'
+        const isMainTaskPending = student.tasks.some(t => 
+            t.type === type && 
+            t.description.includes(taskItem.label) && 
+            t.status === 'pending'
+        );
+
+        if (isMainTaskPending) {
+            showMessage(authMessage, `المهمة الرئيسية (${taskItem.label}) قيد مراجعة المعلم بالفعل.`, 'info');
+            return;
+        }
+        
+        // 2. إيجاد المهمة في مصفوفة tasks أو إضافتها لـ tasks لتكون قابلة للمراجعة
+        let taskIndex = student.tasks.findIndex(t => 
+            t.type === type && 
+            t.description.includes(taskItem.label) && 
+            (t.status === 'assigned' || t.status === 'rejected') // إذا كانت مُعينة أو مرفوضة مسبقاً
+        );
+
+        const taskDescription = `${type === 'hifz' ? 'حفظ' : 'مراجعة'}: ${taskItem.label}`;
+
+        if (taskIndex === -1) {
+             // المهمة غير موجودة، يتم إضافتها الآن (يحدث هذا إذا كانت المهمة الأصلية قد نُظفت)
+             const newTask = {
+                 id: generateUniqueId(),
+                 description: taskDescription,
+                 type: type,
+                 points: taskItem.points,
+                 completed: false, 
+                 status: 'pending' // مباشرة إلى Pending
+             };
+             student.tasks.push(newTask);
+        } else {
+             // المهمة موجودة، نغير حالتها إلى Pending
+             student.tasks[taskIndex].status = 'pending';
+        }
+
+        // Update Firestore
+        await updateDoc(studentDocRef, {
+             tasks: student.tasks
+        });
+
+        // Re-render dashboard
+        currentUser = student;
+        displayStudentDashboard(currentUser); 
+        
+        showMessage(authMessage, `تم إرسال مهمة ${taskItem.label} للمراجعة.`, 'success');
+
+    } catch (error) {
+        console.error("Error setting curriculum task to pending: ", error);
+        showMessage(authMessage, `حدث خطأ أثناء إرسال المهمة: ${error.message}`, 'error');
+    }
+}
+
+
+/**
+ * دالة لإنجاز المهام العامة (غير التسلسلية)
+ * هي بديل لدالة completeTask القديمة، لكنها الآن تُستخدم فقط للمهام العامة
+ */
+async function completeGeneralTask(studentCode, taskId) { 
+    try {
+        const studentDocRef = doc(db, 'students', studentCode);
+        const docSnapshot = await getDoc(studentDocRef);
+        if (!docSnapshot.exists()) return;
+
+        const student = docSnapshot.data();
+        const taskIndex = student.tasks.findIndex(t => t.id === taskId);
+
+        if (taskIndex !== -1 && student.tasks[taskIndex].status === 'assigned') {
+            student.tasks[taskIndex].status = 'pending';
+            
+            await updateDoc(studentDocRef, {
+                tasks: student.tasks,
+            });
+
+            // Re-render dashboard
+            currentUser = student;
+            displayStudentDashboard(currentUser);
+
+            showMessage(authMessage, `تم إرسال المهمة للمراجعة. عند قبول المعلم، ستُضاف النقاط.`, 'success');
+        
+        } else if (taskIndex !== -1 && student.tasks[taskIndex].status === 'pending') {
+            showMessage(authMessage, `هذه المهمة قيد مراجعة المعلم بالفعل. ننتظر القبول.`, 'info');
+        }
+
+    } catch (error) {
+        console.error("Error setting task to pending: ", error);
+        showMessage(authMessage, `حدث خطأ أثناء إرسال المهمة: ${error.message}`, 'error');
+    }
+}
+
+
+/**
+ * دالة لعرض المهام الموكلة إلى الطالب بناءً على تقدمه في المنهج (Hifz/Murajaa).
+ * تعرض المهمة الرئيسية (progress) ومهام إضافية (displayed_bonus_tasks).
+ */
+function renderCurriculumTasks(student) {
+    const tasksContainer = document.getElementById('student-tasks');
+    tasksContainer.innerHTML = '<h2>مهامك الحالية</h2>'; 
+
+    // دالة مساعدة لإنشاء عنصر المهمة
+    const createTaskElement = (task, isMain, isPending, index) => {
+        const statusText = isPending ? 'قيد المراجعة...' : 'بانتظار الإنجاز';
+        const statusClass = isPending ? 'pending' : 'assigned';
+        
+        let buttonHTML = '';
+        if (isPending) {
+            // إذا كانت الرئيسية قيد المراجعة، يتم تعطيل جميع الأزرار
+            buttonHTML = `<button class="complete-btn" disabled>قيد المراجعة</button>`;
+        } else if (isMain) {
+            // زر الإنجاز متاح للمهمة الرئيسية فقط
+            buttonHTML = `<button class="complete-btn curriculum-btn" data-task-type="${task.type}">أنجزت المهمة ✅</button>`;
+        } else {
+            // المهام الإضافية معطلة حتى يتم إنجاز الرئيسية
+            buttonHTML = `<button class="complete-btn" disabled>مغلقة (أنجز المهمة الرئيسية)</button>`;
+        }
+
+        // زر إخفاء المهمة الإضافية
+        let hideButton = '';
+        if (!isMain) {
+             hideButton = `<button class="toggle-bonus-btn hide-btn" data-index="${index}" data-type="${task.type}">إخفاء ➖</button>`;
+        }
+
+        const taskItem = document.createElement('div');
+        taskItem.className = `task-item ${task.type} ${statusClass} ${isMain ? 'main-task' : 'bonus-task'}`;
         taskItem.innerHTML = `
-            <div class="task-description">${task.description}</div>
-            <div class="task-type">${task.type === 'hifz' ? 'حفظ' : task.type === 'murajaa' ? 'مراجعة' : 'عامة'}</div>
-            <div class="task-points">النقاط: <strong>${task.points}</strong></div>
-            <div class="task-status">الحالة: <strong>${statusText}</strong></div>
-            <div class="task-actions">${buttonHTML}</div>
+            <div class="task-header">
+                 <span class="task-title">
+                     ${isMain ? '🎯 المهمة الحالية:' : '✨ مهمة إضافية (قادمة):'} 
+                     ${task.label}
+                 </span>
+                 <div class="task-actions">
+                     <span class="task-points">النقاط: <strong>${task.points}</strong></span>
+                     <span class="task-status">${statusText}</span>
+                     ${!isMain ? hideButton : ''}
+                 </div>
+            </div>
+            <div class="task-controls">
+                ${buttonHTML}
+            </div>
         `;
+        return taskItem;
+    };
 
-        tasksContainer.appendChild(taskItem);
+    // ----------------------------------------------------
+    // 1. معالجة مهام الحفظ (HIFZ)
+    // ----------------------------------------------------
+    const hifzContainer = document.createElement('div');
+    hifzContainer.id = 'hifz-tasks-list';
+    hifzContainer.innerHTML = '<h3>مهام الحفظ</h3>';
+    tasksContainer.appendChild(hifzContainer);
+    
+    const hifzProgress = student.hifz_progress || 0;
+    const hifzBonus = student.displayed_hifz_bonus_tasks || [];
+    const hifzCap = globalHifzCurriculum.length;
+    
+    const mainHifzItem = globalHifzCurriculum[hifzProgress];
+    const isHifzMainPending = student.tasks.some(t => 
+        t.type === 'hifz' && 
+        t.description.includes(mainHifzItem?.label || '') &&
+        t.status === 'pending'
+    );
+    
+    // أ. المهمة الرئيسية (الحالية)
+    if (hifzProgress < hifzCap && mainHifzItem) {
+        const taskItem = createTaskElement(
+            mainHifzItem, 
+            true, 
+            isHifzMainPending, 
+            hifzProgress 
+        );
+        hifzContainer.appendChild(taskItem);
+    } else if (hifzProgress >= hifzCap) {
+        hifzContainer.innerHTML += '<p class="message success">✅ تم إكمال منهج الحفظ. تهانينا!</p>';
+    }
+
+    // ب. المهام الإضافية المعروضة
+    hifzBonus.sort((a, b) => a - b).forEach(index => {
+        if (index > hifzProgress && index < hifzCap) {
+            const bonusItem = globalHifzCurriculum[index];
+            const taskItem = createTaskElement(
+                bonusItem, 
+                false, 
+                isHifzMainPending, // تعطيل الإضافية إذا كانت الرئيسية قيد المراجعة
+                index 
+            );
+            hifzContainer.appendChild(taskItem);
+        }
     });
 
-    // إضافة مستمعي الأحداث لزر الإنجاز
-    tasksContainer.querySelectorAll('.complete-btn:not(:disabled)').forEach(button => {
+    // ج. زر "إظهار مهمة إضافية"
+    if (hifzProgress < hifzCap && hifzBonus.length < 2) {
+        // تحديد أول مهمة تالية غير موجودة حالياً
+        let nextIndex = hifzProgress + 1;
+        while (hifzBonus.includes(nextIndex) && nextIndex < hifzCap) {
+             nextIndex++;
+        }
+        
+        if (nextIndex < hifzCap) {
+            const showButtonDiv = document.createElement('div');
+            showButtonDiv.className = 'toggle-button-wrapper';
+            showButtonDiv.innerHTML = `<button id="show-hifz-bonus-btn" data-index="${nextIndex}" data-type="hifz" ${isHifzMainPending ? 'disabled' : ''}>إظهار مهمة حفظ إضافية ➕</button>`;
+            hifzContainer.appendChild(showButtonDiv);
+        }
+    }
+
+
+    // ----------------------------------------------------
+    // 2. معالجة مهام المراجعة (MURAJAA)
+    // ----------------------------------------------------
+    const murajaaContainer = document.createElement('div');
+    murajaaContainer.id = 'murajaa-tasks-list';
+    murajaaContainer.innerHTML = '<h3>مهام المراجعة</h3>';
+    tasksContainer.appendChild(murajaaContainer);
+
+    const murajaaProgress = student.murajaa_progress || 0;
+    const murajaaBonus = student.displayed_murajaa_bonus_tasks || [];
+    const murajaaCap = globalMurajaaCurriculum.length;
+
+    const mainMurajaaItem = globalMurajaaCurriculum[murajaaProgress];
+    const isMurajaaMainPending = student.tasks.some(t => 
+        t.type === 'murajaa' && 
+        t.description.includes(mainMurajaaItem?.label || '') &&
+        t.status === 'pending'
+    );
+    
+    // أ. المهمة الرئيسية (الحالية)
+    if (murajaaProgress < murajaaCap && mainMurajaaItem) {
+        const taskItem = createTaskElement(
+            mainMurajaaItem, 
+            true, 
+            isMurajaaMainPending, 
+            murajaaProgress 
+        );
+        murajaaContainer.appendChild(taskItem);
+    } else if (murajaaProgress >= murajaaCap) {
+        murajaaContainer.innerHTML += '<p class="message success">✅ تم إكمال منهج المراجعة. تهانينا!</p>';
+    }
+
+    // ب. المهام الإضافية المعروضة
+     murajaaBonus.sort((a, b) => a - b).forEach(index => {
+        if (index > murajaaProgress && index < murajaaCap) {
+            const bonusItem = globalMurajaaCurriculum[index];
+            const taskItem = createTaskElement(
+                bonusItem, 
+                false, 
+                isMurajaaMainPending, 
+                index 
+            );
+            murajaaContainer.appendChild(taskItem);
+        }
+    });
+
+    // ج. زر "إظهار مهمة إضافية"
+    if (murajaaProgress < murajaaCap && murajaaBonus.length < 2) {
+         let nextIndex = murajaaProgress + 1;
+         while (murajaaBonus.includes(nextIndex) && nextIndex < murajaaCap) {
+             nextIndex++;
+         }
+         
+         if (nextIndex < murajaaCap) {
+            const showButtonDiv = document.createElement('div');
+            showButtonDiv.className = 'toggle-button-wrapper';
+            showButtonDiv.innerHTML = `<button id="show-murajaa-bonus-btn" data-index="${nextIndex}" data-type="murajaa" ${isMurajaaMainPending ? 'disabled' : ''}>إظهار مهمة مراجعة إضافية ➕</button>`;
+            murajaaContainer.appendChild(showButtonDiv);
+        }
+    }
+    
+    // ----------------------------------------------------
+    // 3. معالجة المهام العامة (General Tasks)
+    // ----------------------------------------------------
+    const generalTasksContainer = document.createElement('div');
+    generalTasksContainer.id = 'general-tasks-list';
+    generalTasksContainer.innerHTML = '<h3>مهام عامة مُعينة</h3>';
+    tasksContainer.appendChild(generalTasksContainer);
+
+    const generalTasks = student.tasks.filter(t => t.type === 'general' && t.status !== 'completed');
+
+    if (generalTasks.length > 0) {
+        generalTasks.forEach(task => {
+            // نعرض المهام العامة باستخدام منطق قديم مشابه لـ renderStudentTasks
+            const statusText = task.status === 'pending' ? 'قيد المراجعة...' : 'بانتظار الإنجاز';
+            const statusClass = task.status === 'pending' ? 'pending' : 'assigned';
+            
+            const buttonHTML = task.status === 'pending' 
+                ? `<button class="complete-btn" disabled>قيد المراجعة...</button>`
+                : `<button class="complete-btn general-btn" data-task-id="${task.id}">أنجزت المهمة ✅</button>`;
+
+            const taskItem = document.createElement('div');
+            taskItem.className = `task-item general ${statusClass}`;
+            taskItem.innerHTML = `
+                <div class="task-description">${task.description}</div>
+                <div class="task-points">النقاط: <strong>${task.points}</strong></div>
+                <div class="task-status">الحالة: <strong>${statusText}</strong></div>
+                <div class="task-actions">${buttonHTML}</div>
+            `;
+            generalTasksContainer.appendChild(taskItem);
+        });
+    } else {
+         generalTasksContainer.innerHTML += '<p class="message info">لا توجد مهام عامة مُعينة حالياً.</p>';
+    }
+
+
+    // ----------------------------------------------------
+    // 4. ربط مستمعي الأحداث
+    // ----------------------------------------------------
+    
+    // ربط أزرار الإظهار
+    document.getElementById('show-hifz-bonus-btn')?.addEventListener('click', (e) => {
+        const index = parseInt(e.target.dataset.index);
+        toggleBonusTask('hifz', index, 'add');
+    });
+     document.getElementById('show-murajaa-bonus-btn')?.addEventListener('click', (e) => {
+        const index = parseInt(e.target.dataset.index);
+        toggleBonusTask('murajaa', index, 'add');
+    });
+    
+    // ربط أزرار الإخفاء
+    tasksContainer.querySelectorAll('.toggle-bonus-btn.hide-btn').forEach(button => {
         button.addEventListener('click', (e) => {
-            const taskId = e.target.getAttribute('data-task-id');
-            // نستخدم completeTask التي تحول المهمة إلى pending
-            completeTask(student.code, taskId); 
+            const index = parseInt(e.target.dataset.index);
+            const type = e.target.dataset.type;
+            toggleBonusTask(type, index, 'remove');
+        });
+    });
+
+    // ربط زر الإنجاز للمهام التسلسلية (المتاحة فقط للمهمة الرئيسية)
+    tasksContainer.querySelectorAll('.complete-btn.curriculum-btn:not(:disabled)').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const type = e.target.dataset.taskType;
+            completeCurriculumTask(student.code, type); 
+        });
+    });
+    
+    // ربط زر الإنجاز للمهام العامة
+     tasksContainer.querySelectorAll('.complete-btn.general-btn:not(:disabled)').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const taskId = e.target.dataset.taskId;
+            completeGeneralTask(student.code, taskId); 
         });
     });
 }
@@ -243,6 +598,12 @@ function renderStudentTasks(student) {
 async function displayStudentDashboard(student) {
     welcomeStudent.textContent = `أهلاً بك يا ${student.name}`;
 
+    // تهيئة حقول المهام الإضافية في حال كانت غير موجودة (لأول مرة)
+    if (!student.displayed_hifz_bonus_tasks) student.displayed_hifz_bonus_tasks = [];
+    if (!student.displayed_murajaa_bonus_tasks) student.displayed_murajaa_bonus_tasks = [];
+    
+    currentUser = student; // تحديث الكائن العام بآخر البيانات
+
     // Get the actual curriculum items based on saved indices
     const currentHifzItem = globalHifzCurriculum[student.hifz_progress]; 
     const currentMurajaaItem = globalMurajaaCurriculum[student.murajaa_progress];
@@ -251,15 +612,42 @@ async function displayStudentDashboard(student) {
     studentMurajaaProgress.textContent = currentMurajaaItem ? currentMurajaaItem.label : 'المنهج غير مُعين';
     studentTotalPoints.textContent = student.total_points;
 
-    // Display tasks using the new filtered function
-    renderStudentTasks(student); // 💥💥 تم استخدام الدالة المعدلة
+    // Display tasks using the new curriculum-based function
+    renderCurriculumTasks(student); 
 
     hideAllScreens();
     studentScreen.classList.remove('hidden');
 }
 
+// =======================================================
+// ⭐⭐ دوال لوحة المعلم (Teacher Panel Functions) - مُعدّل ⭐⭐
+// =======================================================
 
-// Function for loading students for the teacher panel
+/**
+ * دالة لتعديل إجمالي نقاط الطالب مباشرة من لوحة المعلم.
+ * @param {string} studentCode رمز الطالب.
+ * @param {number} newPoints القيمة الجديدة لإجمالي النقاط.
+ */
+async function updateStudentPoints(studentCode, newPoints) {
+    try {
+        const studentDocRef = doc(db, 'students', studentCode);
+        
+        await updateDoc(studentDocRef, {
+            total_points: newPoints,
+        });
+
+        // تحديث العرض في لوحة المعلم فوراً
+        document.getElementById(`points-display-${studentCode}`).textContent = newPoints;
+        showMessage(authMessage, `تم تحديث نقاط الطالب ${studentCode} إلى ${newPoints} بنجاح!`, 'success');
+
+    } catch (error) {
+        console.error("Error updating student points:", error);
+        showMessage(authMessage, `خطأ في تحديث النقاط للطالب ${studentCode}: ${error.message}`, 'error');
+    }
+}
+
+
+// Function for loading students for the teacher panel - مُعدّل لإضافة تعديل النقاط
 async function loadStudentsForTeacher() {
     studentList.innerHTML = '<li>جارٍ تحميل بيانات الطلاب...</li>';
     try {
@@ -273,14 +661,26 @@ async function loadStudentsForTeacher() {
         studentList.innerHTML = '';
         snapshot.forEach(documentSnapshot => {
             const student = documentSnapshot.data();
-            const hifzLabel = globalHifzCurriculum[student.hifz_progress] ? globalHifzCurriculum[student.hifz_progress].label : 'غير محدد'; // <--- تم التعديل
+            const hifzLabel = globalHifzCurriculum[student.hifz_progress] ? globalHifzCurriculum[student.hifz_progress].label : 'غير محدد';
             
             // إنشاء عنصر القائمة
             const listItem = document.createElement('li');
             
+            // ⭐⭐ التعديل الرئيسي هنا: إضافة حقل تعديل النقاط وزر الحفظ ⭐⭐
             listItem.innerHTML = `
-                <span><strong>${student.name}</strong> (${student.code}) - الحفظ: ${hifzLabel} | النقاط: ${student.total_points}</span>
-                <div class="student-actions">
+                <div style="flex-grow: 1;">
+                    <span><strong>${student.name}</strong> (${student.code}) - الحفظ: ${hifzLabel} | النقاط الحالية: 
+                        <strong id="points-display-${student.code}">${student.total_points}</strong>
+                    </span>
+                </div>
+                <div class="student-actions" style="display:flex; align-items:center; gap: 10px;">
+                    <input type="number" 
+                           id="edit-points-${student.code}" 
+                           value="${student.total_points}" 
+                           min="0" 
+                           style="width: 80px; text-align: center; padding: 5px;"
+                           placeholder="نقاط">
+                    <button class="save-points-btn action-btn" data-code="${student.code}">حفظ النقاط</button>
                     <button class="delete-btn" data-code="${student.code}">حذف</button>
                 </div>
             `;
@@ -304,12 +704,29 @@ async function loadStudentsForTeacher() {
                 }
             });
         });
+        
+        // ⭐⭐ NEW: ربط مستمعي الأحداث لأزرار حفظ النقاط ⭐⭐
+        document.querySelectorAll('.save-points-btn').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const code = e.target.dataset.code;
+                const newPointsInput = document.getElementById(`edit-points-${code}`);
+                const newPoints = parseInt(newPointsInput.value);
+                
+                if (isNaN(newPoints) || newPoints < 0) {
+                    showMessage(authMessage, `الرجاء إدخال رقم صحيح للنقاط للطالب ${code}.`, 'error');
+                    return;
+                }
+                
+                await updateStudentPoints(code, newPoints);
+            });
+        });
 
     } catch (error) {
         studentList.innerHTML = '<li>حدث خطأ في تحميل بيانات الطلاب.</li>';
         console.error("Error loading students: ", error);
     }
 }
+
 
 // Function to display the curriculum in the teacher panel
 function displayCurriculumsInTeacherPanel() {
@@ -325,53 +742,12 @@ function displayCurriculumsInTeacherPanel() {
 }
 
 
-// Function for task completion (Student marks task as PENDING)
-async function completeTask(studentCode, taskId) { // تمت إزالة (points) لأنه لم يعد ضرورياً
-    try {
-        const studentDocRef = doc(db, 'students', studentCode);
-        const docSnapshot = await getDoc(studentDocRef);
-        if (!docSnapshot.exists()) return;
-
-        const student = docSnapshot.data();
-        const taskIndex = student.tasks.findIndex(t => t.id === taskId);
-
-        // الشرط: يجب أن تكون المهمة موجودة وحالتها 'assigned'
-        if (taskIndex !== -1 && student.tasks[taskIndex].status === 'assigned') {
-            
-            // سنغير الحالة فقط إلى 'pending'
-            student.tasks[taskIndex].status = 'pending';
-
-            // Update Firestore
-            await updateDoc(studentDocRef, {
-                tasks: student.tasks,
-                // لا نغير total_points أو hifz_progress أو murajaa_progress
-            });
-
-            // Re-render dashboard
-            currentUser = student;
-            displayStudentDashboard(currentUser); // 💥💥 تحديث لوحة الطالب
-
-            // تغيير رسالة النجاح
-            showMessage(authMessage, `تم إرسال المهمة للمراجعة. عند قبول المعلم، ستُضاف النقاط.`, 'success');
-        
-        } else if (taskIndex !== -1 && student.tasks[taskIndex].status === 'pending') {
-             // رسالة تنبيه إذا كانت المهمة قيد المراجعة بالفعل
-             showMessage(authMessage, `هذه المهمة قيد مراجعة المعلم بالفعل. ننتظر القبول.`, 'info');
-        } else if (taskIndex !== -1 && student.tasks[taskIndex].status === 'completed') {
-             // رسالة تنبيه إذا كانت المهمة مكتملة بالفعل
-             showMessage(authMessage, `هذه المهمة مُنجزة ومقبولة بالفعل.`, 'info');
-        }
-
-
-    } catch (error) {
-        console.error("Error setting task to pending: ", error);
-        showMessage(authMessage, `حدث خطأ أثناء إرسال المهمة: ${error.message}`, 'error');
-    }
-}
-
+// Function for task completion (Student marks task as PENDING) - تم استبدالها بدوال متخصصة
+// تم حذف دالة completeTask القديمة هنا واستبدالها بالوظائف الجديدة:
+// completeCurriculumTask و completeGeneralTask
 
 // =======================================================
-// ⭐⭐ دوال مراجعة المهام (المعلم) - لم يتم تعديلها لأنها صحيحة ⭐⭐
+// ⭐⭐ دوال مراجعة المهام (المعلم) - مُعدّل بشكل كبير ⭐⭐
 // =======================================================
 
 /**
@@ -444,7 +820,7 @@ async function loadPendingTasksForReview() {
 }
 
 /**
- * دالة لمعالجة قبول أو رفض المهمة من قبل المعلم.
+ * دالة لمعالجة قبول أو رفض المهمة من قبل المعلم. (مُعدّل لدعم التسلسل الصارم والمهام الإضافية)
  * @param {string} studentCode رمز الطالب.
  * @param {string} taskId معرف المهمة الفريد.
  * @param {('approve'|'reject')} action الإجراء المطلوب (قبول أو رفض).
@@ -463,7 +839,7 @@ async function reviewTask(studentCode, taskId, action) {
 
         if (taskIndex === -1 || student.tasks[taskIndex].status !== 'pending') {
             showMessage(authMessage, `المهمة لم تعد قيد المراجعة أو غير موجودة. (Task ID: ${taskId})`, 'error');
-            loadPendingTasksForReview(); // تحديث القائمة
+            loadPendingTasksForReview();
             return;
         }
 
@@ -473,47 +849,44 @@ async function reviewTask(studentCode, taskId, action) {
         
         if (action === 'approve') {
             // 1. تغيير حالة المهمة إلى 'completed' ومنح النقاط
-            task.status = 'completed'; // 💥 يتم إخفاؤها الآن من شاشة الطالب
+            task.status = 'completed';
             task.completed = true; 
-            student.total_points += task.points;
+            student.total_points = (student.total_points || 0) + task.points; // تأمين ضد القيمة الفارغة
             
             // 2. تحديث تقدم المنهج إذا كانت المهمة حفظ أو مراجعة
-            if (task.type === 'hifz') {
-                const nextIndex = student.hifz_progress + 1;
-                // التأكد من أن التقدم الجديد ضمن حدود المنهج
-                if (nextIndex < globalHifzCurriculum.length) {
-                    student.hifz_progress = nextIndex;
-                    // تعيين مهمة الحفظ التالية تلقائياً
-                    const nextHifzItem = globalHifzCurriculum[nextIndex];
-                    student.tasks.push({
-                        id: generateUniqueId(),
-                        description: `حفظ جديد: ${nextHifzItem.label}`,
-                        type: 'hifz',
-                        points: nextHifzItem.points,
-                        completed: false,
-                        status: 'assigned'
-                    });
-                } else {
-                    message += ' (تم إكمال منهج الحفظ).';
-                }
-            } else if (task.type === 'murajaa') {
-                const nextIndex = student.murajaa_progress + 1;
-                if (nextIndex < globalMurajaaCurriculum.length) {
-                    student.murajaa_progress = nextIndex;
-                    // تعيين مهمة المراجعة التالية تلقائياً
-                    const nextMurajaaItem = globalMurajaaCurriculum[nextIndex];
-                    student.tasks.push({
-                        id: generateUniqueId(),
-                        description: `مراجعة جديدة: ${nextMurajaaItem.label}`,
-                        type: 'murajaa',
-                        points: nextMurajaaItem.points,
-                        completed: false,
-                        status: 'assigned'
-                    });
-                } else {
-                    message += ' (تم إكمال منهج المراجعة).';
-                }
-            }
+            if (task.type === 'hifz' || task.type === 'murajaa') {
+                 
+                 let progressField = task.type === 'hifz' ? 'hifz_progress' : 'murajaa_progress';
+                 let bonusField = task.type === 'hifz' ? 'displayed_hifz_bonus_tasks' : 'displayed_murajaa_bonus_tasks';
+                 let curriculumArray = task.type === 'hifz' ? globalHifzCurriculum : globalMurajaaCurriculum;
+
+                 const expectedProgressItem = curriculumArray[student[progressField]];
+                 // التحقق من أن المهمة التي تمت الموافقة عليها هي المهمة الرئيسية الحالية (منع القفزات)
+                 const isExpectedTask = expectedProgressItem && task.description.includes(expectedProgressItem.label);
+
+                 if (isExpectedTask) {
+                      // 🌟🌟 المنطق الجديد للتسلسل: زيادة التقدم
+                      const nextIndex = student[progressField] + 1;
+                      if (nextIndex < curriculumArray.length) {
+                            student[progressField] = nextIndex;
+                            message += ' (تمت زيادة التقدم تلقائياً).';
+                            
+                            // 🌟🌟 تنظيف المهام الإضافية المعروضة
+                            student[bonusField] = (student[bonusField] || []).filter(index => index >= nextIndex);
+                            
+                            // 🌟🌟 لا نقوم بإنشاء مهمة جديدة هنا، بل نعتمد على العرض في displayStudentDashboard
+                            
+                      } else {
+                            // تم إكمال المنهج
+                            student[progressField] = curriculumArray.length;
+                            message += ' (تم إكمال المنهج).';
+                      }
+                 } else {
+                     // المهمة المنجزة ليست هي المهمة الرئيسية الحالية
+                      message += ' (ملاحظة: تم قبول مهمة غير تسلسلية/عامة. لم يتم تحديث التقدم).';
+                 }
+                 
+            } 
             
             message = `تم قبول مهمة ${task.description} للطالب ${student.name}. أضيفت ${task.points} نقطة${message}`;
             
@@ -521,15 +894,17 @@ async function reviewTask(studentCode, taskId, action) {
             // تغيير الحالة إلى 'assigned' لإعطاء الطالب فرصة لإعادة الإرسال
             task.status = 'assigned';
             message = `تم رفض مهمة ${task.description} للطالب ${student.name}. وتم إعادتها إلى قائمة مهامه المعينة.`;
-            successType = 'error'; // استخدام كلاس الخطأ لتغيير لون الرسالة لـ "الرفض"
+            successType = 'error';
         }
 
-        // 3. حفظ التغييرات في Firestore (tasks, total_points, progress)
+        // 3. حفظ التغييرات في Firestore (tasks, total_points, progress, bonus fields)
         await updateDoc(studentDocRef, {
             tasks: student.tasks,
             total_points: student.total_points,
             hifz_progress: student.hifz_progress,
             murajaa_progress: student.murajaa_progress,
+            displayed_hifz_bonus_tasks: student.displayed_hifz_bonus_tasks,
+            displayed_murajaa_bonus_tasks: student.displayed_murajaa_bonus_tasks,
         });
 
         showMessage(authMessage, message, successType);
@@ -560,7 +935,7 @@ loginButton.addEventListener('click', async () => {
         teacherScreen.classList.remove('hidden');
         currentUser = { id: 'teacher', name: 'المعلم', role: 'teacher' };
         loadStudentsForTeacher();
-        displayCurriculumsInTeacherPanel(); // <--- NEW: Display curriculums when teacher logs in
+        displayCurriculumsInTeacherPanel();
         setActiveTab('manage-students-tab'); // Default tab for teacher
     } else {
         try {
@@ -568,11 +943,11 @@ loginButton.addEventListener('click', async () => {
             const studentDocRef = doc(db, 'students', userCode);
             const docSnapshot = await getDoc(studentDocRef);
             if (docSnapshot.exists()) {
-                currentUser = docSnapshot.data();
+                // دمج بيانات الطالب مع الرمز والدور
+                currentUser = { code: userCode, role: 'student', ...docSnapshot.data() };
                 displayStudentDashboard(currentUser); // 💥💥 يتم تحديثها الآن بشكل صحيح
             } else {
                 showMessage(authMessage, 'رمز الطالب غير صحيح. حاول مجدداً.', 'error');
-                // لا نحتاج لرسالة خطأ ثانية هنا
             }
         } catch (error) {
             console.error("Login error: ", error);
@@ -589,14 +964,12 @@ tabButtons.forEach(button => {
         setActiveTab(`${button.dataset.tab}-tab`);
         if (button.dataset.tab === 'manage-students') {
             loadStudentsForTeacher();
-        } else if (button.dataset.tab === 'add-student') { // <--- Populate selects when "Add Student" tab is opened
+        } else if (button.dataset.tab === 'add-student') {
             populateCurriculumSelects();
         }
-        // If curriculum tab, make sure it's displayed
         if (button.dataset.tab === 'manage-curriculum') {
             displayCurriculumsInTeacherPanel();
         }
-        // ⭐⭐ NEW: Load pending tasks when "Review Tasks" tab is opened
         if (button.dataset.tab === 'review-tasks') {
             loadPendingTasksForReview();
         }
@@ -615,13 +988,11 @@ registerStudentButton.addEventListener('click', async () => {
         return;
     }
 
-    // <--- تم التعديل: التحقق من globalHifzCurriculum
     if (hifzStartIndex < 0 || hifzStartIndex >= globalHifzCurriculum.length || isNaN(hifzStartIndex)) {
         showMessage(registerStudentMessage, 'نقطة بداية الحفظ غير صالحة. الرجاء اختيار من القائمة.', 'error');
         return;
     }
 
-    // <--- تم التعديل: التحقق من globalMurajaaCurriculum
     if (murajaaStartIndex < 0 || murajaaStartIndex >= globalMurajaaCurriculum.length || isNaN(murajaaStartIndex)) {
         showMessage(registerStudentMessage, 'نقطة بداية المراجعة غير صالحة. الرجاء اختيار من القائمة.', 'error');
         return;
@@ -638,29 +1009,31 @@ registerStudentButton.addEventListener('click', async () => {
 
         // Assign first tasks automatically
         const initialTasks = [];
-        // <--- التعديل: إضافة status: 'assigned'
+        
+        // المهام التسلسلية لم تعد تضاف إلى الـ tasks هنا. سنعتمد على progress
+        // لكن نحتاج لإضافة أول مهمة إلى tasks لجعلها قابلة للمراجعة
         if (globalHifzCurriculum[hifzStartIndex]) {
-            initialTasks.push({ 
-                id: generateUniqueId(), 
-                description: `حفظ جديد: ${globalHifzCurriculum[hifzStartIndex].label}`, 
-                type: 'hifz', 
-                points: globalHifzCurriculum[hifzStartIndex].points, 
-                completed: false, 
-                status: 'assigned' // ⭐⭐ تم الإضافة
-            });
+             // 💥 إضافة أول مهمة حفظ لتكون قابلة للمراجعة (بما أنها المهمة الرئيسية)
+             initialTasks.push({ 
+                 id: generateUniqueId(), 
+                 description: `حفظ: ${globalHifzCurriculum[hifzStartIndex].label}`, 
+                 type: 'hifz', 
+                 points: globalHifzCurriculum[hifzStartIndex].points, 
+                 completed: false, 
+                 status: 'assigned' 
+             });
         }
-        // <--- التعديل: إضافة status: 'assigned'
         if (globalMurajaaCurriculum[murajaaStartIndex]) {
-            initialTasks.push({ 
-                id: generateUniqueId(), 
-                description: `مراجعة جديدة: ${globalMurajaaCurriculum[murajaaStartIndex].label}`, 
-                type: 'murajaa', 
-                points: globalMurajaaCurriculum[murajaaStartIndex].points, 
-                completed: false,
-                status: 'assigned' // ⭐⭐ تم الإضافة
-            });
+             // 💥 إضافة أول مهمة مراجعة لتكون قابلة للمراجعة
+             initialTasks.push({ 
+                 id: generateUniqueId(), 
+                 description: `مراجعة: ${globalMurajaaCurriculum[murajaaStartIndex].label}`, 
+                 type: 'murajaa', 
+                 points: globalMurajaaCurriculum[murajaaStartIndex].points, 
+                 completed: false,
+                 status: 'assigned' 
+             });
         }
-
 
         // Add new student
         await setDoc(studentDocRef, {
@@ -670,7 +1043,9 @@ registerStudentButton.addEventListener('click', async () => {
             hifz_progress: hifzStartIndex,
             murajaa_progress: murajaaStartIndex,
             total_points: 0,
-            tasks: initialTasks, // Using the new initialTasks array
+            tasks: initialTasks,
+            displayed_hifz_bonus_tasks: [], // 🆕 حقل جديد
+            displayed_murajaa_bonus_tasks: [], // 🆕 حقل جديد
         });
 
         showMessage(registerStudentMessage, `تم تسجيل الطالب ${newStudentName} بنجاح!`, 'success');
@@ -699,19 +1074,18 @@ assignIndividualTaskButton.addEventListener('click', async () => {
     }
 
     // Logic to assign task to a single student (using Firestore Update)
-    // التعديل: إضافة status: 'assigned'
     const task = { 
         id: generateUniqueId(), 
         description, 
         type, 
         points, 
         completed: false,
-        status: 'assigned' // ⭐⭐ تم الإضافة
+        status: 'assigned' 
     }; 
     try {
         const studentDocRef = doc(db, 'students', code);
         await updateDoc(studentDocRef, {
-            tasks: arrayUnion(task) // استخدام arrayUnion لإضافة عنصر إلى مصفوفة
+            tasks: arrayUnion(task)
         });
         showMessage(assignTaskMessage, `تم تعيين مهمة فردية للطالب ${code} بنجاح.`, 'success');
     } catch (error) {
@@ -731,14 +1105,13 @@ assignGroupTaskButton.addEventListener('click', async () => {
     }
 
     // Logic to assign task to all students (Batch Write recommended for real app)
-    // التعديل: إضافة status: 'assigned'
     const task = { 
         id: generateUniqueId(), 
         description, 
         type, 
         points, 
         completed: false,
-        status: 'assigned' // ⭐⭐ تم الإضافة
+        status: 'assigned' 
     }; 
     try {
         const studentsColRef = collection(db, 'students');
@@ -758,7 +1131,6 @@ assignGroupTaskButton.addEventListener('click', async () => {
     }
 });
 
-
 // --- Logout ---
 function logout() {
     currentUser = null;
@@ -771,14 +1143,9 @@ function logout() {
 logoutButtonStudent.addEventListener('click', logout);
 logoutButtonTeacher.addEventListener('click', logout);
 
-
 // --- Initialization on load ---
 // 💥 التشغيل الأولي: جلب المنهج قبل أي عملية أخرى
 loadCurriculumFromFirestore().then(() => {
     // بعد تحميل المنهج، يمكن للمستخدمين البدء في التفاعل
     console.log("App ready. Curriculum loaded.");
 });
-
-// =======================================================
-// ⭐⭐ اجعل دالة الترحيل متاحة في الـ Console ⭐⭐
-// ========
