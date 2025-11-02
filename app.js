@@ -34,7 +34,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app); // تهيئة Firestore بالطريقة الجديدة
-const auth = getAuth(app);     // تهيئة Auth بالطريقة الجديدة
+const auth = getAuth(app);    // تهيئة Auth بالطريقة الجديدة
 
 // --- DOM Elements ---
 const authScreen = document.getElementById('auth-screen');
@@ -83,7 +83,6 @@ const murajaaCurriculumDisplay = document.getElementById('murajaa-curriculum-dis
 let currentUser = null; // Stores current logged-in user data
 
 // --- STATIC CURRICULUM DATA ---
-// منهج الحفظ الأصلي: من المرسلات إلى الأحقاف
 const HifzCurriculum = [
     // المرسلات
     { surah: 'المرسلات', start_ayah: 1, end_ayah: 15, points: 5, type: 'hifz', label: 'المرسلات (1-15)' },
@@ -142,7 +141,7 @@ const HifzCurriculum = [
     { surah: 'الحاقة', start_ayah: 9, end_ayah: 18, points: 5, type: 'hifz', label: 'الحاقة (9-18)' },
     { surah: 'الحاقة', start_ayah: 19, end_ayah: 24, points: 5, type: 'hifz', label: 'الحاقة (19-24)' },
     { surah: 'الحاقة', start_ayah: 25, end_ayah: 35, points: 5, type: 'hifz', label: 'الحاقة (25-35)' },
-    { surah: 'الحاقة', start_ayah: 36, end_ayah: 43, points: 5, type: 'hifz', label: 'الحاقة (36-43)' },
+    { surah: 'الحاقة', start_ayah: 36, end_ayah: 43, points: 5, type: 'hifz', label: 'التقويم (36-43)' },
     { surah: 'الحاقة', start_ayah: 44, end_ayah: 52, points: 5, type: 'hifz', label: 'الحاقة (44-52)' },
     // القلم
     { surah: 'القلم', start_ayah: 1, end_ayah: 9, points: 5, type: 'hifz', label: 'القلم (1-9)' },
@@ -219,7 +218,7 @@ const HifzCurriculum = [
     { surah: 'المجادلة', start_ayah: 11, end_ayah: 12, points: 5, type: 'hifz', label: 'المجادلة (11-12)' },
     { surah: 'المجادلة', start_ayah: 13, end_ayah: 16, points: 5, type: 'hifz', label: 'المجادلة (13-16)' },
     { surah: 'المجادلة', start_ayah: 17, end_ayah: 19, points: 5, type: 'hifz', label: 'المجادلة (17-19)' },
-    { surah: 'المجادلة', start_ayah: 4, end_ayah: 22, points: 5, type: 'hifz', label: 'المجادلة (20-22)' },
+    { surah: 'المجادلة', start_ayah: 20, end_ayah: 22, points: 5, type: 'hifz', label: 'المجادلة (20-22)' }, // تصحيح: كان 4-22، الآن 20-22
     // الحديد
     { surah: 'الحديد', start_ayah: 1, end_ayah: 6, points: 5, type: 'hifz', label: 'الحديد (1-6)' },
     { surah: 'الحديد', start_ayah: 7, end_ayah: 11, points: 5, type: 'hifz', label: 'الحديد (7-11)' },
@@ -307,8 +306,6 @@ const HifzCurriculum = [
     { surah: 'الأحقاف', start_ayah: 29, end_ayah: 32, points: 5, type: 'hifz', label: 'الأحقاف (29-32)' },
     { surah: 'الأحقاف', start_ayah: 33, end_ayah: 35, points: 5, type: 'hifz', label: 'الأحقاف (33-35)' },
 ];
-
-// منهج المراجعة المتكامل: من الأحقاف إلى الناس (ترتيب تنازلي في المصحف)
 const MurajaaCurriculum = [
     // الأحقاف (مقسمة)
     { surah: 'الأحقاف', label: 'مراجعة الأحقاف (1-16)', points: 3, type: 'murajaa', hifz_start_index: 0, hifz_end_index: 4 }, // يمثل أول 5 مقاطع
@@ -567,7 +564,7 @@ async function completeTask(studentCode, taskId, points) {
             if (student.tasks[taskIndex].type === 'hifz') {
                 student.hifz_progress = Math.min(student.hifz_progress + 1, HifzCurriculum.length - 1);
             } else if (student.tasks[taskIndex].type === 'murajaa') {
-                 student.murajaa_progress = Math.min(student.murajaa_progress + 1, MurajaaCurriculum.length - 1);
+                   student.murajaa_progress = Math.min(student.murajaa_progress + 1, MurajaaCurriculum.length - 1);
             }
 
             // Update Firestore
@@ -604,7 +601,7 @@ loginButton.addEventListener('click', async () => {
         teacherScreen.classList.remove('hidden');
         currentUser = { id: 'teacher', name: 'المعلم', role: 'teacher' };
         loadStudentsForTeacher();
-        displayCurriculumsInTeacherPanel();
+        displayCurriculumsInTeacherPanel(); // <--- NEW: Display curriculums when teacher logs in
         setActiveTab('manage-students-tab'); // Default tab for teacher
     } else {
         try {
@@ -632,10 +629,12 @@ tabButtons.forEach(button => {
         setActiveTab(`${button.dataset.tab}-tab`);
         if (button.dataset.tab === 'manage-students') {
             loadStudentsForTeacher();
+        } else if (button.dataset.tab === 'add-student') { // <--- NEW: Populate selects when "Add Student" tab is opened
+            populateCurriculumSelects();
         }
-        // Ensure selects are populated every time
-        if (button.dataset.tab === 'add-student') {
-             populateCurriculumSelects();
+        // If curriculum tab, make sure it's displayed
+        if (button.dataset.tab === 'manage-curriculum') {
+            displayCurriculumsInTeacherPanel();
         }
     });
 });
@@ -671,6 +670,16 @@ registerStudentButton.addEventListener('click', async () => {
             return;
         }
         
+        // Assign first tasks automatically
+        const initialTasks = [];
+        if (HifzCurriculum[hifzStartIndex]) {
+            initialTasks.push({ id: generateUniqueId(), description: `حفظ جديد: ${HifzCurriculum[hifzStartIndex].label}`, type: 'hifz', points: HifzCurriculum[hifzStartIndex].points, completed: false });
+        }
+        if (MurajaaCurriculum[murajaaStartIndex]) {
+            initialTasks.push({ id: generateUniqueId(), description: `مراجعة جديدة: ${MurajaaCurriculum[murajaaStartIndex].label}`, type: 'murajaa', points: MurajaaCurriculum[murajaaStartIndex].points, completed: false });
+        }
+
+
         // Add new student
         await setDoc(studentDocRef, {
             code: newStudentCode,
@@ -679,11 +688,7 @@ registerStudentButton.addEventListener('click', async () => {
             hifz_progress: hifzStartIndex,
             murajaa_progress: murajaaStartIndex,
             total_points: 0,
-            tasks: [
-                // Assign first tasks automatically (example)
-                { id: generateUniqueId(), description: `حفظ جديد: ${HifzCurriculum[hifzStartIndex].label}`, type: 'hifz', points: HifzCurriculum[hifzStartIndex].points, completed: false },
-                { id: generateUniqueId(), description: `مراجعة جديدة: ${MurajaaCurriculum[murajaaStartIndex].label}`, type: 'murajaa', points: MurajaaCurriculum[murajaaStartIndex].points, completed: false }
-            ],
+            tasks: initialTasks, // Using the new initialTasks array
         });
 
         showMessage(registerStudentMessage, `تم تسجيل الطالب ${newStudentName} بنجاح!`, 'success');
@@ -769,5 +774,5 @@ logoutButtonStudent.addEventListener('click', logout);
 logoutButtonTeacher.addEventListener('click', logout);
 
 // --- Initialization on load ---
-populateCurriculumSelects();
-
+// No need to call populateCurriculumSelects here, as it's called when the tab is activated
+// populateCurriculumSelects();
