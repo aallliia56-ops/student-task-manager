@@ -398,7 +398,54 @@ const MurajaaCurriculum = [
     // البلد إلى الناس
     { surah: 'البلد إلى الناس', label: 'مراجعة البلد إلى الناس', points: 3, type: 'murajaa', hifz_start_index: -1, hifz_end_index: -1 },
 ];
+// ===============================================
+// تأكد أن تهيئة Firebase Firestore موجودة هنا في ملف app.js
+// مثال: const db = firebase.firestore();
+// ===============================================
 
+
+// ====== دالة ترحيل المنهج إلى Firestore (تشغيل مرة واحدة فقط) ======
+async function migrateCurriculumToFirestore() {
+    console.log("Starting curriculum migration to Firestore...");
+
+    // تأكد من أن db (Firestore instance) متاح
+    if (!db) {
+        console.error("Firestore database (db) not initialized. Please ensure Firebase is set up correctly.");
+        return;
+    }
+
+    const curriculumCollection = db.collection('curriculumItems');
+    let hifzOrder = 0;
+    let murajaaOrder = 0;
+
+    // ترحيل مهام الحفظ
+    for (const item of HifzCurriculum) {
+        try {
+            // إضافة حقل order لكل مهمة حفظ
+            await curriculumCollection.add({ ...item, order: hifzOrder++ });
+            console.log(`Adding Hifz: ${item.label}`);
+        } catch (error) {
+            console.error(`Error adding Hifz item ${item.label}:`, error);
+        }
+    }
+
+    // ترحيل مهام المراجعة
+    // ملاحظة: مهام المراجعة لديك تحتوي على hifz_start_index و hifz_end_index
+    // هذه الحقول ستحفظ كما هي، ويمكن استخدامها لاحقًا لربط المراجعة بالحفظ.
+    for (const item of MurajaaCurriculum) {
+        try {
+            // إضافة حقل order لكل مهمة مراجعة
+            await curriculumCollection.add({ ...item, order: murajaaOrder++ });
+            console.log(`Adding Murajaa: ${item.label}`);
+        } catch (error) {
+            console.error(`Error adding Murajaa item ${item.label}:`, error);
+        }
+    }
+
+    console.log("Finished curriculum migration. Please verify in Firebase Console.");
+    alert("Curriculum migration complete! Check your browser console for details and Firebase Console to verify.");
+}
+// =================================================================
 // --- Helper Functions ---
 function showMessage(element, msg, type) {
     element.textContent = msg;
@@ -780,4 +827,5 @@ logoutButtonTeacher.addEventListener('click', logout);
 // --- Initialization on load ---
 // No need to call populateCurriculumSelects here, as it's called when the tab is activated
 // populateCurriculumSelects();
+
 
