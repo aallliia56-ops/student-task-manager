@@ -82,11 +82,16 @@ const murajaaCurriculumDisplay = document.getElementById('murajaa-curriculum-dis
 
 let currentUser = null; // Stores current logged-in user data
 
-// =========================================================================================
-// 💡💡💡 هنا يجب أن تضع مصفوفات المنهج إذا كنت تنوي تشغيل دالة الترحيل migrateCurriculumToFirestore()
-//     مرة أخرى.
-//     إذا كنت قد رحّلت المنهج إلى Firestore بالفعل بنجاح، يمكنك حذف هذه المتغيرات.
-// =========================================================================================
+
+// --- NEW CURRICULUM STATE ---
+let globalHifzCurriculum = []; // سيتم تخزين منهج الحفظ هنا من Firestore
+let globalMurajaaCurriculum = []; // سيتم تخزين منهج المراجعة هنا من Firestore
+
+// ====== دالة ترحيل المنهج إلى Firestore (تشغيل مرة واحدة فقط) ======
+// 💡💡💡 هذه الدالة هي الوحيدة التي يجب أن تستخدم مصفوفات المنهج المحلية
+async function migrateCurriculumToFirestore() {
+    console.log("Starting curriculum migration to Firestore...");
+
 const HifzCurriculum = [
     // المرسلات
     { surah: 'المرسلات', start_ayah: 1, end_ayah: 15, points: 5, type: 'hifz', label: 'المرسلات (1-15)' },
@@ -401,22 +406,19 @@ const MurajaaCurriculum = [
 // =========================================================================================
 
 
-// --- NEW CURRICULUM STATE ---
-let globalHifzCurriculum = []; // سيتم تخزين منهج الحفظ هنا من Firestore
-let globalMurajaaCurriculum = []; // سيتم تخزين منهج المراجعة هنا من Firestore
-
-// ====== دالة ترحيل المنهج إلى Firestore (تشغيل مرة واحدة فقط) ======
-// 💡💡💡 تأكد أن مصفوفات HifzCurriculum و MurajaaCurriculum أعلاه تحتوي على بيانات المنهج الأصلية
-//     قبل تشغيل هذه الدالة من الـ Console.
-async function migrateCurriculumToFirestore() {
-    console.log("Starting curriculum migration to Firestore...");
-
     // تأكد من أن db (Firestore instance) متاح
     if (!db) {
         console.error("Firestore database (db) not initialized. Please ensure Firebase is set up correctly.");
         return;
     }
 
+    // تحقق من وجود بيانات ليتم ترحيلها
+    if (HifzCurriculum.length === 0 && MurajaaCurriculum.length === 0) {
+         alert("⚠️ فشل الترحيل: يجب لصق بيانات المنهج (HifzCurriculum و MurajaaCurriculum) داخل دالة migrateCurriculumToFirestore قبل التشغيل.");
+         console.error("Migration failed: HifzCurriculum and MurajaaCurriculum arrays are empty.");
+         return;
+    }
+    
     const curriculumCollection = collection(db, 'curriculumItems'); // استخدام collection بالطريقة الجديدة
     let hifzOrder = 0;
     let murajaaOrder = 0;
@@ -446,7 +448,7 @@ async function migrateCurriculumToFirestore() {
     }
 
     console.log("Finished curriculum migration. Please verify in Firebase Console.");
-    alert("Curriculum migration complete! Check your browser console for details and Firebase Console to verify.");
+    alert("✅ Curriculum migration complete! Check your browser console for details and Firebase Console to verify.");
 }
 // =================================================================
 
@@ -584,6 +586,10 @@ async function loadStudentsForTeacher() {
         snapshot.forEach(documentSnapshot => {
             const student = documentSnapshot.data();
             const hifzLabel = globalHifzCurriculum[student.hifz_progress] ? globalHifzCurriculum[student.hifz_progress].label : 'غير محدد'; // <--- تم التعديل
+            
+            // إنشاء عنصر القائمة
+            const listItem = document.createElement('li');
+            
             listItem.innerHTML = `
                 <span><strong>${student.name}</strong> (${student.code}) - الحفظ: ${hifzLabel} | النقاط: ${student.total_points}</span>
                 <div class="student-actions">
@@ -698,12 +704,11 @@ loginButton.addEventListener('click', async () => {
                 displayStudentDashboard(currentUser);
             } else {
                 showMessage(authMessage, 'رمز الطالب غير صحيح. حاول مجدداً.', 'error');
-                console.warn(`Attempted login with invalid code: ${userCode}`);
-                showMessage(authMessage, 'حدث خطأ أثناء الاتصال بالخادم.', 'error');
+                // لا نحتاج لرسالة خطأ ثانية هنا
             }
         } catch (error) {
             console.error("Login error: ", error);
-            showMessage(authMessage, 'حدث خطأ أثناء الاتصال بالخادم.', 'error');
+            showMessage(authMessage, 'حدث خطأ أثناء الاتصال بالخادم. تحقق من الاتصال وقواعد Firebase.', 'error');
         }
     }
 });
@@ -871,3 +876,8 @@ loadCurriculumFromFirestore().then(() => {
     // بعد تحميل المنهج، يمكن للمستخدمين البدء في التفاعل
     console.log("App ready. Curriculum loaded.");
 });
+
+// =======================================================
+// ⭐⭐ اجعل دالة الترحيل متاحة في الـ Console ⭐⭐
+// =======================================================
+window.migrateCurriculumToFirestore = migrateCurriculumToFirestore;
