@@ -83,6 +83,10 @@ const murajaaCurriculumDisplay = document.getElementById('murajaa-curriculum-dis
 let currentUser = null; // Stores current logged-in user data
 
 // --- STATIC CURRICULUM DATA ---
+// تأكد أن تهيئة Firebase Firestore موجودة هنا في ملف app.js
+// مثال: const db = firebase.firestore();
+
+// المنهج الذي زودتني به:
 const HifzCurriculum = [
     // المرسلات
     { surah: 'المرسلات', start_ayah: 1, end_ayah: 15, points: 5, type: 'hifz', label: 'المرسلات (1-15)' },
@@ -141,7 +145,7 @@ const HifzCurriculum = [
     { surah: 'الحاقة', start_ayah: 9, end_ayah: 18, points: 5, type: 'hifz', label: 'الحاقة (9-18)' },
     { surah: 'الحاقة', start_ayah: 19, end_ayah: 24, points: 5, type: 'hifz', label: 'الحاقة (19-24)' },
     { surah: 'الحاقة', start_ayah: 25, end_ayah: 35, points: 5, type: 'hifz', label: 'الحاقة (25-35)' },
-    { surah: 'الحاقة', start_ayah: 36, end_ayah: 43, points: 5, type: 'hifz', label: 'التقويم (36-43)' },
+    { surah: 'الحاقة', start_ayah: 36, end_ayah: 43, points: 5, type: 'hifz', label: 'الحاقة (36-43)' },
     { surah: 'الحاقة', start_ayah: 44, end_ayah: 52, points: 5, type: 'hifz', label: 'الحاقة (44-52)' },
     // القلم
     { surah: 'القلم', start_ayah: 1, end_ayah: 9, points: 5, type: 'hifz', label: 'القلم (1-9)' },
@@ -218,7 +222,7 @@ const HifzCurriculum = [
     { surah: 'المجادلة', start_ayah: 11, end_ayah: 12, points: 5, type: 'hifz', label: 'المجادلة (11-12)' },
     { surah: 'المجادلة', start_ayah: 13, end_ayah: 16, points: 5, type: 'hifz', label: 'المجادلة (13-16)' },
     { surah: 'المجادلة', start_ayah: 17, end_ayah: 19, points: 5, type: 'hifz', label: 'المجادلة (17-19)' },
-    { surah: 'المجادلة', start_ayah: 20, end_ayah: 22, points: 5, type: 'hifz', label: 'المجادلة (20-22)' }, // تصحيح: كان 4-22، الآن 20-22
+    { surah: 'المجادلة', start_ayah: 4, end_ayah: 22, points: 5, type: 'hifz', label: 'المجادلة (20-22)' },
     // الحديد
     { surah: 'الحديد', start_ayah: 1, end_ayah: 6, points: 5, type: 'hifz', label: 'الحديد (1-6)' },
     { surah: 'الحديد', start_ayah: 7, end_ayah: 11, points: 5, type: 'hifz', label: 'الحديد (7-11)' },
@@ -306,6 +310,7 @@ const HifzCurriculum = [
     { surah: 'الأحقاف', start_ayah: 29, end_ayah: 32, points: 5, type: 'hifz', label: 'الأحقاف (29-32)' },
     { surah: 'الأحقاف', start_ayah: 33, end_ayah: 35, points: 5, type: 'hifz', label: 'الأحقاف (33-35)' },
 ];
+
 const MurajaaCurriculum = [
     // الأحقاف (مقسمة)
     { surah: 'الأحقاف', label: 'مراجعة الأحقاف (1-16)', points: 3, type: 'murajaa', hifz_start_index: 0, hifz_end_index: 4 }, // يمثل أول 5 مقاطع
@@ -393,7 +398,6 @@ const MurajaaCurriculum = [
     // البلد إلى الناس
     { surah: 'البلد إلى الناس', label: 'مراجعة البلد إلى الناس', points: 3, type: 'murajaa', hifz_start_index: -1, hifz_end_index: -1 },
 ];
-
 
 // --- Helper Functions ---
 function showMessage(element, msg, type) {
@@ -776,3 +780,4 @@ logoutButtonTeacher.addEventListener('click', logout);
 // --- Initialization on load ---
 // No need to call populateCurriculumSelects here, as it's called when the tab is activated
 // populateCurriculumSelects();
+
