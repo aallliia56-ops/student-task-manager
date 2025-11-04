@@ -22,7 +22,8 @@ function getReviewKeyByLevel(levelId) {
 // ** بداية الكود الأصلي المُعدل **
 // ----------------------------------------------------------------------------------
 
-// إعدادات Firebase (تم تضمين البيانات التي أرسلتها)
+// 2. إعدادات Firebase
+// **هام:** استبدل هذه الإعدادات بمعلومات مشروعك الحقيقية من Firebase Console.
 const firebaseConfig = {
     apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
     authDomain: "studenttasksmanager.firebaseapp.com",
@@ -33,7 +34,7 @@ const firebaseConfig = {
     measurementId: "G-7QC4FVXKZG"
 };
 
-// تهيئة Firebase باستخدام الكائن العام (ملاحظة: هذا يتطلب تضمين مكتبة Firebase مسبقًا)
+// تهيئة Firebase باستخدام الكائن العام 
 const app = firebase.initializeApp(firebaseConfig);
 const analytics = firebase.analytics(app);
 const db = firebase.firestore(app);
@@ -43,7 +44,7 @@ let currentUserCode = null;
 
 
 // ===============================================
-// 1. الدوال المساعدة للواجهة والبيانات (مُعدلة)
+// 3. الدوال المساعدة للواجهة والبيانات (مُعدلة ومُضافة)
 // ===============================================
 
 /**
@@ -56,21 +57,45 @@ function fillHifzPointsSelects() {
     if (!hifzStartSelect) return; 
 
     hifzStartSelect.innerHTML = '<option value="">نقطة البداية (غير مُعين)</option>';
-    // SURAH_DETAILS: هنا يتم استخدام الثابت المُستورد
-    SURAH_DETAILS.forEach(item => {
-        // نستخدم نقطة نهاية المقطع كنقطة بداية للطالب
+    
+    SURAH_DETAILS.forEach((item, index) => {
+        // نستخدم الفهرس كنقطة بداية للطالب (index) 
         const value = `${item.surah_number}:${item.end_ayah}`; 
         const label = `${item.surah_name_ar} (آية ${item.end_ayah})`;
         const option = new Option(label, value);
         hifzStartSelect.add(option);
     });
-
+    
     // تعبئة قائمة تعيين الهدف في شاشة المعلم
     const hifzGoalSelect = document.getElementById('assign-task-hifz-goal'); 
     if (hifzGoalSelect) {
-        hifzGoalSelect.innerHTML = hifzStartSelect.innerHTML;
-        // يجب أن نغير الـ ID هنا لتجنب التضارب إذا كان موجودًا في HTML
+         // استخدام نفس الخيارات في قائمة تعيين الهدف للحفظ
+        hifzGoalSelect.innerHTML = hifzStartSelect.innerHTML; 
     }
+}
+
+/**
+ * دالة تعبئة خيارات نقاط المراجعة في قوائم الـ Select (في شاشة إضافة طالب جديد)
+ */
+function fillMurajaaPointsSelects(levelId) {
+    const murajaaStartSelect = document.getElementById('new-student-hifz-start');
+    if (!murajaaStartSelect) return;
+
+    // الحصول على مفتاح المراجعة الصحيح من المنهج
+    const reviewKey = getReviewKeyByLevel(levelId);
+    const reviewList = REVIEW_METHODOLOGY[reviewKey] || [];
+
+    // ** ملاحظة: تم تعديل ID العنصر في ملف index.html إلى new-student-murajaa-start **
+    const targetSelect = document.getElementById('new-student-murajaa-start');
+    if (!targetSelect) return;
+
+    targetSelect.innerHTML = '';
+    
+    // إنشاء خيارات لكل مهمة مراجعة في المستوى المحدد
+    reviewList.forEach((task, index) => {
+        const option = new Option(task, index);
+        targetSelect.add(option);
+    });
 }
 
 
@@ -87,7 +112,7 @@ function getCurriculumLabel(studentData) {
         
     // حالة المراجعة
     const reviewKey = getReviewKeyByLevel(studentData.current_level);
-    const reviewList = REVIEW_METHODOLOGY[reviewKey]; // REVIEW_METHODOLOGY: الثابت المُستورد
+    const reviewList = REVIEW_METHODOLOGY[reviewKey]; 
     const progress = studentData.murajaa_progress || 0;
     
     let murajaaLabel;
@@ -119,12 +144,11 @@ function showScreen(screenId) {
 
 
 // ===============================================
-// 2. دوال شاشة الطالب (Student Screen)
+// 4. دوال شاشة الطالب (Student Screen)
 // ===============================================
 
 /**
  * دالة لضمان وجود المهام الشخصية الحالية (حفظ/مراجعة)
- * (تم تعديلها لاستخدام نظام المنهج الجديد القائم على المستوى والنقاط)
  */
 async function ensureCurriculumTasks(studentData) {
     const studentRef = db.collection("students").doc(studentData.code);
@@ -155,14 +179,14 @@ async function ensureCurriculumTasks(studentData) {
         const waitingTaskExists = tasks.some(t => t.type === 'hifz' && t.status === 'assigned' && t.description.includes('بانتظار تحديد الهدف'));
         if (!waitingTaskExists) {
              tasks.push({
-                id: db.collection('_').doc().id,
-                type: 'hifz',
-                description: `حفظ: بانتظار تحديد الهدف الجديد من المعلم (المرجع: ${hifzStart})`,
-                points: 0,
-                status: 'assigned',
-                created_at: new Date()
-            });
-            shouldUpdate = true;
+                 id: db.collection('_').doc().id,
+                 type: 'hifz',
+                 description: `حفظ: بانتظار تحديد الهدف الجديد من المعلم (المرجع: ${hifzStart})`,
+                 points: 0,
+                 status: 'assigned',
+                 created_at: new Date()
+             });
+             shouldUpdate = true;
         }
     }
 
@@ -215,7 +239,6 @@ async function displayStudentDashboard(studentData) {
     const murajaaProgressElement = document.getElementById('student-murajaa-progress');
 
     pointsElement.textContent = studentData.total_points || 0;
-    // تأكد من وجود حقل levelElement في HTML
     if (levelElement) levelElement.textContent = level; 
     hifzProgressElement.textContent = hifz;
     murajaaProgressElement.textContent = murajaa;
@@ -298,7 +321,7 @@ async function sendTaskToReview(studentCode, taskId) {
 
 
 // ===============================================
-// 3. دوال شاشة المعلم (Teacher Screen)
+// 5. دوال شاشة المعلم (Teacher Screen)
 // ===============================================
 
 /**
@@ -377,11 +400,10 @@ function displayCurriculumForTeacher() {
     let html = '<h2>مستويات المنهج المعتمدة</h2>';
     html += '<ol class="curriculum-levels-list">';
     
-    // CURRICULUM_LEVELS: الثابت المُستورد
     Object.keys(CURRICULUM_LEVELS).forEach(key => {
         const level = CURRICULUM_LEVELS[key];
         const reviewKey = getReviewKeyByLevel(key);
-        const reviewList = REVIEW_METHODOLOGY[reviewKey] || []; // REVIEW_METHODOLOGY: الثابت المُستورد
+        const reviewList = REVIEW_METHODOLOGY[reviewKey] || []; 
         
         html += `
             <li>
@@ -408,28 +430,28 @@ async function loadStudentsForTeacher() {
 
     // تهيئة واجهة تعيين الهدف (يجب أن يتم استدعاء fillHifzPointsSelects() هنا)
     const assignHifzGoalContainer = document.getElementById('assign-hifz-goal-container');
-    if (assignHifzGoalContainer && assignHifzGoalContainer.innerHTML.trim() === '') {
+    if (assignHifzGoalContainer && assignHifzGoalContainer.innerHTML.trim().includes('جارٍ تحميل')) {
         fillHifzPointsSelects(); // تعبئة قائمة اختيار الهدف
+        // يجب أن نضمن وجود حقل الإدخال والـ Select الصحيحين لتعيين الهدف في HTML قبل تعبئة الـ innerHTML
         assignHifzGoalContainer.innerHTML = `
              <div class="input-group">
                 <label for="assign-hifz-student-code">رمز الطالب</label>
                 <input type="text" id="assign-hifz-student-code" placeholder="رمز الطالب">
             </div>
             <div class="input-group">
-                <label for="assign-task-hifz-goal">تعيين نقطة الهدف الجديدة</label>
-                <select id="new-student-hifz-start"></select> 
+                <label for="new-student-hifz-start">تعيين نقطة الهدف الجديدة</label>
+                <select id="assign-task-hifz-goal"></select> 
             </div>
             <button class="action-btn primary-btn" onclick="assignHifzGoal()">تعيين الهدف</button>
             <p id="assign-hifz-message" class="message hidden"></p>
         `;
-        // إعادة تعبئة القائمة بعد إنشاء الـ Select
+        // إعادة تعبئة القائمة بعد إنشاء الـ Select بمعرف (ID) صحيح
         fillHifzPointsSelects(); 
     }
 
     try {
         const studentsRef = db.collection("students");
-        const q = studentsRef.where("role", "==", "student");
-        const snapshot = await q.get();
+        const snapshot = await studentsRef.where("role", "==", "student").get();
 
         studentList.innerHTML = '';
 
@@ -470,8 +492,8 @@ async function loadStudentsForTeacher() {
  */
 async function assignHifzGoal() {
     const studentCode = document.getElementById('assign-hifz-student-code').value.trim();
-    // نستخدم الـ ID الذي تم تعبئته (new-student-hifz-start)
-    const newGoalPoint = document.getElementById('new-student-hifz-start').value.trim(); 
+    // نستخدم الـ ID الصحيح (assign-task-hifz-goal)
+    const newGoalPoint = document.getElementById('assign-task-hifz-goal').value.trim(); 
     const messageElement = document.getElementById('assign-hifz-message');
     
     if (!studentCode || !newGoalPoint) {
@@ -514,21 +536,230 @@ async function assignHifzGoal() {
     }
 }
 
-// ... [ displayLeaderboardForTeacher, loadPendingTasksForReview, updateStudentPoints ]
-// تم الإبقاء على الدوال كما هي في الكود الأصلي
+/**
+ * دالة تعيين مهمة إضافية (فردية أو جماعية)
+ * @param {boolean} isGroup - هل المهمة جماعية لجميع الطلاب أم لا.
+ */
+async function assignAdditionalTask(isGroup) {
+    const studentCodeInput = document.getElementById('assign-task-student-code');
+    const taskType = document.getElementById('assign-task-type').value;
+    const description = document.getElementById('assign-task-description').value.trim();
+    const points = parseInt(document.getElementById('assign-task-points').value) || 0;
+    const messageElement = document.getElementById('assign-task-message');
+
+    if (!description || points <= 0 || (!isGroup && !studentCodeInput.value.trim())) {
+        messageElement.textContent = 'الرجاء إدخال وصف المهمة وعدد النقاط والرمز (للفردي).';
+        messageElement.className = 'message error';
+        messageElement.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        const newTask = {
+            id: db.collection('_').doc().id,
+            type: taskType,
+            description: description,
+            points: points,
+            status: 'assigned',
+            created_at: new Date()
+        };
+
+        let studentsToUpdate = [];
+
+        if (isGroup) {
+            // تعيين جماعي: الحصول على جميع الطلاب
+            const snapshot = await db.collection("students").where("role", "==", "student").get();
+            studentsToUpdate = snapshot.docs;
+        } else {
+            // تعيين فردي: التحقق من الطالب وتعيين المهمة له
+            const studentRef = db.collection("students").doc(studentCodeInput.value.trim());
+            const studentDoc = await studentRef.get();
+            if (studentDoc.exists && studentDoc.data().role === 'student') {
+                studentsToUpdate.push(studentDoc);
+            } else {
+                messageElement.textContent = 'رمز الطالب غير صحيح للتعيين الفردي.';
+                messageElement.className = 'message error';
+                messageElement.classList.remove('hidden');
+                return;
+            }
+        }
+
+        // تنفيذ عملية التعيين على جميع الطلاب المستهدفين (Batch Write)
+        const batch = db.batch();
+
+        studentsToUpdate.forEach(doc => {
+            const studentRef = doc.ref;
+            const studentData = doc.data();
+            const currentTasks = studentData.tasks || [];
+            
+            // إضافة المهمة الجديدة إلى قائمة مهام الطالب
+            currentTasks.push(newTask); 
+            
+            batch.update(studentRef, { tasks: currentTasks });
+        });
+        
+        await batch.commit();
+
+        messageElement.textContent = `تم تعيين المهمة ${isGroup ? 'لجميع الطلاب' : `للطالب ${studentCodeInput.value.trim()}`} بنجاح!`;
+        messageElement.className = 'message success';
+        messageElement.classList.remove('hidden');
+        
+        // مسح الحقول بعد النجاح
+        studentCodeInput.value = '';
+        document.getElementById('assign-task-description').value = '';
+        document.getElementById('assign-task-points').value = '';
+
+    } catch (e) {
+        console.error("Error assigning task: ", e);
+        messageElement.textContent = 'فشل في تعيين المهمة. حاول مرة أخرى.';
+        messageElement.className = 'message error';
+        messageElement.classList.remove('hidden');
+    }
+}
+
+
+/**
+ * دالة عرض المهام المعلقة للمراجعة
+ */
+async function loadPendingTasksForReview() {
+    const listElement = document.getElementById('pending-tasks-list');
+    listElement.innerHTML = '<p class="message info">جارٍ تحميل المهام المعلقة...</p>';
+
+    try {
+        const snapshot = await db.collection("students").where("role", "==", "student").get();
+        const pendingTasks = [];
+
+        snapshot.forEach(doc => {
+            const student = doc.data();
+            const tasks = student.tasks || [];
+            
+            // تصفية المهام التي حالتها 'pending'
+            tasks.filter(t => t.status === 'pending').forEach(task => {
+                pendingTasks.push({
+                    studentCode: student.code,
+                    studentName: student.name,
+                    ...task
+                });
+            });
+        });
+
+        if (pendingTasks.length === 0) {
+            listElement.innerHTML = '<p class="message success">لا توجد مهام بانتظار المراجعة حالياً. 🎉</p>';
+            return;
+        }
+
+        // ترتيب المهام حسب تاريخ الإرسال (الأقدم أولاً)
+        pendingTasks.sort((a, b) => (a.submission_date || 0) - (b.submission_date || 0));
+
+        let html = '<ul class="data-list pending-tasks">';
+        pendingTasks.forEach(task => {
+            const date = task.submission_date ? task.submission_date.toDate().toLocaleDateString('ar-EG') : 'غير محدد';
+            
+            html += `
+                <li class="review-item ${task.type}-task">
+                    <div class="task-info">
+                        <strong>الطالب: ${task.studentName} (${task.studentCode})</strong>
+                        <div class="description">${task.description}</div>
+                        <div class="meta">النقاط: ${task.points} 🌟 | النوع: ${task.type} | تاريخ الإرسال: ${date}</div>
+                    </div>
+                    <div class="review-actions">
+                        <button class="action-btn success-btn" onclick="reviewTask('${task.studentCode}', '${task.id}', 'accepted')">قبول ✅</button>
+                        <button class="action-btn error-btn" onclick="reviewTask('${task.studentCode}', '${task.id}', 'rejected')">رفض ❌</button>
+                    </div>
+                </li>
+            `;
+        });
+        html += '</ul>';
+        listElement.innerHTML = html;
+
+    } catch (error) {
+        console.error("Error loading pending tasks: ", error);
+        listElement.innerHTML = '<p class="message error">فشل في تحميل المهام المعلقة.</p>';
+    }
+}
+
+
+/**
+ * دالة تحديث النقاط للطالب يدوياً
+ */
+async function updateStudentPoints(studentCode) {
+    const pointsInput = document.getElementById(`points-input-${studentCode}`);
+    const newPoints = parseInt(pointsInput.value);
+
+    if (isNaN(newPoints) || newPoints < 0) {
+        alert("الرجاء إدخال قيمة نقطة صحيحة.");
+        return;
+    }
+
+    try {
+        await db.collection("students").doc(studentCode).update({
+            total_points: newPoints
+        });
+        alert(`تم تحديث نقاط الطالب ${studentCode} بنجاح إلى ${newPoints}.`);
+        loadStudentsForTeacher(); // إعادة تحميل القائمة
+        displayLeaderboardForTeacher(); // تحديث لوحة الشرف
+    } catch (e) {
+        console.error("Error updating points: ", e);
+        alert("فشل في تحديث النقاط.");
+    }
+}
+
+
+/**
+ * دالة عرض لوحة الشرف (أعلى 10 طلاب)
+ */
+async function displayLeaderboardForTeacher() {
+    const leaderboardList = document.getElementById('leaderboard-list');
+    leaderboardList.innerHTML = '<li>جارٍ تحميل لوحة الشرف...</li>';
+
+    try {
+        const snapshot = await db.collection("students")
+            .where("role", "==", "student")
+            .orderBy("total_points", "desc")
+            .limit(10)
+            .get();
+
+        leaderboardList.innerHTML = '';
+        
+        if (snapshot.empty) {
+            leaderboardList.innerHTML = '<li>لا يوجد طلاب مسجلين بعد.</li>';
+            return;
+        }
+
+        snapshot.forEach((doc, index) => {
+            const student = doc.data();
+            const listItem = document.createElement('li');
+            listItem.className = `leaderboard-item rank-${index + 1}`;
+            
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🌟';
+
+            listItem.innerHTML = `
+                <span class="rank">${index + 1}</span>
+                <span class="name">${student.name}</span>
+                <span class="points">${student.total_points || 0} نقطة ${medal}</span>
+            `;
+            leaderboardList.appendChild(listItem);
+        });
+
+    } catch (error) {
+        console.error("Error loading leaderboard:", error);
+        leaderboardList.innerHTML = '<li class="message error">فشل في تحميل لوحة الشرف.</li>';
+    }
+}
 
 
 // ===============================================
-// 4. دوال تعيين وتسجيل الطلاب (Assign & Register)
+// 6. دوال تعيين وتسجيل الطلاب (Assign & Register)
 // ===============================================
 
 // دالة تسجيل طالب جديد (مُعدلة لحقول المنهج الجديدة)
 document.getElementById('register-student-button').addEventListener('click', async () => {
     const code = document.getElementById('new-student-code').value.trim();
     const name = document.getElementById('new-student-name').value.trim();
-    // حقل اختيار المستوى الجديد (يجب أن يكون موجوداً في HTML)
     const level = document.getElementById('new-student-level').value; 
     const hifzStart = document.getElementById('new-student-hifz-start').value.trim();
+    // 💡 التعديل: قراءة قيمة نقطة بداية المراجعة
+    const murajaaStart = document.getElementById('new-student-murajaa-start').value; 
     const messageElement = document.getElementById('register-student-message');
 
     if (!code || !name || !level) {
@@ -549,8 +780,9 @@ document.getElementById('register-student-button').addEventListener('click', asy
             return;
         }
         
-        const initialHifzStart = hifzStart || null; // إذا لم يحدد، نتركها فارغة
-        const initialMurajaaProgress = 0;
+        const initialHifzStart = hifzStart || null; 
+        // 💡 التعديل: استخدام القيمة المُختارة للمراجعة (تحويلها لرقم)
+        const initialMurajaaProgress = parseInt(murajaaStart) || 0; 
 
         await studentRef.set({
             code: code,
@@ -585,17 +817,21 @@ document.getElementById('register-student-button').addEventListener('click', asy
     }
 });
 
-// ... [ باقي الدوال في القسم 4 و 5 كما هي في الكود الأصلي ]
-
 
 // ===============================================
-// 5. التحكم في الشاشات والتسجيل
+// 7. التحكم في الشاشات والتسجيل
 // ===============================================
 
-// دوال التسجيل والخروج (تم الإبقاء عليها مع تعديل بسيط في الدخول)
+// المستمع لتحديث خيارات المراجعة عند تغيير المستوى (في شاشة إضافة طالب)
+document.getElementById('new-student-level').addEventListener('change', (event) => {
+    const levelId = event.target.value;
+    fillMurajaaPointsSelects(levelId);
+});
+
+
 document.getElementById('login-button').addEventListener('click', async () => {
     const userCode = document.getElementById('user-code').value.trim();
-    // ... (باقي كود الدخول كما هو)
+    
     if (!userCode) {
         document.getElementById('auth-message').textContent = 'الرجاء إدخال الرمز.';
         document.getElementById('auth-message').classList.remove('hidden');
@@ -662,6 +898,8 @@ document.querySelectorAll('.tab-button').forEach(button => {
 // عند تحميل الصفحة، ابدأ بتهيئة الواجهة وإظهار شاشة الدخول
 window.onload = () => {
     fillHifzPointsSelects();
+    // تعبئة خيارات المراجعة للمستوى الافتراضي (BUILDING)
+    fillMurajaaPointsSelects('BUILDING'); 
     showScreen('auth-screen');
 };
 
@@ -671,4 +909,10 @@ window.sendTaskToReview = sendTaskToReview;
 window.reviewTask = reviewTask;
 window.updateStudentPoints = updateStudentPoints;
 window.assignHifzGoal = assignHifzGoal; 
-// ...
+// 💡 ربط دوال تعيين المهام الإضافية
+window.assignIndividualTask = () => assignAdditionalTask(false);
+window.assignGroupTask = () => assignAdditionalTask(true);
+window.updateStudentPoints = updateStudentPoints;
+// 💡 ربط الدوال المستخدمة في تبويبات شاشة المعلم
+window.loadPendingTasksForReview = loadPendingTasksForReview;
+window.displayLeaderboardForTeacher = displayLeaderboardForTeacher;
