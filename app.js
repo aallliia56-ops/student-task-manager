@@ -104,7 +104,74 @@ function showScreen(screenId) {
 // ===============================================
 
 /**
- * ⭐⭐ الدالة المعدلة لعرض واجهة الطالب (تم تحسين فلترة المهام) ⭐⭐
+ * دالة لضمان وجود المهام التسلسلية الحالية في قائمة مهام الطالب.
+ * يتم استدعاؤها عند تسجيل الدخول أو بعد مراجعة المهمة.
+ *
+ * (هذه الدالة المضافة لحل مشكلة عدم ظهور المهام)
+ * * @param {object} studentData كائن بيانات الطالب الحالي
+ * @returns {Promise<object>} بيانات الطالب المحدثة (محتملة الإضافة)
+ */
+async function ensureCurriculumTasks(studentData) {
+    const studentRef = db.collection("students").doc(studentData.code);
+    let shouldUpdate = false;
+    let tasks = studentData.tasks || [];
+
+    // 1. تحديد المهمة الرئيسية للحفظ
+    const hifzIndex = studentData.hifz_progress || 0;
+    const currentHifzItem = globalHifzCurriculum[hifzIndex - 1]; // -1 لأن التقدم يبدأ من 1
+
+    if (currentHifzItem) {
+        const expectedDescription = `حفظ: ${currentHifzItem.label}`;
+        // التأكد من أن المهمة غير موجودة كـ 'assigned' أو 'pending'
+        const hifzTaskExists = tasks.some(t => t.description === expectedDescription && t.status !== 'completed');
+        
+        if (!hifzTaskExists) {
+            tasks.push({
+                id: db.collection('_').doc().id,
+                type: 'hifz',
+                description: expectedDescription,
+                points: currentHifzItem.points,
+                status: 'assigned',
+                created_at: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            shouldUpdate = true;
+        }
+    }
+
+    // 2. تحديد المهمة الرئيسية للمراجعة
+    const murajaaIndex = studentData.murajaa_progress || 0;
+    const currentMurajaaItem = globalMurajaaCurriculum[murajaaIndex - 1];
+
+    if (currentMurajaaItem) {
+        const expectedDescription = `مراجعة: ${currentMurajaaItem.label}`;
+        // التأكد من أن المهمة غير موجودة كـ 'assigned' أو 'pending'
+        const murajaaTaskExists = tasks.some(t => t.description === expectedDescription && t.status !== 'completed');
+        
+        if (!murajaaTaskExists) {
+            tasks.push({
+                id: db.collection('_').doc().id,
+                type: 'murajaa',
+                description: expectedDescription,
+                points: currentMurajaaItem.points,
+                status: 'assigned',
+                created_at: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            shouldUpdate = true;
+        }
+    }
+
+    // 3. تحديث قاعدة البيانات إذا كانت هناك مهام جديدة
+    if (shouldUpdate) {
+        await studentRef.update({ tasks: tasks });
+        studentData.tasks = tasks; // تحديث الكائن المحلي
+    }
+
+    return studentData;
+}
+
+
+/**
+ * ⭐⭐ الدالة الأصلية المعدلة لعرض واجهة الطالب ⭐⭐
  */
 async function displayStudentDashboard(studentData) {
     const welcomeElement = document.getElementById('welcome-student');
@@ -127,7 +194,7 @@ async function displayStudentDashboard(studentData) {
     const tasksListElement = document.getElementById('student-tasks');
     tasksListElement.innerHTML = '<h2>مهامك الحالية</h2>';
     
-    // ⭐⭐ التعديل هنا: فلترة المهام التي ليست 'completed' (مكتملة) ⭐⭐
+    // فلترة المهام التي ليست 'completed' (مكتملة)
     const activeTasks = studentData.tasks ? studentData.tasks.filter(t => t.status !== 'completed') : [];
 
     if (activeTasks.length === 0) {
@@ -400,7 +467,7 @@ async function loadPendingTasksForReview() {
 }
 
 /**
- * الدالة المعدلة: مراجعة المهمة (قبول/رفض)
+ * الدالة الأصلية: مراجعة المهمة (قبول/رفض)
  */
 async function reviewTask(studentCode, taskId, action) {
     try {
@@ -445,6 +512,10 @@ async function reviewTask(studentCode, taskId, action) {
 
         alert(`تم ${action === 'accepted' ? 'قبول' : 'رفض'} المهمة بنجاح.`);
         
+        // ⭐⭐ تعديل: ضمان إنشاء المهمة التالية بعد قبول المهمة الحالية ⭐⭐
+        const updatedStudentDoc = await studentRef.get();
+        await ensureCurriculumTasks(updatedStudentDoc.data());
+
         loadPendingTasksForReview();
         displayLeaderboardForTeacher();
 
@@ -618,7 +689,10 @@ document.getElementById('login-button').addEventListener('click', async () => {
             const studentSnap = await studentRef.get();
 
             if (studentSnap.exists && studentSnap.data().role === 'student') {
-                displayStudentDashboard(studentSnap.data());
+                const studentData = studentSnap.data();
+                // ⭐⭐ تعديل: ضمان إنشاء المهام قبل عرضها ⭐⭐
+                const updatedStudentData = await ensureCurriculumTasks(studentData); 
+                displayStudentDashboard(updatedStudentData);
                 showScreen('student-screen');
             } else {
                 document.getElementById('auth-message').textContent = 'رمز الطالب غير صحيح.';
