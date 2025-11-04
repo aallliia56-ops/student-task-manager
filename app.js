@@ -276,6 +276,10 @@ async function sendTaskToReview(studentCode, taskId) {
 /**
  * دالة عرض المنهج في تبويب "عرض المنهج"
  */
+/**
+ * دالة عرض المنهج في تبويب "عرض المنهج"
+ * (تم تعديل التنسيق لاستخدام وسم <strong> بدلاً من **)
+ */
 function displayCurriculumForTeacher() {
     const hifzDisplay = document.getElementById('hifz-curriculum-display');
     const murajaaDisplay = document.getElementById('murajaa-curriculum-display');
@@ -283,7 +287,8 @@ function displayCurriculumForTeacher() {
     // عرض منهج الحفظ
     let hifzHtml = '<ol>';
     globalHifzCurriculum.forEach((item, index) => {
-        hifzHtml += `<li>**المستوى ${index + 1}**: ${item.label} (النقاط: ${item.points})</li>`;
+        // ⭐ التعديل هنا ⭐
+        hifzHtml += `<li><strong>المستوى ${index + 1}</strong>: ${item.label} (النقاط: ${item.points})</li>`;
     });
     hifzHtml += '</ol>';
     hifzDisplay.innerHTML = hifzHtml;
@@ -291,7 +296,8 @@ function displayCurriculumForTeacher() {
     // عرض منهج المراجعة
     let murajaaHtml = '<ol>';
     globalMurajaaCurriculum.forEach((item, index) => {
-        murajaaHtml += `<li>**المستوى ${index + 1}**: ${item.label} (النقاط: ${item.points})</li>`;
+        // ⭐ التعديل هنا ⭐
+        murajaaHtml += `<li><strong>المستوى ${index + 1}</strong>: ${item.label} (النقاط: ${item.points})</li>`;
     });
     murajaaHtml += '</ol>';
     murajaaDisplay.innerHTML = murajaaHtml;
@@ -751,4 +757,5 @@ window.onload = () => {
 window.sendTaskToReview = sendTaskToReview;
 window.reviewTask = reviewTask;
 window.updateStudentPoints = updateStudentPoints;
+
 
