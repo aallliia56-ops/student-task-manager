@@ -26,14 +26,9 @@ let currentUserCode = null;
 // 1. الدوال المساعدة للواجهة والبيانات
 // ===============================================
 
-/**
- * دالة تحميل بيانات المنهج من Firestore
- * يتم فرز البيانات حسب حقل 'order'
- */
 async function loadCurriculumFromFirestore() {
     try {
         const curriculumRef = db.collection("curriculumItems");
-        // جلب جميع الوثائق وفرزها حسب حقل 'order'
         const snapshot = await curriculumRef.orderBy("order", "asc").get();
 
         globalHifzCurriculum = [];
@@ -41,7 +36,6 @@ async function loadCurriculumFromFirestore() {
 
         snapshot.forEach(doc => {
             const data = doc.data();
-            // إضافة معرّف الوثيقة كحقل 'id' لاستخدامه كـ Value في الـ Select
             const item = { ...data, id: doc.id }; 
             if (data.type === 'hifz') {
                 globalHifzCurriculum.push(item);
@@ -50,20 +44,14 @@ async function loadCurriculumFromFirestore() {
             }
         });
 
-        // عند التحميل، املأ قوائم الـ Select للمعلم
         fillCurriculumSelects();
-        // أيضاً، اعرض المنهج في التبويب الخاص به
         displayCurriculumForTeacher(); 
 
     } catch (error) {
         console.error("Error loading curriculum:", error);
-        alert("فشل في تحميل بيانات المنهج. يرجى مراجعة إعدادات Firestore.");
     }
 }
 
-/**
- * دالة لملء قوائم الـ Select في شاشة إضافة طالب
- */
 function fillCurriculumSelects() {
     const hifzSelect = document.getElementById('new-student-hifz-start');
     const murajaaSelect = document.getElementById('new-student-murajaa-start');
@@ -72,7 +60,6 @@ function fillCurriculumSelects() {
     murajaaSelect.innerHTML = '<option value="0">نقطة البداية (غير مُعين)</option>';
 
     globalHifzCurriculum.forEach((item, index) => {
-        // نستخدم index + 1 كقيمة للتقدم (hifz_progress)
         const option = new Option(item.label, index + 1);
         hifzSelect.add(option);
     });
@@ -83,9 +70,6 @@ function fillCurriculumSelects() {
     });
 }
 
-/**
- * دالة لاستخراج اسم المستوى الحالي للطالب
- */
 function getCurriculumLabel(progressIndex, type) {
     const curriculum = type === 'hifz' ? globalHifzCurriculum : globalMurajaaCurriculum;
     
@@ -98,9 +82,6 @@ function getCurriculumLabel(progressIndex, type) {
     return "تم إكمال المنهج بالكامل 🎉";
 }
 
-/**
- * دالة لإظهار الشاشة المطلوبة وإخفاء البقية
- */
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.add('hidden');
@@ -111,9 +92,8 @@ function showScreen(screenId) {
         loadStudentsForTeacher(); 
         loadPendingTasksForReview(); 
         displayLeaderboardForTeacher(); 
-        displayCurriculumForTeacher(); // تأكد من عرض المنهج عند الدخول
+        displayCurriculumForTeacher(); 
         
-        // تفعيل تبويب لوحة التحكم افتراضياً
         document.querySelector('.tab-button[data-tab="dashboard"]').click(); 
     }
 }
@@ -124,13 +104,13 @@ function showScreen(screenId) {
 // ===============================================
 
 /**
- * الدالة المعدلة لعرض واجهة الطالب
+ * ⭐⭐ الدالة المعدلة لعرض واجهة الطالب (تم تحسين فلترة المهام) ⭐⭐
  */
 async function displayStudentDashboard(studentData) {
     const welcomeElement = document.getElementById('welcome-student');
     welcomeElement.textContent = `أهلاً بك يا ${studentData.name}`;
 
-    // 1. عرض بيانات البطاقات الإحصائية (مطابق للتصميم)
+    // 1. عرض بيانات البطاقات الإحصائية
     const pointsElement = document.getElementById('student-total-points');
     const hifzProgressElement = document.getElementById('student-hifz-progress');
     const murajaaProgressElement = document.getElementById('student-murajaa-progress');
@@ -147,8 +127,8 @@ async function displayStudentDashboard(studentData) {
     const tasksListElement = document.getElementById('student-tasks');
     tasksListElement.innerHTML = '<h2>مهامك الحالية</h2>';
     
-    // يجب أن تكون المهام ذات حالة 'assigned' أو 'pending' ظاهرة للطالب
-    const activeTasks = studentData.tasks ? studentData.tasks.filter(t => t.status === 'assigned' || t.status === 'pending') : [];
+    // ⭐⭐ التعديل هنا: فلترة المهام التي ليست 'completed' (مكتملة) ⭐⭐
+    const activeTasks = studentData.tasks ? studentData.tasks.filter(t => t.status !== 'completed') : [];
 
     if (activeTasks.length === 0) {
         tasksListElement.innerHTML += '<p class="message info">لا توجد لديك مهام حالياً. بالتوفيق!</p>';
@@ -208,7 +188,6 @@ async function sendTaskToReview(studentCode, taskId) {
             }
         });
 
-        // إعادة تحميل الواجهة لعرض التحديث
         const updatedStudentSnap = await studentRef.get();
         displayStudentDashboard(updatedStudentSnap.data());
 
@@ -225,7 +204,7 @@ async function sendTaskToReview(studentCode, taskId) {
 // ===============================================
 
 /**
- * دالة جديدة: عرض المنهج في تبويب "عرض المنهج"
+ * دالة عرض المنهج في تبويب "عرض المنهج"
  */
 function displayCurriculumForTeacher() {
     const hifzDisplay = document.getElementById('hifz-curriculum-display');
@@ -466,7 +445,6 @@ async function reviewTask(studentCode, taskId, action) {
 
         alert(`تم ${action === 'accepted' ? 'قبول' : 'رفض'} المهمة بنجاح.`);
         
-        // تحديث الواجهات
         loadPendingTasksForReview();
         displayLeaderboardForTeacher();
 
@@ -500,7 +478,8 @@ async function assignTask(isGroup) {
     }
     
     const newTask = {
-        id: db.collection('_').doc().id, // توليد id فريد
+        // نستخدم ID فريد لسهولة التتبع والمراجعة
+        id: db.collection('_').doc().id, 
         type: type,
         description: description,
         points: points,
@@ -517,7 +496,6 @@ async function assignTask(isGroup) {
             studentsSnapshot.forEach(doc => {
                 const studentRef = studentsRef.doc(doc.id);
                 const currentTasks = doc.data().tasks || [];
-                // لا نضيف مهمة إذا كانت موجودة وغير مكتملة
                 const isTaskExist = currentTasks.some(t => t.description === description && t.status !== 'completed');
                 if (!isTaskExist) {
                     batch.update(studentRef, { tasks: firebase.firestore.FieldValue.arrayUnion(newTask) });
@@ -547,7 +525,6 @@ async function assignTask(isGroup) {
         }
 
         messageElement.classList.remove('hidden');
-        // تنظيف الحقول
         document.getElementById('assign-task-description').value = '';
         document.getElementById('assign-task-points').value = '';
         document.getElementById('assign-task-student-code').value = '';
@@ -674,7 +651,6 @@ document.querySelectorAll('.tab-button').forEach(button => {
         const tabId = button.getAttribute('data-tab');
         document.getElementById(`${tabId}-tab`).classList.remove('hidden');
         
-        // عند النقر على أي تبويب، تأكد من تحديث بياناته
         if (tabId === 'review-tasks') {
             loadPendingTasksForReview();
         } else if (tabId === 'manage-students') {
@@ -682,7 +658,7 @@ document.querySelectorAll('.tab-button').forEach(button => {
         } else if (tabId === 'dashboard') {
             displayLeaderboardForTeacher();
         } else if (tabId === 'manage-curriculum') {
-            displayCurriculumForTeacher(); // استدعاء الدالة هنا لضمان العرض
+            displayCurriculumForTeacher(); 
         }
     });
 });
