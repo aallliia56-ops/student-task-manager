@@ -111,6 +111,10 @@ function showScreen(screenId) {
  * * @param {object} studentData كائن بيانات الطالب الحالي
  * @returns {Promise<object>} بيانات الطالب المحدثة (محتملة الإضافة)
  */
+/**
+ * دالة لضمان وجود المهام التسلسلية الحالية في قائمة مهام الطالب.
+ * (تم تعديل حقل created_at لحل مشكلة الخطأ FirebaseError: FieldValue.serverTimestamp() is not currently supported inside arrays)
+ */
 async function ensureCurriculumTasks(studentData) {
     const studentRef = db.collection("students").doc(studentData.code);
     let shouldUpdate = false;
@@ -118,11 +122,10 @@ async function ensureCurriculumTasks(studentData) {
 
     // 1. تحديد المهمة الرئيسية للحفظ
     const hifzIndex = studentData.hifz_progress || 0;
-    const currentHifzItem = globalHifzCurriculum[hifzIndex - 1]; // -1 لأن التقدم يبدأ من 1
+    const currentHifzItem = globalHifzCurriculum[hifzIndex - 1]; 
 
     if (currentHifzItem) {
         const expectedDescription = `حفظ: ${currentHifzItem.label}`;
-        // التأكد من أن المهمة غير موجودة كـ 'assigned' أو 'pending'
         const hifzTaskExists = tasks.some(t => t.description === expectedDescription && t.status !== 'completed');
         
         if (!hifzTaskExists) {
@@ -132,7 +135,8 @@ async function ensureCurriculumTasks(studentData) {
                 description: expectedDescription,
                 points: currentHifzItem.points,
                 status: 'assigned',
-                created_at: firebase.firestore.FieldValue.serverTimestamp()
+                // ⭐⭐ التعديل: استخدام التاريخ المحلي (مقارنة بـ serverTimestamp() الذي يسبب الخطأ) ⭐⭐
+                created_at: new Date() 
             });
             shouldUpdate = true;
         }
@@ -144,7 +148,6 @@ async function ensureCurriculumTasks(studentData) {
 
     if (currentMurajaaItem) {
         const expectedDescription = `مراجعة: ${currentMurajaaItem.label}`;
-        // التأكد من أن المهمة غير موجودة كـ 'assigned' أو 'pending'
         const murajaaTaskExists = tasks.some(t => t.description === expectedDescription && t.status !== 'completed');
         
         if (!murajaaTaskExists) {
@@ -154,7 +157,8 @@ async function ensureCurriculumTasks(studentData) {
                 description: expectedDescription,
                 points: currentMurajaaItem.points,
                 status: 'assigned',
-                created_at: firebase.firestore.FieldValue.serverTimestamp()
+                // ⭐⭐ التعديل: استخدام التاريخ المحلي (مقارنة بـ serverTimestamp() الذي يسبب الخطأ) ⭐⭐
+                created_at: new Date() 
             });
             shouldUpdate = true;
         }
@@ -168,7 +172,6 @@ async function ensureCurriculumTasks(studentData) {
 
     return studentData;
 }
-
 
 /**
  * ⭐⭐ الدالة الأصلية المعدلة لعرض واجهة الطالب ⭐⭐
@@ -748,3 +751,4 @@ window.onload = () => {
 window.sendTaskToReview = sendTaskToReview;
 window.reviewTask = reviewTask;
 window.updateStudentPoints = updateStudentPoints;
+
