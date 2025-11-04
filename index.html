@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>إدارة المهام الطلابية</title>
-    <link rel="stylesheet" href="style.css"> 
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -18,7 +18,7 @@
     </div>
 
     <div id="student-screen" class="hidden screen">
-        
+
         <div class="header-controls">
             <h1 id="welcome-student">أهلاً بك يا طالب</h1>
             <button id="logout-button-student" class="logout-btn">تسجيل الخروج</button>
@@ -30,7 +30,12 @@
                 <p class="stat-label">مجموع النقاط</p>
                 <div class="stat-icon">🌟</div>
             </div>
-            
+
+            <div class="stat-card level-card purple-border">
+                <span id="student-level" class="stat-value">...</span>
+                <p class="stat-label">المستوى الحالي</p>
+                <div class="stat-icon">🎓</div>
+            </div>
             <div class="stat-card hifz-card green-border">
                 <span id="student-hifz-progress" class="stat-value">...</span>
                 <p class="stat-label">تقدم الحفظ</p>
@@ -43,9 +48,9 @@
                 <div class="stat-icon">🔄</div>
             </div>
         </div>
-        
+
         <hr>
-        
+
         <div id="student-tasks" class="tasks-list">
             <h2>مهامك الحالية</h2>
         </div>
@@ -68,7 +73,7 @@
             </div>
 
             <div class="tab-contents-wrapper">
-                
+
                 <div id="dashboard-tab" class="tab-content">
                     <h2>لوحة التحكم الإجمالية</h2>
                     <h3>لوحة الشرف (أفضل 10 طلاب) 🏆</h3>
@@ -90,13 +95,19 @@
                         <input type="text" id="new-student-code" placeholder="رمز الطالب (فريد)" required>
                         <input type="text" id="new-student-name" placeholder="اسم الطالب الكامل" required>
                     </div>
+
+                    <div class="form-group">
+                        <label for="new-student-level">المستوى في المنهج:</label>
+                        <select id="new-student-level" required>
+                            <option value="BUILDING">قسم البناء</option>
+                            <option value="DEVELOPMENT">قسم التطوير</option>
+                            <option value="ADVANCED">قسم المتقدم</option>
+                        </select>
+                    </div>
+
                     <div class="form-group">
                         <label for="new-student-hifz-start">نقطة بداية الحفظ:</label>
                         <select id="new-student-hifz-start"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="new-student-murajaa-start">نقطة بداية المراجعة:</label>
-                        <select id="new-student-murajaa-start"></select>
                     </div>
                     <button id="register-student-button" class="action-btn">تسجيل الطالب</button>
                     <p id="register-student-message" class="message hidden"></p>
@@ -104,6 +115,13 @@
 
                 <div id="assign-tasks-tab" class="tab-content hidden">
                     <h2>تعيين المهام</h2>
+
+                    <h3>تعيين هدف الحفظ للطالب (لتوليد المهمة التالية) 🎯</h3>
+                    <div class="form-group" id="assign-hifz-goal-container">
+                         <p class="message info">جارٍ تحميل واجهة تعيين الهدف...</p>
+                    </div>
+                    <hr>
+                    <h3>تعيين مهمة إضافية</h3>
                     <div class="form-group">
                         <label for="assign-task-type">نوع المهمة:</label>
                         <select id="assign-task-type">
@@ -122,7 +140,7 @@
                     </div>
                     <p id="assign-task-message" class="message hidden"></p>
                 </div>
-                
+
                 <div id="review-tasks-tab" class="tab-content hidden">
                     <h2>المهام بانتظار المراجعة</h2>
                     <div id="pending-tasks-list">
@@ -131,19 +149,20 @@
                 </div>
 
                 <div id="manage-curriculum-tab" class="tab-content hidden">
-                    <h2>منهج الحفظ</h2>
-                    <div id="hifz-curriculum-display" class="curriculum-display"></div>
-                    <h2>منهج المراجعة</h2>
-                    <div id="murajaa-curriculum-display" class="curriculum-display"></div>
+                    <h2>عرض المنهج 📚</h2>
+                    <div id="curriculum-display-content" class="curriculum-display">
+                        <p>سيتم عرض تفاصيل المستويات والمراجعة هنا...</p>
+                    </div>
                 </div>
+
             </div>
         </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    
-    <script src="app.js"></script>
+
+    <script type="module" src="app.js"></script>
 </body>
 </html>
