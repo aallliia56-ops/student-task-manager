@@ -48,11 +48,16 @@ const userCodeInput   = document.getElementById('user-code');
 const loginButton     = document.getElementById('login-button');
 const authMessage     = document.getElementById('auth-message');
 
-const welcomeStudent        = document.getElementById('welcome-student');
-const studentHifzProgress   = document.getElementById('student-hifz-progress');
-const studentMurajaaProgress = document.getElementById('student-murajaa-progress');
-const studentTotalPoints    = document.getElementById('student-total-points');
-const studentTasksDiv       = document.getElementById('student-tasks');
+const welcomeStudent = document.getElementById('welcome-student');
+const studentHifzProgress = document.getElementById('student-hifz-progress');
+
+// ⭐ جديد: سبانات عرض مستوى المراجعة وتقدمها
+const studentMurajaaLevelSpan = document.getElementById('student-murajaa-level');
+const studentMurajaaProgressIndexSpan = document.getElementById('student-murajaa-progress-index');
+
+const studentTotalPoints = document.getElementById('student-total-points');
+const studentTasksDiv = document.getElementById('student-tasks');
+
 
 const logoutButtonStudent = document.getElementById('logout-button-student');
 const logoutButtonTeacher = document.getElementById('logout-button-teacher');
@@ -585,33 +590,53 @@ function renderCurriculumTasks(student) {
 
 
 // Function to display student progress (Used in login and update)
+// Function to display student progress (Used in login and update)
 async function displayStudentDashboard(student) {
     welcomeStudent.textContent = `أهلاً بك يا ${student.name}`;
 
-    // تجهيز منهج المراجعة لمستوى الطالب
+    // ⭐ ضمان أن للطالب مستوى مراجعة، وإلا نضبطه افتراضيًا
+    if (!student.murajaa_level) {
+        student.murajaa_level = 'BUILDING'; // تقدر تغيّرها للمستوى اللي يناسبك
+        try {
+            const studentDocRef = doc(db, 'students', student.code);
+            await updateDoc(studentDocRef, {
+                murajaa_level: student.murajaa_level
+            });
+        } catch (e) {
+            console.warn('لم أستطع تحديث murajaa_level في Firestore، لكن ستعمل الواجهة على أي حال.', e);
+        }
+    }
+
+    // ⭐ تهيئة قائمة المراجعة للطالب بناءً على مستواه
     setStudentMurajaaCurriculum(student.murajaa_level);
 
+    // تهيئة حقول المهام الإضافية في حال كانت غير موجودة (لأول مرة)
     if (!student.displayed_hifz_bonus_tasks) student.displayed_hifz_bonus_tasks = [];
     if (!student.displayed_murajaa_bonus_tasks) student.displayed_murajaa_bonus_tasks = [];
 
-    currentUser = student;
+    currentUser = student; // تحديث الكائن العام بآخر البيانات
 
+    // Get the actual curriculum items based on saved indices
     const currentHifzItem = globalHifzCurriculum[student.hifz_progress];
     const currentMurajaaItem = studentMurajaaCurriculum[student.murajaa_progress_index];
 
-    // حفظ
-    studentHifzProgress.textContent = currentHifzItem ? currentHifzItem.label : 'المنهج غير مُعين';
-
-    // مستوى المراجعة
-    studentMurajaaLevelSpan.textContent = student.murajaa_level || 'غير محدد';
-
-    // تقدّم المراجعة (الفهرس + اسم المهمة)
-    studentMurajaaProgressIndexSpan.textContent = currentMurajaaItem
-        ? `${student.murajaa_progress_index} - ${currentMurajaaItem.label}`
+    // 🔹 عرض تحفظ الحفظ
+    studentHifzProgress.textContent = currentHifzItem
+        ? (currentHifzItem.label || `${currentHifzItem.surah_name_ar} (${currentHifzItem.start_ayah}-${currentHifzItem.end_ayah})`)
         : 'المنهج غير مُعين';
 
+    // 🔹 عرض مستوى المراجعة (القيمة الخام مثل BUILDING/DEVELOPMENT/ADVANCED)
+    studentMurajaaLevelSpan.textContent = student.murajaa_level || 'غير محدد';
+
+    // 🔹 عرض المقطع الحالي من المراجعة
+    studentMurajaaProgressIndexSpan.textContent = currentMurajaaItem
+        ? (currentMurajaaItem.label || currentMurajaaItem.name || 'مقطع مراجعة')
+        : 'المنهج غير مُعين';
+
+    // 🔹 عرض مجموع النقاط
     studentTotalPoints.textContent = student.total_points || 0;
 
+    // Display tasks using the new curriculum-based function
     renderCurriculumTasks(student);
 
     hideAllScreens();
@@ -932,10 +957,23 @@ loginButton.addEventListener('click', async () => {
         setActiveTab('manage-students-tab');
     } else {
         try {
+            // Student Login Logic
             const studentDocRef = doc(db, 'students', userCode);
             const docSnapshot = await getDoc(studentDocRef);
             if (docSnapshot.exists()) {
-                currentUser = { code: userCode, role: 'student', ...docSnapshot.data() };
+                const data = docSnapshot.data();
+
+                // ⭐ لو الطالب قديم وما عنده murajaa_level نضبطه افتراضي:
+                if (!data.murajaa_level) {
+                    data.murajaa_level = 'BUILDING';
+                    try {
+                        await updateDoc(studentDocRef, { murajaa_level: data.murajaa_level });
+                    } catch (e) {
+                        console.warn('لم أستطع تحديث murajaa_level للطالب القديم.', e);
+                    }
+                }
+
+                currentUser = { code: userCode, role: 'student', ...data };
                 displayStudentDashboard(currentUser);
             } else {
                 showMessage(authMessage, 'رمز الطالب غير صحيح. حاول مجدداً.', 'error');
@@ -945,6 +983,7 @@ loginButton.addEventListener('click', async () => {
             showMessage(authMessage, 'حدث خطأ أثناء الاتصال بالخادم. تحقق من الاتصال وقواعد Firebase.', 'error');
         }
     }
+
 });
 
 // --- Teacher Panel Logic ---
@@ -1139,4 +1178,5 @@ if (logoutButtonTeacher) {
 
 // --- Initialization on load ---
 console.log("App ready. Curriculum loaded from external file.");
+
 
