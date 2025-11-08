@@ -39,22 +39,24 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // --- DOM Elements ---
-const authScreen = document.getElementById('auth-screen');
-const studentScreen = document.getElementById('student-screen');
-const teacherScreen = document.getElementById('teacher-screen');
+// --- DOM Elements ---
+const authScreen      = document.getElementById('auth-screen');
+const studentScreen   = document.getElementById('student-screen');
+const teacherScreen   = document.getElementById('teacher-screen');
 
-const userCodeInput = document.getElementById('user-code');
-const loginButton = document.getElementById('login-button');
-const authMessage = document.getElementById('auth-message');
+const userCodeInput   = document.getElementById('user-code');
+const loginButton     = document.getElementById('login-button');
+const authMessage     = document.getElementById('auth-message');
 
-const welcomeStudent = document.getElementById('welcome-student');
-const studentHifzProgress = document.getElementById('student-hifz-progress');
-const studentMurajaaLevelSpan = document.getElementById('student-murajaa-level');
-const studentMurajaaProgressIndexSpan = document.getElementById('student-murajaa-progress-index');
-const studentTotalPoints = document.getElementById('student-total-points');
-const studentTasksDiv = document.getElementById('student-tasks');
+const welcomeStudent        = document.getElementById('welcome-student');
+const studentHifzProgress   = document.getElementById('student-hifz-progress');
+const studentMurajaaProgress = document.getElementById('student-murajaa-progress');
+const studentTotalPoints    = document.getElementById('student-total-points');
+const studentTasksDiv       = document.getElementById('student-tasks');
+
 const logoutButtonStudent = document.getElementById('logout-button-student');
 const logoutButtonTeacher = document.getElementById('logout-button-teacher');
+
 
 const manageStudentsTab = document.getElementById('manage-students-tab');
 const addStudentTab = document.getElementById('add-student-tab');
@@ -120,9 +122,9 @@ function showMessage(element, msg, type) {
 }
 
 function hideAllScreens() {
-    authScreen.classList.add('hidden');
-    studentScreen.classList.add('hidden');
-    teacherScreen.classList.add('hidden');
+    if (authScreen)    authScreen.classList.add('hidden');
+    if (studentScreen) studentScreen.classList.add('hidden');
+    if (teacherScreen) teacherScreen.classList.add('hidden');
 }
 
 function setActiveTab(tabId) {
@@ -1128,8 +1130,13 @@ function logout() {
     showMessage(authMessage, 'تم تسجيل الخروج بنجاح.', 'success');
 }
 
-logoutButtonStudent.addEventListener('click', logout);
-logoutButtonTeacher.addEventListener('click', logout);
+if (logoutButtonStudent) {
+    logoutButtonStudent.addEventListener('click', logout);
+}
+if (logoutButtonTeacher) {
+    logoutButtonTeacher.addEventListener('click', logout);
+}
 
 // --- Initialization on load ---
 console.log("App ready. Curriculum loaded from external file.");
+
