@@ -18,25 +18,22 @@
         <button id="login-button" class="button">دخول</button>
         <p id="auth-message" class="message hidden"></p>
     </div>
+    <div class="progress-section">
+    <p>نقاطي الكلية: <strong id="student-total-points">0</strong></p>
 
-    <div id="student-screen" class="container hidden">
-        <header class="dashboard-header">
-            <h2 id="welcome-student">أهلاً بك يا طالب</h2>
-            <button id="logout-button-student" class="button logout-button">تسجيل الخروج</button>
-        </header>
-        
-        <div class="progress-section">
-            <p>نقاطي الكلية: <strong id="student-total-points">0</strong></p>
-            <div class="progress-item">
-                <p>تقدم الحفظ الحالي:</p>
-                <strong id="student-hifz-progress">المنهج غير مُعين</strong>
-            </div>
-            <div class="progress-item murajaa-info">
-                <p>تقدم المراجعة الحالي:</p>
-                <!-- هذا الـ id يطابق ما يستخدمه app.js -->
-                <strong id="student-murajaa-progress">المنهج غير مُعين</strong>
-            </div>
-        </div>
+    <div class="progress-item">
+        <p>تقدم الحفظ الحالي:</p>
+        <strong id="student-hifz-progress">المنهج غير مُعين</strong>
+    </div>
+
+    <div class="progress-item murajaa-info">
+        <p>تقدم المراجعة الحالي:</p>
+        <!-- هذا هو الـ id الذي يحتاجه app.js -->
+        <strong id="student-murajaa-progress">المنهج غير مُعين</strong>
+    </div>
+</div>
+
+
 
         <hr>
 
@@ -154,3 +151,4 @@
     <script type="module" src="app.js"></script>
 </body>
 </html>
+
