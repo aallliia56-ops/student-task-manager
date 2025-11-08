@@ -22,7 +22,6 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.
 import { HIFZ_CURRICULUM, REVIEW_CURRICULUM, LEVEL_CONFIG } from './curriculum.js';
 
 
-// هذا الجزء هو نفسه الذي زودتني به سابقاً:
 // Your web app's Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
@@ -39,7 +38,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// --- DOM Elements (تم تعديل العناصر المتعلقة بتعيين المراجعة) ---
+// --- DOM Elements ---
 const authScreen = document.getElementById('auth-screen');
 const studentScreen = document.getElementById('student-screen');
 const teacherScreen = document.getElementById('teacher-screen');
@@ -67,7 +66,7 @@ const studentList = document.getElementById('student-list');
 const newStudentCodeInput = document.getElementById('new-student-code');
 const newStudentNameInput = document.getElementById('new-student-name');
 const newStudentHifzStart = document.getElementById('new-student-hifz-start');
-const newStudentMurajaaLevel = document.getElementById('new-student-murajaa-level'); // ⭐⭐ جديد: اختيار المستوى بدلاً من نقطة البداية
+const newStudentMurajaaLevel = document.getElementById('new-student-murajaa-level');
 
 const registerStudentButton = document.getElementById('register-student-button');
 const registerStudentMessage = document.getElementById('register-student-message');
@@ -87,9 +86,10 @@ const pendingTasksList = document.getElementById('pending-tasks-list');
 
 let currentUser = null; // Stores current logged-in user data
 
-// --- NEW CURRICULUM STATE (تم التعيين بناءً على الاستيراد) ---
-const globalHifzCurriculum = HIFZ_CURRICULUM; // ⭐⭐ ثابت
-let globalMurajaaCurriculum = []; // ⭐⭐ ديناميكي: يتم تحديده بناءً على مستوى الطالب عند الدخول
+// --- NEW CURRICULUM STATE (تم التعديل ليكون واضحاً) ---
+const globalHifzCurriculum = HIFZ_CURRICULUM; 
+const globalReviewCurriculumLevels = REVIEW_CURRICULUM; // كائن المراجعة الكامل
+let studentMurajaaCurriculum = []; // ⭐⭐ قائمة المراجعة النشطة للطالب الحالي
 
 // --- Helper Functions ---
 function showMessage(element, msg, type) {
@@ -123,24 +123,22 @@ function generateUniqueId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 }
 
-// ⭐⭐ حذف دالة loadCurriculumFromFirestore القديمة ⭐⭐
-
 /**
  * تجهز قائمة المراجعة للطالب بناءً على مستوى المراجعة المخزن في وثيقته.
- * يجب استدعاؤها بعد تسجيل دخول الطالب/جلب بياناته.
- * @param {string} level مستوى المراجعة الثابت للطالب ('BUILDING', 'DEVELOPMENT', 'ADVANCED').
+ * @param {string} level مستوى المراجعة الثابت للطالب.
  */
 function setStudentMurajaaCurriculum(level) {
-    if (REVIEW_CURRICULUM[level]) {
-        globalMurajaaCurriculum = REVIEW_CURRICULUM[level];
+    // ⭐⭐ يستخدم REVIEW_CURRICULUM مباشرة لملء studentMurajaaCurriculum
+    if (globalReviewCurriculumLevels[level]) { 
+        studentMurajaaCurriculum = globalReviewCurriculumLevels[level];
     } else {
         console.warn(`Murajaa level ${level} not found. Defaulting to empty.`);
-        globalMurajaaCurriculum = [];
+        studentMurajaaCurriculum = [];
     }
 }
 
 
-// --- NEW FUNCTION: Populate Curriculum Selects ---
+// --- NEW FUNCTION: Populate Curriculum Selects (للوحة المعلم) ---
 function populateCurriculumSelects() {
     // Populate Hifz Select (using index as value)
     const hifzOptions = globalHifzCurriculum.map((item, index) =>
@@ -149,7 +147,8 @@ function populateCurriculumSelects() {
     newStudentHifzStart.innerHTML = hifzOptions;
 
     // Populate Murajaa Level Select (using level name as value)
-    const levelKeys = Object.keys(REVIEW_CURRICULUM);
+    // ⭐⭐ يستخدم globalReviewCurriculumLevels للاستعلام عن المفاتيح
+    const levelKeys = Object.keys(globalReviewCurriculumLevels); 
     const murajaaOptions = levelKeys.map(key =>
         `<option value="${key}">${key}</option>`
     ).join('');
@@ -157,12 +156,11 @@ function populateCurriculumSelects() {
 }
 
 // =======================================================
-// ⭐⭐ دوال لوحة قيادة الطالب (Student Dashboard Functions) - مُعدّل ⭐⭐
+// ⭐⭐ دوال لوحة قيادة الطالب (Student Dashboard Functions) ⭐⭐
 // =======================================================
 
 /**
  * دالة لمعالجة إظهار أو إخفاء المهام الإضافية وتحديث Firestore.
- * (المنطق لم يتغير جذرياً)
  */
 async function toggleBonusTask(type, index, action) {
     if (!currentUser || currentUser.role !== 'student') return;
@@ -212,9 +210,6 @@ async function toggleBonusTask(type, index, action) {
 
 /**
  * دالة لإنجاز المهام التي تعتمد على تقدم المنهج (Hifz/Murajaa) - إرسال للمراجعة.
- * (تم تحديثها لدعم التقدم الجديد للمراجعة)
- * @param {string} studentCode رمز الطالب.
- * @param {string} type نوع المهمة (يجب أن يكون 'hifz' أو 'murajaa').
  */
 async function completeCurriculumTask(studentCode, type) {
     try {
@@ -225,15 +220,18 @@ async function completeCurriculumTask(studentCode, type) {
         const student = docSnapshot.data();
         let progressField, curriculumArray;
 
+        // يجب تهيئة قائمة المراجعة الخاصة بالطالب قبل استخدامها
+        if (type === 'murajaa') {
+            setStudentMurajaaCurriculum(student.murajaa_level); 
+        }
+
         if (type === 'hifz') {
             progressField = 'hifz_progress';
             curriculumArray = globalHifzCurriculum;
         } else if (type === 'murajaa') {
-            // ⭐⭐ استخدام الحقل الجديد لتقدم المراجعة داخل الدورة
             progressField = 'murajaa_progress_index';
-            // يجب إعادة تعيين قائمة المراجعة للطالب قبل استخدامها
-            setStudentMurajaaCurriculum(student.murajaa_level);
-            curriculumArray = globalMurajaaCurriculum;
+            // ⭐⭐ استخدام studentMurajaaCurriculum المهيأ
+            curriculumArray = studentMurajaaCurriculum; 
         } else {
             showMessage(authMessage, 'نوع مهمة غير مدعوم في هذا الإجراء.', 'error');
             return;
@@ -267,7 +265,6 @@ async function completeCurriculumTask(studentCode, type) {
         );
 
         const taskDescription = `${type === 'hifz' ? 'حفظ' : 'مراجعة'}: ${taskItem.label}`;
-        // ⭐⭐ تطبيق مضاعف الحفظ على النقاط إذا كانت مهمة حفظ
         const points = (type === 'hifz')
             ? taskItem.points * (student.hifz_level_multiplier || 1)
             : taskItem.points;
@@ -279,11 +276,11 @@ async function completeCurriculumTask(studentCode, type) {
                 type: type,
                 points: points,
                 completed: false,
-                status: 'pending' // مباشرة إلى Pending
+                status: 'pending' 
             };
             student.tasks.push(newTask);
         } else {
-            // المهمة موجودة، نغير حالتها إلى Pending ونحدث النقاط في حال تغير المضاعف
+            // المهمة موجودة، نغير حالتها إلى Pending ونحدث النقاط
             student.tasks[taskIndex].status = 'pending';
             student.tasks[taskIndex].points = points;
         }
@@ -310,7 +307,6 @@ async function completeCurriculumTask(studentCode, type) {
  * دالة لإنجاز المهام العامة (غير التسلسلية)
  */
 async function completeGeneralTask(studentCode, taskId) {
-    // ... [المنطق القديم يبقى كما هو] ...
     try {
         const studentDocRef = doc(db, 'students', studentCode);
         const docSnapshot = await getDoc(studentDocRef);
@@ -348,7 +344,6 @@ async function completeGeneralTask(studentCode, taskId) {
  */
 function renderCurriculumTasks(student) {
     const tasksContainer = document.getElementById('student-tasks');
-    // ... [بقية الدالة لإنشاء العناصر ( createTaskElement ) لم تتغير] ...
     tasksContainer.innerHTML = '<h2>مهامك الحالية</h2>';
 
     // دالة مساعدة لإنشاء عنصر المهمة
@@ -432,7 +427,7 @@ function renderCurriculumTasks(student) {
             const taskItem = createTaskElement(
                 bonusItem,
                 false,
-                isHifzMainPending, // تعطيل الإضافية إذا كانت الرئيسية قيد المراجعة
+                isHifzMainPending, 
                 index
             );
             hifzContainer.appendChild(taskItem);
@@ -441,7 +436,6 @@ function renderCurriculumTasks(student) {
 
     // ج. زر "إظهار مهمة إضافية"
     if (hifzProgress < hifzCap && hifzBonus.length < 2) {
-        // تحديد أول مهمة تالية غير موجودة حالياً
         let nextIndex = hifzProgress + 1;
         while (hifzBonus.includes(nextIndex) && nextIndex < hifzCap) {
             nextIndex++;
@@ -464,12 +458,12 @@ function renderCurriculumTasks(student) {
     murajaaContainer.innerHTML = '<h3>مهام المراجعة</h3>';
     tasksContainer.appendChild(murajaaContainer);
 
-    // ⭐⭐ استخدام murajaa_progress_index للعرض
+    // ⭐⭐ التعديل: استخدام studentMurajaaCurriculum المهيأ مسبقًا في displayStudentDashboard
     const murajaaProgressIndex = student.murajaa_progress_index || 0;
     const murajaaBonus = student.displayed_murajaa_bonus_tasks || [];
-    const murajaaCap = globalMurajaaCurriculum.length;
+    const murajaaCap = studentMurajaaCurriculum.length; // ⭐⭐ التعديل هنا: استخدام studentMurajaaCurriculum
 
-    const mainMurajaaItem = globalMurajaaCurriculum[murajaaProgressIndex];
+    const mainMurajaaItem = studentMurajaaCurriculum[murajaaProgressIndex]; // ⭐⭐ التعديل هنا: استخدام studentMurajaaCurriculum
     const isMurajaaMainPending = student.tasks.some(t =>
         t.type === 'murajaa' &&
         t.description.includes(mainMurajaaItem?.label || '') &&
@@ -485,15 +479,16 @@ function renderCurriculumTasks(student) {
             murajaaProgressIndex
         );
         murajaaContainer.appendChild(taskItem);
-    } else if (murajaaProgressIndex >= murajaaCap) {
-        // ⭐⭐ ملاحظة: يجب أن لا يحدث هذا إلا بعد اكتمال كامل المنهج، وإلا سيتم إعادة التعيين (Pivot)
+    } else if (murajaaProgressIndex >= murajaaCap && murajaaCap > 0) {
         murajaaContainer.innerHTML += '<p class="message success">✅ تم إكمال الدورة الحالية للمراجعة بنجاح. سيتم تعيين مهام جديدة عند العودة!</p>';
+    } else if (murajaaCap === 0) {
+         murajaaContainer.innerHTML += '<p class="message info">لا يوجد منهج مراجعة مُعين لمستواك الحالي.</p>';
     }
 
     // ب. المهام الإضافية المعروضة
     murajaaBonus.sort((a, b) => a - b).forEach(index => {
         if (index > murajaaProgressIndex && index < murajaaCap) {
-            const bonusItem = globalMurajaaCurriculum[index];
+            const bonusItem = studentMurajaaCurriculum[index]; // ⭐⭐ التعديل هنا: استخدام studentMurajaaCurriculum
             const taskItem = createTaskElement(
                 bonusItem,
                 false,
@@ -552,12 +547,12 @@ function renderCurriculumTasks(student) {
         generalTasksContainer.innerHTML += '<p class="message info">لا توجد مهام عامة مُعينة حالياً.</p>';
     }
 
-
     // ----------------------------------------------------
     // 4. ربط مستمعي الأحداث
     // ----------------------------------------------------
 
     // ربط أزرار الإظهار
+    // نستخدم document بدلاً من getElementById لأن العناصر يتم إنشاؤها ديناميكياً
     document.getElementById('show-hifz-bonus-btn')?.addEventListener('click', (e) => {
         const index = parseInt(e.target.dataset.index);
         toggleBonusTask('hifz', index, 'add');
@@ -598,7 +593,7 @@ function renderCurriculumTasks(student) {
 async function displayStudentDashboard(student) {
     welcomeStudent.textContent = `أهلاً بك يا ${student.name}`;
 
-    // ⭐⭐ التعديل: تجهيز قائمة المراجعة للطالب بناءً على مستواه
+    // ⭐⭐ الخطوة الأهم: تجهيز قائمة المراجعة للطالب بناءً على مستواه قبل العرض
     setStudentMurajaaCurriculum(student.murajaa_level);
 
     // تهيئة حقول المهام الإضافية في حال كانت غير موجودة (لأول مرة)
@@ -609,8 +604,8 @@ async function displayStudentDashboard(student) {
 
     // Get the actual curriculum items based on saved indices
     const currentHifzItem = globalHifzCurriculum[student.hifz_progress];
-    // ⭐⭐ استخدام murajaa_progress_index
-    const currentMurajaaItem = globalMurajaaCurriculum[student.murajaa_progress_index];
+    // ⭐⭐ التعديل هنا: استخدام studentMurajaaCurriculum الذي تم تهيئته للتو
+    const currentMurajaaItem = studentMurajaaCurriculum[student.murajaa_progress_index]; 
 
     studentHifzProgress.textContent = currentHifzItem ? currentHifzItem.label : 'المنهج غير مُعين';
     studentMurajaaProgress.textContent = currentMurajaaItem ? currentMurajaaItem.label : 'المنهج غير مُعين';
@@ -624,7 +619,7 @@ async function displayStudentDashboard(student) {
 }
 
 // =======================================================
-// ⭐⭐ دوال لوحة المعلم (Teacher Panel Functions) - مُعدّل ⭐⭐
+// ⭐⭐ دوال لوحة المعلم (Teacher Panel Functions) ⭐⭐
 // =======================================================
 
 /**
@@ -664,7 +659,6 @@ async function loadStudentsForTeacher() {
         snapshot.forEach(documentSnapshot => {
             const student = documentSnapshot.data();
             const hifzLabel = globalHifzCurriculum[student.hifz_progress] ? globalHifzCurriculum[student.hifz_progress].label : 'غير محدد';
-            // ⭐⭐ التعديل: عرض مستوى المراجعة (Level)
             const murajaaLabel = student.murajaa_level || 'غير محدد';
 
             const listItem = document.createElement('li');
@@ -737,8 +731,8 @@ function displayCurriculumsInTeacherPanel() {
         `<div>(${index}) ${item.label} (${item.points} نقاط)</div>`
     ).join('');
 
-    // ⭐⭐ التعديل: عرض جميع مستويات المراجعة
-    murajaaCurriculumDisplay.innerHTML = Object.entries(REVIEW_CURRICULUM).map(([level, items]) => {
+    // ⭐⭐ التعديل: عرض جميع مستويات المراجعة باستخدام globalReviewCurriculumLevels
+    murajaaCurriculumDisplay.innerHTML = Object.entries(globalReviewCurriculumLevels).map(([level, items]) => {
         const levelHeader = `<h4>${level} Level (${items.length} مهام)</h4>`;
         const itemList = items.map((item, index) =>
             `<div>(${index}) ${item.label} (${item.points} نقاط)</div>`
@@ -749,14 +743,11 @@ function displayCurriculumsInTeacherPanel() {
 
 
 // =======================================================
-// ⭐⭐ دوال مراجعة المهام (المعلم) - مُعدّل بشكل كبير ⭐⭐
+// ⭐⭐ دوال مراجعة المهام (المعلم) ⭐⭐
 // =======================================================
 
 /**
- * دالة لمعالجة قبول أو رفض المهمة من قبل المعلم. (مُعدّل لدعم التسلسل الحلقي)
- * @param {string} studentCode رمز الطالب.
- * @param {string} taskId معرف المهمة الفريد.
- * @param {('approve'|'reject')} action الإجراء المطلوب (قبول أو رفض).
+ * دالة لمعالجة قبول أو رفض المهمة من قبل المعلم.
  */
 async function reviewTask(studentCode, taskId, action) {
     try {
@@ -791,9 +782,15 @@ async function reviewTask(studentCode, taskId, action) {
 
             // 2. تحديث تقدم المنهج إذا كانت المهمة حفظ أو مراجعة
             if (task.type === 'hifz' || task.type === 'murajaa') {
+                const progressField = task.type === 'hifz' ? 'hifz_progress' : 'murajaa_progress_index';
+                
+                // ⭐⭐ التعديل: التأكد من تهيئة قائمة المراجعة للطالب داخل دالة المراجعة قبل استخدامها
+                if (task.type === 'murajaa') {
+                    setStudentMurajaaCurriculum(student.murajaa_level);
+                }
 
-                const progressField = task.type === 'hifz' ? 'hifz_progress' : 'murajaa_progress_index'; // ⭐⭐ الحقل الجديد
-                const curriculumArray = task.type === 'hifz' ? globalHifzCurriculum : REVIEW_CURRICULUM[student.murajaa_level];
+                const curriculumArray = task.type === 'hifz' ? globalHifzCurriculum : studentMurajaaCurriculum; // ⭐⭐ التعديل هنا
+
                 const currentIndex = student[progressField] || 0;
                 const expectedProgressItem = curriculumArray[currentIndex];
 
@@ -865,7 +862,6 @@ async function reviewTask(studentCode, taskId, action) {
     }
 }
 
-// ... [loadPendingTasksForReview تبقى كما هي في الجزء الثاني الذي أرسلته لي] ...
 async function loadPendingTasksForReview() {
     pendingTasksList.innerHTML = '<p class="message info">جارٍ البحث عن مهام بانتظار المراجعة...</p>';
     try {
@@ -988,12 +984,11 @@ tabButtons.forEach(button => {
     });
 });
 
-// Register Student Logic (مُعدّل لدعم اختيار مستوى المراجعة)
+// Register Student Logic
 registerStudentButton.addEventListener('click', async () => {
     const newStudentCode = newStudentCodeInput.value.trim();
     const newStudentName = newStudentNameInput.value.trim();
     const hifzStartIndex = parseInt(newStudentHifzStart.value);
-    // ⭐⭐ التعديل: جلب مستوى المراجعة بدلاً من الفهرس
     const murajaaLevel = newStudentMurajaaLevel.value;
 
     if (!newStudentCode || !newStudentName || !murajaaLevel) {
@@ -1006,9 +1001,9 @@ registerStudentButton.addEventListener('click', async () => {
         return;
     }
 
-    // ⭐⭐ تحديد قائمة المراجعة التي سيتم العمل عليها لأول مرة
+    // ⭐⭐ التعديل هنا: استخدام دالة التعيين لملء studentMurajaaCurriculum
     setStudentMurajaaCurriculum(murajaaLevel);
-    const initialMurajaaCurriculum = globalMurajaaCurriculum;
+    const initialMurajaaCurriculum = studentMurajaaCurriculum;
 
     if (initialMurajaaCurriculum.length === 0) {
         showMessage(registerStudentMessage, 'مستوى المراجعة المختار غير صالح أو فارغ. الرجاء اختيار مستوى آخر.', 'error');
@@ -1066,11 +1061,9 @@ registerStudentButton.addEventListener('click', async () => {
             name: newStudentName,
             role: 'student',
             hifz_progress: hifzStartIndex,
-            // ⭐⭐ الحقول الجديدة للمراجعة ومضاعف الحفظ
             murajaa_level: murajaaLevel,
             murajaa_progress_index: initialMurajaaIndex,
             hifz_level_multiplier: 1, // الافتراضي هو 1x
-            // نهاية الحقول الجديدة
             total_points: 0,
             tasks: initialTasks,
             displayed_hifz_bonus_tasks: [],
@@ -1173,6 +1166,4 @@ logoutButtonStudent.addEventListener('click', logout);
 logoutButtonTeacher.addEventListener('click', logout);
 
 // --- Initialization on load ---
-// 💥 التشغيل الأولي: لم يعد بحاجة لجلب المنهج من Firestore.
-// سيعتمد على المنهج المستورد مباشرةً.
 console.log("App ready. Curriculum loaded from external file.");
