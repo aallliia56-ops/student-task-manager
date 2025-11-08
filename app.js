@@ -591,8 +591,16 @@ function renderCurriculumTasks(student) {
 
 // Function to display student progress (Used in login and update)
 // Function to display student progress (Used in login and update)
+// Function to display student progress (Used in login and update)
 async function displayStudentDashboard(student) {
-    welcomeStudent.textContent = `أهلاً بك يا ${student.name}`;
+    // ⭐ أولاً: طباعة العناصر في الكونسل عشان لو حبيت تشوف مين اللي null
+    console.log('DOM refs in displayStudentDashboard:', {
+        welcomeStudent,
+        studentHifzProgress,
+        studentMurajaaLevelSpan,
+        studentMurajaaProgressIndexSpan,
+        studentTotalPoints
+    });
 
     // ⭐ ضمان أن للطالب مستوى مراجعة، وإلا نضبطه افتراضيًا
     if (!student.murajaa_level) {
@@ -607,41 +615,55 @@ async function displayStudentDashboard(student) {
         }
     }
 
-    // ⭐ تهيئة قائمة المراجعة للطالب بناءً على مستواه
+    // ⭐ تجهيز منهج المراجعة حسب مستوى الطالب
     setStudentMurajaaCurriculum(student.murajaa_level);
 
-    // تهيئة حقول المهام الإضافية في حال كانت غير موجودة (لأول مرة)
+    // تهيئة حقول المهام الإضافية
     if (!student.displayed_hifz_bonus_tasks) student.displayed_hifz_bonus_tasks = [];
     if (!student.displayed_murajaa_bonus_tasks) student.displayed_murajaa_bonus_tasks = [];
 
-    currentUser = student; // تحديث الكائن العام بآخر البيانات
+    currentUser = student; // تحديث الكائن العام
 
-    // Get the actual curriculum items based on saved indices
+    // عناصر المنهج الحالية
     const currentHifzItem = globalHifzCurriculum[student.hifz_progress];
     const currentMurajaaItem = studentMurajaaCurriculum[student.murajaa_progress_index];
 
-    // 🔹 عرض تحفظ الحفظ
-    studentHifzProgress.textContent = currentHifzItem
-        ? (currentHifzItem.label || `${currentHifzItem.surah_name_ar} (${currentHifzItem.start_ayah}-${currentHifzItem.end_ayah})`)
-        : 'المنهج غير مُعين';
+    // 🔹 الترحيب
+    if (welcomeStudent) {
+        welcomeStudent.textContent = `أهلاً بك يا ${student.name}`;
+    }
 
-    // 🔹 عرض مستوى المراجعة (القيمة الخام مثل BUILDING/DEVELOPMENT/ADVANCED)
-    studentMurajaaLevelSpan.textContent = student.murajaa_level || 'غير محدد';
+    // 🔹 عرض تقدم الحفظ
+    if (studentHifzProgress) {
+        studentHifzProgress.textContent = currentHifzItem
+            ? (currentHifzItem.label || `${currentHifzItem.surah_name_ar} (${currentHifzItem.start_ayah}-${currentHifzItem.end_ayah})`)
+            : 'المنهج غير مُعين';
+    }
 
-    // 🔹 عرض المقطع الحالي من المراجعة
-    studentMurajaaProgressIndexSpan.textContent = currentMurajaaItem
-        ? (currentMurajaaItem.label || currentMurajaaItem.name || 'مقطع مراجعة')
-        : 'المنهج غير مُعين';
+    // 🔹 عرض مستوى المراجعة (BUILDING / DEVELOPMENT / ADVANCED مثلاً)
+    if (studentMurajaaLevelSpan) {
+        studentMurajaaLevelSpan.textContent = student.murajaa_level || 'غير محدد';
+    }
+
+    // 🔹 عرض المقطع الحالي في المراجعة
+    if (studentMurajaaProgressIndexSpan) {
+        studentMurajaaProgressIndexSpan.textContent = currentMurajaaItem
+            ? (currentMurajaaItem.label || currentMurajaaItem.name || 'مقطع مراجعة')
+            : 'المنهج غير مُعين';
+    }
 
     // 🔹 عرض مجموع النقاط
-    studentTotalPoints.textContent = student.total_points || 0;
+    if (studentTotalPoints) {
+        studentTotalPoints.textContent = student.total_points || 0;
+    }
 
-    // Display tasks using the new curriculum-based function
+    // عرض المهام
     renderCurriculumTasks(student);
 
     hideAllScreens();
     studentScreen.classList.remove('hidden');
 }
+
 
 // =======================================================
 // ⭐⭐ دوال لوحة المعلم (Teacher Panel Functions) ⭐⭐
@@ -1178,5 +1200,6 @@ if (logoutButtonTeacher) {
 
 // --- Initialization on load ---
 console.log("App ready. Curriculum loaded from external file.");
+
 
 
