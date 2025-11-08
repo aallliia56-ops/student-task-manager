@@ -1,673 +1,280 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>مدير مهام الطلاب</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>نظام إدارة مهام التحفيظ</title>
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+  <!-- خط جميل عربي -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
 
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Cairo', sans-serif;
-            margin: 0;
-            padding: 15px;
-            background-color: #f0f4f8;
-            color: #34495e;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-        }
-
-        .container {
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-            width: 100%;
-            max-width: 1100px;
-        }
-
-        h1, h2, h3, h4 {
-            color: #2c3e50;
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-weight: 700;
-            line-height: 1.3;
-            text-align: right;
-        }
-
-        h1 { font-size: 2em; text-align: center; }
-        h2 { font-size: 1.8em; }
-        h3 { font-size: 1.4em; }
-        h4 { font-size: 1.2em; }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* رسائل النظام */
-        .message {
-            margin-top: 15px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            font-weight: 600;
-            text-align: center;
-            font-size: 0.9em;
-        }
-        .message.error {
-            background-color: #ffebee;
-            color: #e57373;
-            border: 1px solid #ef5350;
-        }
-        .message.success {
-            background-color: #e8f5e9;
-            color: #4caf50;
-            border: 1px solid #66bb6a;
-        }
-        .message.info {
-            background-color: #e3f2fd;
-            color: #2196f3;
-            border: 1px solid #64b5f6;
-        }
-
-        /* أزرار عامة */
-        .button,
-        .action-btn,
-        .approve-btn,
-        .reject-btn,
-        .complete-btn,
-        .toggle-bonus-btn,
-        .delete-btn {
-            background-color: #3498db;
-            color: #ffffff;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.2);
-        }
-        .button:hover,
-        .action-btn:hover,
-        .approve-btn:hover,
-        .reject-btn:hover,
-        .complete-btn:hover,
-        .toggle-bonus-btn:hover,
-        .delete-btn:hover {
-            background-color: #2980b9;
-            box-shadow: 0 5px 12px rgba(52, 152, 219, 0.3);
-            transform: translateY(-2px);
-        }
-        .button:disabled,
-        .action-btn:disabled,
-        .complete-btn:disabled,
-        .toggle-bonus-btn:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-            box-shadow: none;
-            transform: none;
-        }
-
-        .logout-button {
-            background-color: #e74c3c;
-            box-shadow: 0 3px 10px rgba(231, 76, 60, 0.2);
-        }
-        .logout-button:hover {
-            background-color: #c0392b;
-            box-shadow: 0 5px 12px rgba(231, 76, 60, 0.3);
-        }
-        .action-btn { background-color: #2ecc71; }
-        .action-btn:hover { background-color: #27ae60; }
-        .delete-btn { background-color: #e74c3c; }
-        .delete-btn:hover { background-color: #c0392b; }
-        .approve-btn { background-color: #4CAF50; }
-        .approve-btn:hover { background-color: #43A047; }
-        .reject-btn { background-color: #F44336; }
-        .reject-btn:hover { background-color: #E53935; }
-
-        /* مجموعات الإدخال */
-        .input-group {
-            margin-bottom: 15px;
-            text-align: right;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            color: #4a698c;
-            font-size: 0.9em;
-        }
-        .input-group input[type="text"],
-        .input-group input[type="number"],
-        .input-group select,
-        .input-group textarea {
-            width: 100%;
-            padding: 9px 10px;
-            border: 1px solid #dce4ec;
-            border-radius: 8px;
-            font-size: 0.95em;
-            background-color: #fdfdfd;
-            color: #555;
-        }
-        .input-group input:focus,
-        .input-group select:focus,
-        .input-group textarea:focus {
-            border-color: #3498db;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
-        }
-
-        /* رأس لوحة الطالب / المعلم */
-        .dashboard-header {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 10px;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
-        }
-
-        hr {
-            border: none;
-            border-top: 1px solid #eee;
-            margin: 25px 0;
-        }
-
-        .info-text {
-            font-size: 0.9em;
-            color: #777;
-            text-align: right;
-            margin-bottom: 15px;
-            line-height: 1.6;
-        }
-
-        /* شاشة الدخول */
-        #auth-screen {
-            max-width: 400px;
-            text-align: center;
-        }
-        #auth-screen h2 {
-            text-align: center;
-        }
-        #auth-screen .input-group {
-            max-width: 280px;
-            margin: 0 auto 20px auto;
-        }
-        #auth-screen .button {
-            width: 100%;
-        }
-
-        /* لوحة الطالب */
-        #student-screen h2#welcome-student {
-            color: #28a745;
-        }
-
-        .progress-section {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #eaf6fc;
-            border-radius: 10px;
-        }
-        .progress-section > p {
-            margin: 0;
-            font-size: 1.2em;
-            font-weight: 700;
-            color: #34495e;
-        }
-        .progress-section > p strong {
-            color: #1a73e8;
-        }
-        .progress-item {
-            background-color: #ffffff;
-            padding: 12px;
-            border-radius: 8px;
-            border-right: 4px solid #66bb6a;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-        .progress-item.murajaa-info {
-            border-right-color: #ffb74d;
-        }
-        .progress-item p {
-            margin: 0 0 4px 0;
-            font-size: 0.9em;
-            color: #666;
-        }
-        .progress-item strong {
-            font-size: 1.1em;
-            color: #2c3e50;
-        }
-
-        .tasks-list > p {
-            text-align: center;
-            color: #777;
-            font-size: 0.95em;
-            padding: 15px;
-            border-radius: 8px;
-            background-color: #f9fbfd;
-            border: 1px dashed #e0e0e0;
-        }
-
-        .task-item {
-            background-color: #ffffff;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
-        }
-        .task-item.general { border-right: 6px solid #3498db; }
-        .task-item.hifz { border-right: 6px solid #28a745; }
-        .task-item.murajaa { border-right: 6px solid #ff9800; }
-
-        .task-item.pending {
-            border-left: 6px solid #ff9800;
-            background-color: #fff8e1;
-        }
-
-        .task-header {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 8px;
-            border-bottom: 1px dashed #f0f0f0;
-            padding-bottom: 8px;
-        }
-        .task-title {
-            font-weight: 700;
-            font-size: 1.05em;
-            color: #2c3e50;
-        }
-        .task-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            align-items: center;
-        }
-        .task-points {
-            background-color: #eef2f6;
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 0.85em;
-        }
-        .task-status {
-            font-size: 0.85em;
-            font-weight: 600;
-            color: #ff9800;
-        }
-        .task-controls {
-            border-top: 1px dashed #f0f0f0;
-            padding-top: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .complete-btn {
-            background-color: #28a745;
-        }
-        .toggle-bonus-btn {
-            background-color: #ff9800;
-        }
-        .toggle-bonus-btn.hide-btn {
-            background-color: #9e9e9e;
-        }
-        .toggle-button-wrapper {
-            margin-top: 8px;
-            text-align: center;
-        }
-
-        /* لوحة المعلم */
-        .tabs {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-        .tab-button {
-            background-color: #e3f2fd;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.95em;
-            font-weight: 600;
-            color: #4a698c;
-            text-align: center;
-        }
-        .tab-button.active {
-            background-color: #3498db;
-            color: #ffffff;
-            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.25);
-        }
-
-        .data-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-        .data-list li {
-            background-color: #f7f9fc;
-            border-right: 5px solid #3498db;
-            border-radius: 10px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .student-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 8px;
-            border-top: 1px dashed #eee;
-            padding-top: 8px;
-        }
-        .student-actions input[type="number"] {
-            width: 100%;
-        }
-
-        .tasks-review-container {
-            margin-top: 15px;
-        }
-        .review-student-section {
-            background-color: #fdfdfd;
-            border-radius: 10px;
-            border: 1px solid #e0e0e0;
-            padding: 12px;
-            margin-bottom: 15px;
-        }
-        .review-student-section h4 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            color: #3498db;
-            border-bottom: 1px solid #f0f4f8;
-            padding-bottom: 6px;
-        }
-        .task-review-item {
-            background-color: #fffde7;
-            border-left: 6px solid #ffca28;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .review-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .curriculum-view {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            margin-top: 10px;
-        }
-        .curriculum-view > div {
-            background-color: #fcfcfc;
-            border: 1px solid #e5eef5;
-            border-radius: 10px;
-            padding: 12px;
-        }
-        .curriculum-list div {
-            padding: 6px 0;
-            border-bottom: 1px dashed #eee;
-            font-size: 0.9em;
-        }
-        .curriculum-list div:last-child {
-            border-bottom: none;
-        }
-
-        @media (min-width: 768px) {
-            body {
-                padding-top: 40px;
-            }
-
-            .container {
-                padding: 30px 35px;
-            }
-
-            .dashboard-header {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
-            .dashboard-header .logout-button {
-                width: auto;
-            }
-
-            .progress-section {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            .progress-section > p {
-                grid-column: 1 / -1;
-                text-align: center;
-            }
-
-            .tabs {
-                flex-direction: row;
-                border-bottom: 2px solid #ddd;
-            }
-            .tab-button {
-                border-radius: 8px 8px 0 0;
-            }
-
-            .data-list {
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            }
-
-            .student-actions {
-                flex-direction: row;
-                align-items: center;
-            }
-            .student-actions input[type="number"] {
-                width: 80px;
-            }
-
-            .task-review-item {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
-            .review-actions {
-                flex-direction: row;
-                gap: 10px;
-            }
-
-            .curriculum-view {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .task-controls {
-                flex-direction: row;
-            }
-        }
-    </style>
+  <!-- ملف التنسيق الخارجي -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-    <!-- شاشة الدخول -->
-    <div id="auth-screen" class="container">
-        <h2>تسجيل الدخول</h2>
+  <!-- شاشة الدخول -->
+  <div id="auth-screen" class="container">
+    <h1>نظام إدارة مهام التحفيظ</h1>
+    <h2>تسجيل الدخول</h2>
+
+    <div class="input-group">
+      <label for="user-code">رمز الدخول:</label>
+      <input
+        type="text"
+        id="user-code"
+        placeholder="رمز المعلم / الطالب / ولي الأمر"
+      />
+      <p class="info-text">
+        مثال: <strong>teacher</strong> للمعلم – رمز الطالب – أو رمز ولي الأمر.
+      </p>
+    </div>
+
+    <button id="login-button" class="button primary">دخول</button>
+    <p id="auth-message" class="message hidden"></p>
+  </div>
+
+  <!-- شاشة الطالب -->
+  <div id="student-screen" class="container hidden">
+    <header class="dashboard-header">
+      <div>
+        <h2 id="welcome-student">أهلاً بك يا طالب</h2>
+        <p class="subtitle">تابع تقدمك في الحفظ والمراجعة 👇</p>
+      </div>
+      <button id="logout-button-student" class="button danger">تسجيل الخروج</button>
+    </header>
+
+    <!-- كروت التقدم -->
+    <section class="progress-section">
+      <div class="progress-card hifz">
+        <h3>تقدم الحفظ</h3>
+        <p class="progress-label" id="student-hifz-progress-label">لا يوجد منهج بعد</p>
+        <div class="progress-bar">
+          <div id="student-hifz-progress-bar" class="progress-fill"></div>
+        </div>
+        <p class="progress-percent">
+          <span id="student-hifz-progress-percent">0</span>%
+        </p>
+      </div>
+
+      <div class="progress-card murajaa">
+        <h3>تقدم المراجعة</h3>
+        <p class="progress-label" id="student-murajaa-progress-label">لا يوجد منهج بعد</p>
+        <div class="progress-bar">
+          <div id="student-murajaa-progress-bar" class="progress-fill"></div>
+        </div>
+        <p class="progress-percent">
+          <span id="student-murajaa-progress-percent">0</span>%
+        </p>
+        <p class="small-text">
+          مستوى المراجعة: <strong id="student-murajaa-level-label">غير محدد</strong>
+        </p>
+      </div>
+
+      <div class="progress-card points">
+        <h3>الرصيد التحفيزي</h3>
+        <p class="big-number"><span id="student-total-points">0</span> نقطة</p>
+        <p class="small-text">استمر في الإنجاز لتحصل على المزيد 🌟</p>
+      </div>
+    </section>
+
+    <!-- مهامي -->
+    <section class="tasks-section">
+      <h3>مهامي الحالية</h3>
+      <div id="student-tasks" class="tasks-list">
+        <p class="message info">لا توجد مهام حالياً. وفقك الله 🤍</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- شاشة المعلم -->
+  <div id="teacher-screen" class="container hidden">
+    <header class="dashboard-header">
+      <div>
+        <h2>لوحة تحكم المعلم</h2>
+        <p class="subtitle">إدارة مهام الطلاب وخططهم</p>
+      </div>
+      <button id="logout-button-teacher" class="button danger">تسجيل الخروج</button>
+    </header>
+
+    <!-- تبويبات المعلم -->
+    <nav class="tabs">
+      <button class="tab-button active" data-tab="review-tasks-tab">
+        مهام بانتظار المراجعة 📝
+      </button>
+      <button class="tab-button" data-tab="assign-tasks-tab">
+        تعيين مهام
+      </button>
+      <button class="tab-button" data-tab="manage-students-tab">
+        إدارة الطلاب
+      </button>
+      <button class="tab-button" data-tab="curriculum-tab">
+        عرض المنهج
+      </button>
+    </nav>
+
+    <section class="tab-content-container">
+
+      <!-- تبويب: مراجعة المهام -->
+      <div id="review-tasks-tab" class="tab-content">
+        <h3>مهام بانتظار مراجعتك</h3>
+        <p class="info-text">
+          هنا تظهر المهام التي أرسلها الطلاب للمراجعة. يمكنك قبولها أو رفضها.
+        </p>
+        <div id="pending-tasks-list" class="tasks-review-container">
+          <p class="message info">جارٍ تحميل المهام...</p>
+        </div>
+      </div>
+
+      <!-- تبويب: تعيين المهام -->
+      <div id="assign-tasks-tab" class="tab-content hidden">
+        <h3>تعيين مهام جديدة</h3>
+
         <div class="input-group">
-            <label for="user-code">رمز الطالب / المعلم:</label>
-            <input type="text" id="user-code" placeholder="مثال: 101 أو teacher">
-        </div>
-        <button id="login-button" class="button">دخول</button>
-        <p id="auth-message" class="message hidden"></p>
-    </div>
-
-    <!-- شاشة الطالب -->
-    <div id="student-screen" class="container hidden">
-        <header class="dashboard-header">
-            <h2 id="welcome-student">أهلاً بك يا طالب</h2>
-            <button id="logout-button-student" class="button logout-button">تسجيل الخروج</button>
-        </header>
-        <div class="progress-section">
-    <p>نقاطي الكلية: <strong id="student-total-points">0</strong></p>
-
-    <div class="progress-item">
-        <p>تقدم الحفظ الحالي:</p>
-        <strong id="student-hifz-progress">المنهج غير مُعين</strong>
-    </div>
-
-    <div class="progress-item murajaa-info">
-        <p>مستوى المراجعة (حلقة):</p>
-        <strong id="student-murajaa-level">غير محدد</strong>
-    </div>
-
-    <div class="progress-item murajaa-info">
-        <p>تقدم المراجعة الحالي (اندكس):</p>
-        <strong id="student-murajaa-progress-index">المنهج غير مُعين</strong>
-    </div>
-</div>
-
-
-
-
-        <hr>
-
-        <h3>المهام الموكلة إليك:</h3>
-        <div id="student-tasks" class="tasks-list">
-            <p>لا توجد مهام حاليًا. وفقك الله.</p>
-        </div>
-    </div>
-
-    <!-- شاشة المعلم -->
-    <div id="teacher-screen" class="container hidden">
-        <header class="dashboard-header">
-            <h2>لوحة تحكم المعلم</h2>
-            <button id="logout-button-teacher" class="button logout-button">تسجيل الخروج</button>
-        </header>
-
-        <div class="tabs">
-            <button class="tab-button active" data-tab="manage-students">إدارة الطلاب</button>
-            <button class="tab-button" data-tab="add-student">إضافة طالب</button>
-            <button class="tab-button" data-tab="assign-tasks">تعيين المهام</button>
-            <button class="tab-button" data-tab="review-tasks">مراجعة المهام 📝</button>
-            <button class="tab-button" data-tab="manage-curriculum">عرض المنهج</button>
+          <label for="assign-task-student-code">رمز الطالب (للفردي):</label>
+          <input
+            type="text"
+            id="assign-task-student-code"
+            placeholder="اتركه فارغًا لتعيين المهمة لجميع الطلاب"
+          />
         </div>
 
-        <div class="tab-content-container">
-
-            <!-- إدارة الطلاب -->
-            <div id="manage-students-tab" class="tab-content">
-                <h3>قائمة الطلاب</h3>
-                <ul id="student-list" class="data-list"></ul>
-            </div>
-
-            <!-- إضافة طالب -->
-            <div id="add-student-tab" class="tab-content hidden">
-                <h3>تسجيل طالب جديد</h3>
-
-                <div class="input-group">
-                    <label for="new-student-code">رمز الطالب:</label>
-                    <input type="text" id="new-student-code" placeholder="رمز فريد (مثال: 101)">
-                </div>
-
-                <div class="input-group">
-                    <label for="new-student-name">اسم الطالب:</label>
-                    <input type="text" id="new-student-name" placeholder="الاسم الكامل">
-                </div>
-
-                <div class="input-group">
-                    <label for="new-student-hifz-start">نقطة بداية الحفظ:</label>
-                    <select id="new-student-hifz-start"></select>
-                </div>
-
-                <div class="input-group">
-                    <label for="new-student-murajaa-level">مستوى المراجعة (الحلقة):</label>
-                    <!-- سيتم تعبئته برمجياً من app.js -->
-                    <select id="new-student-murajaa-level"></select>
-                </div>
-
-                <button id="register-student-button" class="button">تسجيل</button>
-                <p id="register-student-message" class="message hidden"></p>
-            </div>
-
-            <!-- تعيين المهام -->
-            <div id="assign-tasks-tab" class="tab-content hidden">
-                <h3>تعيين مهمة</h3>
-
-                <div class="input-group">
-                    <label for="assign-task-student-code">رمز الطالب (للمهمة الفردية):</label>
-                    <input type="text" id="assign-task-student-code" placeholder="اتركه فارغًا للمهمة الجماعية">
-                </div>
-
-                <div class="input-group">
-                    <label for="assign-task-type">نوع المهمة:</label>
-                    <select id="assign-task-type">
-                        <option value="general">عامة</option>
-                        <option value="hifz">حفظ</option>
-                        <option value="murajaa">مراجعة</option>
-                    </select>
-                </div>
-
-                <div class="input-group">
-                    <label for="assign-task-description">وصف المهمة:</label>
-                    <input type="text" id="assign-task-description" placeholder="مثال: حفظ سورة البقرة من آية 10">
-                </div>
-
-                <div class="input-group">
-                    <label for="assign-task-points">النقاط:</label>
-                    <input type="number" id="assign-task-points" value="10" min="1">
-                </div>
-
-                <div class="action-buttons" style="display:flex;flex-direction:column;gap:10px;">
-                    <button id="assign-individual-task-button" class="button action-btn">تعيين فردي</button>
-                    <button id="assign-group-task-button" class="button action-btn">تعيين جماعي (لجميع الطلاب)</button>
-                </div>
-
-                <p id="assign-task-message" class="message hidden"></p>
-            </div>
-
-            <!-- مراجعة المهام -->
-            <div id="review-tasks-tab" class="tab-content hidden">
-                <h3>مهام بانتظار المراجعة والتصديق</h3>
-                <p class="info-text">تظهر هنا المهام التي أرسلها الطلاب وتنتظر موافقتك لإضافة النقاط.</p>
-                <div id="pending-tasks-list" class="tasks-review-container">
-                    <p class="message info">جارٍ تحميل المهام...</p>
-                </div>
-            </div>
-
-            <!-- عرض المنهج -->
-            <div id="manage-curriculum-tab" class="tab-content hidden">
-                <div class="curriculum-view">
-                    <div>
-                        <h3>منهج الحفظ</h3>
-                        <div id="hifz-curriculum-display" class="curriculum-list"></div>
-                    </div>
-                    <div>
-                        <h3>منهج المراجعة</h3>
-                        <div id="murajaa-curriculum-display" class="curriculum-list"></div>
-                    </div>
-                </div>
-            </div>
-
+        <div class="input-group">
+          <label for="assign-task-type">نوع المهمة:</label>
+          <select id="assign-task-type">
+            <option value="general">مهمة عامة</option>
+            <option value="hifz">حفظ</option>
+            <option value="murajaa">مراجعة</option>
+          </select>
         </div>
-    </div>
 
-    <!-- ربط ملف الجافاسكربت -->
-    <script type="module" src="app.js"></script>
+        <div class="input-group">
+          <label for="assign-task-description">وصف المهمة:</label>
+          <input
+            type="text"
+            id="assign-task-description"
+            placeholder="مثال: حفظ أول 5 آيات من سورة البقرة"
+          />
+        </div>
+
+        <div class="input-group">
+          <label for="assign-task-points">النقاط:</label>
+          <input type="number" id="assign-task-points" value="10" min="1" />
+        </div>
+
+        <div class="action-buttons">
+          <button id="assign-individual-task-button" class="button primary">
+            تعيين فردي
+          </button>
+          <button id="assign-group-task-button" class="button success">
+            تعيين جماعي (لكل الطلاب)
+          </button>
+        </div>
+
+        <p id="assign-task-message" class="message hidden"></p>
+      </div>
+
+      <!-- تبويب: إدارة الطلاب -->
+      <div id="manage-students-tab" class="tab-content hidden">
+        <h3>قائمة الطلاب</h3>
+        <ul id="student-list" class="data-list"></ul>
+
+        <hr />
+
+        <h3 id="student-form-title">إضافة / تعديل طالب</h3>
+
+        <div class="student-form">
+          <div class="input-group">
+            <label for="new-student-code">رمز الطالب:</label>
+            <input type="text" id="new-student-code" placeholder="مثال: 101" />
+          </div>
+
+          <div class="input-group">
+            <label for="new-student-name">اسم الطالب:</label>
+            <input type="text" id="new-student-name" placeholder="الاسم الكامل" />
+          </div>
+
+          <div class="input-group">
+            <label for="new-student-parent-code">رمز ولي الأمر (اختياري):</label>
+            <input
+              type="text"
+              id="new-student-parent-code"
+              placeholder="مثال: P100 (نفسه يستخدمه ولي الأمر للدخول)"
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="new-student-hifz-start">نقطة بداية الحفظ:</label>
+            <select id="new-student-hifz-start"></select>
+          </div>
+
+          <div class="input-group">
+            <label for="new-student-hifz-level">مستوى الحفظ (عدد المقاطع):</label>
+            <select id="new-student-hifz-level">
+              <option value="1">مقطع واحد (1x)</option>
+              <option value="2">مقطعين (2x)</option>
+              <option value="3">ثلاثة مقاطع (3x)</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label for="new-student-murajaa-level">مستوى المراجعة (الحلقة):</label>
+            <select id="new-student-murajaa-level">
+              <option value="BUILDING">البناء</option>
+              <option value="DEVELOPMENT">التطوير</option>
+              <option value="ADVANCED">المتقدم</option>
+            </select>
+          </div>
+
+          <button id="register-student-button" class="button primary">
+            حفظ بيانات الطالب
+          </button>
+          <p id="register-student-message" class="message hidden"></p>
+        </div>
+      </div>
+
+      <!-- تبويب: عرض المنهج -->
+      <div id="curriculum-tab" class="tab-content hidden">
+        <h3>عرض المنهج</h3>
+        <div class="curriculum-view">
+          <div>
+            <h4>منهج الحفظ</h4>
+            <div id="hifz-curriculum-display" class="curriculum-list"></div>
+          </div>
+          <div>
+            <h4>منهج المراجعة</h4>
+            <div id="murajaa-curriculum-display" class="curriculum-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- شاشة ولي الأمر -->
+  <div id="parent-screen" class="container hidden">
+    <header class="dashboard-header">
+      <div>
+        <h2 id="welcome-parent">مرحبًا بك يا ولي الأمر</h2>
+        <p class="subtitle">متابعة إنجاز الأبناء في الحفظ والمراجعة</p>
+      </div>
+      <button id="logout-button-parent" class="button danger">تسجيل الخروج</button>
+    </header>
+
+    <section>
+      <h3>أبناؤك المسجلون</h3>
+      <div id="parent-children-list" class="children-list">
+        <p class="message info">جارٍ تحميل بيانات الأبناء...</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- منطق التطبيق -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
-
