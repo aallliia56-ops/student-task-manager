@@ -1393,7 +1393,7 @@ loginButton.addEventListener("click", async () => {
   }
 
   try {
-    if (code === "teacher") {
+    if (code === "teacher1") {
       currentUser = { role: "teacher", name: "المعلم" };
       hideAllScreens();
       teacherScreen.classList.remove("hidden");
@@ -1447,4 +1447,5 @@ logoutButtonParent.addEventListener("click", logout);
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
 
