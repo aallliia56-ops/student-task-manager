@@ -16,11 +16,11 @@ import {
   arrayUnion,
   writeBatch,
   query,
-  where
+  where,
 } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
 
-import { HIFZ_CURRICULUM, REVIEW_CURRICULUM, LEVEL_CONFIG } from "./curriculum.js";
+import { HIFZ_CURRICULUM, REVIEW_CURRICULUM } from "./curriculum.js";
 
 // إعدادات المشروع
 const firebaseConfig = {
@@ -59,6 +59,7 @@ const studentHifzProgressPercent = document.getElementById("student-hifz-progres
 const studentMurajaaProgressPercent = document.getElementById("student-murajaa-progress-percent");
 const studentMurajaaLevelLabel = document.getElementById("student-murajaa-level-label");
 const studentTotalPoints = document.getElementById("student-total-points");
+const studentRankText = document.getElementById("student-rank-text");
 const studentTasksDiv = document.getElementById("student-tasks");
 const logoutButtonStudent = document.getElementById("logout-button-student");
 
@@ -81,6 +82,7 @@ const studentList = document.getElementById("student-list");
 const studentFormTitle = document.getElementById("student-form-title");
 const newStudentCodeInput = document.getElementById("new-student-code");
 const newStudentNameInput = document.getElementById("new-student-name");
+const newStudentParentNameInput = document.getElementById("new-student-parent-name");
 const newStudentParentCodeInput = document.getElementById("new-student-parent-code");
 const newStudentHifzStart = document.getElementById("new-student-hifz-start");
 const newStudentHifzEnd = document.getElementById("new-student-hifz-end");
@@ -96,6 +98,7 @@ const murajaaCurriculumDisplay = document.getElementById("murajaa-curriculum-dis
 
 // مراجعة المهام (المعلم)
 const pendingTasksList = document.getElementById("pending-tasks-list");
+const honorBoardDiv = document.getElementById("honor-board");
 
 // شاشة ولي الأمر
 const parentScreen = document.getElementById("parent-screen");
@@ -133,37 +136,53 @@ function generateUniqueId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
 }
 
-// =======================
-// منطق المنهج: حفظ + مراجعة
-// =======================
-
-// إرجاع قائمة المراجعة حسب المستوى
+// جلب مصفوفة المراجعة حسب المستوى
 function getReviewArrayForLevel(level) {
   return REVIEW_CURRICULUM[level] || [];
 }
 
-// مهمة الحفظ الحالية حسب مستوى الطالب (1 / 2 / 3 مقاطع)
+// جلب جميع الطلاب مرتبين حسب النقاط (تنازلياً)
+async function fetchAllStudentsSortedByPoints() {
+  const colRef = collection(db, "students");
+  const snap = await getDocs(colRef);
+  const students = [];
+  snap.forEach((docSnap) => {
+    const s = docSnap.data();
+    students.push(s);
+  });
+  students.sort((a, b) => (b.total_points || 0) - (a.total_points || 0));
+  return students;
+}
+
+// =======================
+// منطق المنهج: حفظ + مراجعة
+// =======================
+
+// مهمة الحفظ الحالية حسب خطة (من–إلى) ومستوى الحفظ
 function getCurrentHifzMission(student) {
   const all = HIFZ_CURRICULUM;
   if (!all || all.length === 0) return null;
 
-  // نعتبر hifz_progress هو موضع الطالب الحالي، ولو غير موجود نبدأ من hifz_start_id
-  const startIndex = student.hifz_progress ?? student.hifz_start_id ?? 0;
-  const endLimit = student.hifz_end_id ?? all.length - 1;
+  const planStart = student.hifz_start_id ?? 0;
+  const planEnd = student.hifz_end_id ?? all.length - 1;
 
-  if (startIndex > endLimit || startIndex >= all.length) return null;
+  let startIndex = student.hifz_progress;
+  if (startIndex == null) startIndex = planStart;
+  if (startIndex < planStart) startIndex = planStart;
+  if (startIndex > planEnd) return null; // أنهى الخطة
 
   const level = parseInt(student.hifz_level || 1, 10);
   const maxSegments = Math.max(1, Math.min(3, level));
 
   const segments = [];
   const firstSeg = all[startIndex];
+  if (!firstSeg) return null;
   segments.push(firstSeg);
 
   let i = startIndex + 1;
-  while (segments.length < maxSegments && i <= endLimit && i < all.length) {
+  while (segments.length < maxSegments && i <= planEnd && i < all.length) {
     const seg = all[i];
-    if (seg.surah_number !== firstSeg.surah_number) break; // لا نتجاوز السورة
+    if (!seg || seg.surah_number !== firstSeg.surah_number) break;
     segments.push(seg);
     i++;
   }
@@ -186,14 +205,24 @@ function getCurrentHifzMission(student) {
   };
 }
 
-// مهمة المراجعة الحالية (خطية، مع إعادة من البداية بعد النهاية)
+// مهمة المراجعة الحالية (مع نقطة بداية مخصصة لكل طالب)
 function getCurrentMurajaaMission(student) {
   const level = student.murajaa_level || "BUILDING";
   const arr = getReviewArrayForLevel(level);
   if (!arr || arr.length === 0) return null;
 
-  let index = student.murajaa_progress_index ?? 0;
-  if (index >= arr.length) index = 0;
+  const arrLen = arr.length;
+  let startIndex = student.murajaa_start_index ?? 0;
+  if (arrLen > 0) {
+    startIndex = ((startIndex % arrLen) + arrLen) % arrLen;
+  }
+
+  let index = student.murajaa_progress_index;
+  if (index == null) {
+    index = startIndex;
+  } else if (arrLen > 0) {
+    index = ((index % arrLen) + arrLen) % arrLen;
+  }
 
   const item = arr[index];
   const description = item.name;
@@ -208,7 +237,7 @@ function getCurrentMurajaaMission(student) {
   };
 }
 
-// نسبة التقدم في الحفظ (بناءً على الخطة من–إلى)
+// نسبة التقدم في الحفظ داخل الخطة (من–إلى)
 function computeHifzPercent(student) {
   const all = HIFZ_CURRICULUM;
   if (!all || all.length === 0) return 0;
@@ -222,15 +251,23 @@ function computeHifzPercent(student) {
   return Math.round((doneSegments / span) * 100);
 }
 
-// نسبة التقدم في المراجعة داخل المستوى
+// نسبة التقدم في المراجعة ضمن الدورة الحالية (من نقطة البداية)
 function computeMurajaaPercent(student) {
   const level = student.murajaa_level || "BUILDING";
   const arr = getReviewArrayForLevel(level);
   if (!arr || arr.length === 0) return 0;
 
-  let index = student.murajaa_progress_index ?? 0;
-  if (index >= arr.length) index = arr.length - 1;
-  return Math.round(((index + 1) / arr.length) * 100);
+  const arrLen = arr.length;
+  const start = (student.murajaa_start_index ?? 0) % arrLen;
+
+  let progressIndex = student.murajaa_progress_index;
+  if (progressIndex == null) {
+    progressIndex = start;
+  }
+  progressIndex = ((progressIndex % arrLen) + arrLen) % arrLen;
+
+  const distance = (progressIndex - start + arrLen) % arrLen; // عدد المهام المنجزة في الدورة الحالية
+  return Math.round((distance / arrLen) * 100);
 }
 
 // =======================
@@ -266,11 +303,13 @@ function renderStudentTasks(student) {
       </div>
       <div class="task-footer">
         <span class="task-points-tag">النقاط: ${hifzMission.points}</span>
-        <span class="task-status-text">${
-          pendingTask
-            ? "قيد المراجعة لدى المعلم..."
-            : "بانتظار أن تضغط أنجزت المهمة"
-        }</span>
+        <span class="task-status-text">
+          ${
+            pendingTask
+              ? "قيد المراجعة لدى المعلم..."
+              : "بانتظار أن تضغط أنجزت المهمة"
+          }
+        </span>
       </div>
     `;
 
@@ -314,11 +353,13 @@ function renderStudentTasks(student) {
       </div>
       <div class="task-footer">
         <span class="task-points-tag">النقاط: ${murMission.points}</span>
-        <span class="task-status-text">${
-          pendingTask
-            ? "قيد المراجعة لدى المعلم..."
-            : "بانتظار أن تضغط أنجزت المهمة"
-        }</span>
+        <span class="task-status-text">
+          ${
+            pendingTask
+              ? "قيد المراجعة لدى المعلم..."
+              : "بانتظار أن تضغط أنجزت المهمة"
+          }
+        </span>
       </div>
     `;
 
@@ -339,7 +380,7 @@ function renderStudentTasks(student) {
     tasksContainer.appendChild(card);
   }
 
-  // 3) المهام العامة المعينة
+  // 3) المهام العامة
   const generalTasks = tasksArray.filter((t) => t.type === "general");
 
   if (generalTasks.length > 0) {
@@ -356,13 +397,15 @@ function renderStudentTasks(student) {
         </div>
         <div class="task-footer">
           <span class="task-points-tag">النقاط: ${task.points}</span>
-          <span class="task-status-text">${
-            task.status === "pending"
-              ? "قيد المراجعة لدى المعلم..."
-              : task.status === "completed"
-              ? "تم اعتمادها ✅"
-              : "بانتظار الإنجاز"
-          }</span>
+          <span class="task-status-text">
+            ${
+              task.status === "pending"
+                ? "قيد المراجعة لدى المعلم..."
+                : task.status === "completed"
+                ? "تم اعتمادها ✅"
+                : "بانتظار الإنجاز"
+            }
+          </span>
         </div>
       `;
 
@@ -398,8 +441,8 @@ function renderStudentTasks(student) {
   }
 }
 
-// عرض الداشبورد للطالب
-function displayStudentDashboard(student) {
+// عرض الداشبورد للطالب (مع الترتيب)
+async function displayStudentDashboard(student) {
   currentUser = student;
 
   welcomeStudent.textContent = `أهلاً بك يا ${student.name || "طالب"}`;
@@ -430,11 +473,26 @@ function displayStudentDashboard(student) {
 
   studentHifzProgressPercent.textContent = hifzPercent;
   studentMurajaaProgressPercent.textContent = murPercent;
-
   studentHifzProgressBar.style.width = `${hifzPercent}%`;
   studentMurajaaProgressBar.style.width = `${murPercent}%`;
 
   studentTotalPoints.textContent = student.total_points || 0;
+
+  // ترتيب الطالب بين بقية الطلاب
+  try {
+    const allStudents = await fetchAllStudentsSortedByPoints();
+    const total = allStudents.length;
+    const index = allStudents.findIndex((s) => s.code === student.code);
+    if (index !== -1 && studentRankText) {
+      const rank = index + 1;
+      studentRankText.textContent = `${rank} من ${total}`;
+    } else if (studentRankText) {
+      studentRankText.textContent = "غير متوفر";
+    }
+  } catch (e) {
+    console.error("Error computing rank:", e);
+    if (studentRankText) studentRankText.textContent = "غير متوفر";
+  }
 
   renderStudentTasks(student);
 
@@ -480,7 +538,7 @@ async function submitCurriculumTask(studentCode, mission) {
 
     await updateDoc(studentRef, { tasks });
 
-    displayStudentDashboard({ code: studentCode, ...student, tasks });
+    await displayStudentDashboard({ code: studentCode, ...student, tasks });
     showMessage(authMessage, "تم إرسال مهمة الحفظ للمراجعة.", "success");
   } catch (error) {
     console.error("Error submitCurriculumTask:", error);
@@ -507,7 +565,7 @@ async function cancelCurriculumTask(studentCode, type, missionStartIndex) {
 
     await updateDoc(studentRef, { tasks });
 
-    displayStudentDashboard({ code: studentCode, ...student, tasks });
+    await displayStudentDashboard({ code: studentCode, ...student, tasks });
     showMessage(authMessage, "تم إلغاء إرسال المهمة وإعادتها لك.", "success");
   } catch (error) {
     console.error("Error cancelCurriculumTask:", error);
@@ -515,7 +573,7 @@ async function cancelCurriculumTask(studentCode, type, missionStartIndex) {
   }
 }
 
-// مراجعة (submit) للمراجعة
+// مراجعة: إرسال مهمة المراجعة
 async function submitMurajaaTask(studentCode, mission) {
   try {
     const studentRef = doc(db, "students", studentCode);
@@ -551,7 +609,7 @@ async function submitMurajaaTask(studentCode, mission) {
 
     await updateDoc(studentRef, { tasks });
 
-    displayStudentDashboard({ code: studentCode, ...student, tasks });
+    await displayStudentDashboard({ code: studentCode, ...student, tasks });
     showMessage(authMessage, "تم إرسال مهمة المراجعة للمراجعة.", "success");
   } catch (error) {
     console.error("Error submitMurajaaTask:", error);
@@ -579,7 +637,7 @@ async function cancelMurajaaTask(studentCode, mission) {
 
     await updateDoc(studentRef, { tasks });
 
-    displayStudentDashboard({ code: studentCode, ...student, tasks });
+    await displayStudentDashboard({ code: studentCode, ...student, tasks });
     showMessage(authMessage, "تم إلغاء إرسال مهمة المراجعة وإعادتها لك.", "success");
   } catch (error) {
     console.error("Error cancelMurajaaTask:", error);
@@ -608,7 +666,7 @@ async function submitGeneralTask(studentCode, taskId) {
 
     await updateDoc(studentRef, { tasks });
 
-    displayStudentDashboard({ code: studentCode, ...student, tasks });
+    await displayStudentDashboard({ code: studentCode, ...student, tasks });
     showMessage(authMessage, "تم إرسال المهمة العامة للمراجعة.", "success");
   } catch (error) {
     console.error("Error submitGeneralTask:", error);
@@ -633,7 +691,7 @@ async function cancelGeneralTask(studentCode, taskId) {
 
     await updateDoc(studentRef, { tasks });
 
-    displayStudentDashboard({ code: studentCode, ...student, tasks });
+    await displayStudentDashboard({ code: studentCode, ...student, tasks });
     showMessage(authMessage, "تم إلغاء إرسال المهمة العامة.", "success");
   } catch (error) {
     console.error("Error cancelGeneralTask:", error);
@@ -642,7 +700,7 @@ async function cancelGeneralTask(studentCode, taskId) {
 }
 
 // =======================
-// شاشة المعلم: مراجعة المهام
+// شاشة المعلم: مراجعة المهام + لوحة الشرف
 // =======================
 
 async function loadPendingTasksForReview() {
@@ -679,13 +737,15 @@ async function loadPendingTasksForReview() {
 
         item.innerHTML = `
           <div class="review-task-header">
-            <span>${
-              task.type === "hifz"
-                ? "مهمة حفظ"
-                : task.type === "murajaa"
-                ? "مهمة مراجعة"
-                : "مهمة عامة"
-            }</span>
+            <span>
+              ${
+                task.type === "hifz"
+                  ? "مهمة حفظ"
+                  : task.type === "murajaa"
+                  ? "مهمة مراجعة"
+                  : "مهمة عامة"
+              }
+            </span>
             <span>النقاط: ${task.points}</span>
           </div>
           <div class="review-task-body">
@@ -729,6 +789,39 @@ async function loadPendingTasksForReview() {
   }
 }
 
+async function loadHonorBoard() {
+  if (!honorBoardDiv) return;
+  honorBoardDiv.innerHTML =
+    '<p class="message info">جارٍ تحديث لوحة الشرف...</p>';
+
+  try {
+    const students = await fetchAllStudentsSortedByPoints();
+    if (students.length === 0) {
+      honorBoardDiv.innerHTML =
+        '<p class="message info">لا يوجد طلاب مسجلون بعد.</p>';
+      return;
+    }
+
+    const top = students.slice(0, 5);
+    const list = document.createElement("ol");
+    top.forEach((s) => {
+      const li = document.createElement("li");
+      li.textContent = `${s.name} (${s.code}) – ${s.total_points || 0} نقطة`;
+      list.appendChild(li);
+    });
+
+    honorBoardDiv.innerHTML = "";
+    const title = document.createElement("p");
+    title.className = "small-text";
+    title.textContent = "أعلى الطلاب نقاطاً:";
+    honorBoardDiv.appendChild(title);
+    honorBoardDiv.appendChild(list);
+  } catch (error) {
+    console.error("Error loadHonorBoard:", error);
+    honorBoardDiv.innerHTML = `<p class="message error">خطأ في تحميل لوحة الشرف: ${error.message}</p>`;
+  }
+}
+
 async function reviewTask(studentCode, taskId, action) {
   try {
     const studentRef = doc(db, "students", studentCode);
@@ -762,10 +855,33 @@ async function reviewTask(studentCode, taskId, action) {
       } else if (task.type === "murajaa") {
         const level = student.murajaa_level || task.murajaa_level || "BUILDING";
         const arr = getReviewArrayForLevel(level);
-        let curIndex = student.murajaa_progress_index ?? task.murajaa_index ?? 0;
-        let nextIndex = arr.length > 0 ? (curIndex + 1) % arr.length : 0;
+        const arrLen = arr.length;
+
+        let startIndex = student.murajaa_start_index ?? task.murajaa_index ?? 0;
+        if (arrLen > 0) {
+          startIndex = ((startIndex % arrLen) + arrLen) % arrLen;
+        } else {
+          startIndex = 0;
+        }
+
+        let curIndex = student.murajaa_progress_index ?? task.murajaa_index ?? startIndex;
+        if (arrLen > 0) {
+          curIndex = ((curIndex % arrLen) + arrLen) % arrLen;
+        } else {
+          curIndex = startIndex;
+        }
+
+        const nextIndex = arrLen > 0 ? (curIndex + 1) % arrLen : startIndex;
+
+        let murCycles = student.murajaa_cycles || 0;
+        if (arrLen > 0 && nextIndex === startIndex) {
+          murCycles += 1; // أنهى دورة كاملة
+        }
+
         student.murajaa_level = level;
+        student.murajaa_start_index = startIndex;
         student.murajaa_progress_index = nextIndex;
+        student.murajaa_cycles = murCycles;
       }
 
       tasks[idx].status = "completed";
@@ -773,9 +889,13 @@ async function reviewTask(studentCode, taskId, action) {
       await updateDoc(studentRef, {
         tasks,
         total_points: student.total_points,
+        hifz_start_id: student.hifz_start_id ?? 0,
+        hifz_end_id: student.hifz_end_id ?? (HIFZ_CURRICULUM.length - 1),
         hifz_progress: student.hifz_progress ?? 0,
         murajaa_level: student.murajaa_level || "BUILDING",
+        murajaa_start_index: student.murajaa_start_index ?? 0,
         murajaa_progress_index: student.murajaa_progress_index ?? 0,
+        murajaa_cycles: student.murajaa_cycles || 0,
       });
 
       showMessage(
@@ -799,7 +919,13 @@ async function reviewTask(studentCode, taskId, action) {
       );
     }
 
-    loadPendingTasksForReview();
+    // تحديث واجهة المعلم لحظياً
+    await loadPendingTasksForReview();
+    await loadHonorBoard();
+    // لو المعلم فاتح تبويب إدارة الطلاب، نحدّث القائمة أيضاً
+    if (!document.getElementById("manage-students-tab").classList.contains("hidden")) {
+      await loadStudentsForTeacher();
+    }
   } catch (error) {
     console.error("Error reviewTask:", error);
     showMessage(authMessage, `خطأ في مراجعة المهمة: ${error.message}`, "error");
@@ -908,72 +1034,74 @@ assignGroupTaskButton.addEventListener("click", async () => {
 // إدارة الطلاب (معلم)
 // =======================
 
-// تعبئة قائمة بداية/نهاية الحفظ
 function populateHifzSelects() {
-  const options = HIFZ_CURRICULUM.map(
+  if (!newStudentHifzStart || !newStudentHifzEnd) return;
+
+  const optionsHtml = HIFZ_CURRICULUM.map(
     (item, index) =>
       `<option value="${index}">(${index}) ${item.surah_name_ar} (${item.start_ayah}-${item.end_ayah})</option>`
   ).join("");
 
-  if (newStudentHifzStart) newStudentHifzStart.innerHTML = options;
-  if (newStudentHifzEnd) newStudentHifzEnd.innerHTML = options;
+  newStudentHifzStart.innerHTML = optionsHtml;
+  newStudentHifzEnd.innerHTML = optionsHtml;
 }
 
-// تعبئة نقاط بداية المراجعة حسب مستوى المراجعة
-function populateMurajaaStartSelect(level, selectedIndex = 0) {
+function populateMurajaaStartSelect() {
+  if (!newStudentMurajaaLevel || !newStudentMurajaaStart) return;
+  const level = newStudentMurajaaLevel.value || "BUILDING";
   const arr = getReviewArrayForLevel(level);
-  if (!newStudentMurajaaStart) return;
 
   if (!arr || arr.length === 0) {
     newStudentMurajaaStart.innerHTML =
-      '<option value="0">لا يوجد منهج لهذا المستوى</option>';
+      '<option value="0">لا توجد مهام لهذا المستوى</option>';
     return;
   }
 
   newStudentMurajaaStart.innerHTML = arr
     .map(
       (item, index) =>
-        `<option value="${index}" ${
-          index === selectedIndex ? "selected" : ""
-        }">(${index}) ${item.name}</option>`
+        `<option value="${index}">(${index}) ${item.name}</option>`
     )
     .join("");
 }
+
+newStudentMurajaaLevel.addEventListener("change", populateMurajaaStartSelect);
 
 async function loadStudentsForTeacher() {
   studentList.innerHTML = "<li>جارٍ تحميل الطلاب...</li>";
 
   try {
-    const colRef = collection(db, "students");
-    const snap = await getDocs(colRef);
-
+    const students = await fetchAllStudentsSortedByPoints();
     studentList.innerHTML = "";
 
-    snap.forEach((docSnap) => {
-      const s = docSnap.data();
-      const li = document.createElement("li");
+    if (students.length === 0) {
+      studentList.innerHTML = "<li>لا يوجد طلاب مسجلون بعد.</li>";
+      return;
+    }
 
+    students.forEach((s, index) => {
+      const rank = index + 1;
       const hifzPercent = computeHifzPercent(s);
       const murPercent = computeMurajaaPercent(s);
 
+      const li = document.createElement("li");
       li.innerHTML = `
         <div class="student-line">
-          <div class="student-main">${s.name} (${s.code})</div>
+          <div class="student-main">
+            #${rank} - ${s.name} (${s.code})
+          </div>
           <div class="student-sub">
             حفظ: ${hifzPercent}% | مراجعة: ${murPercent}% | نقاط: ${
         s.total_points || 0
       }
           </div>
           <div class="student-sub">
-            ولي الأمر: ${s.parent_code || "غير محدد"}
+            ولي الأمر: ${s.parent_name || "غير مسجل"} (${s.parent_code || "—"})
           </div>
           <div class="student-actions">
             <button class="button primary btn-edit-student" data-code="${
               s.code
             }">تعديل</button>
-            <button class="button danger btn-delete-student" data-code="${
-              s.code
-            }">حذف</button>
           </div>
         </div>
       `;
@@ -986,26 +1114,6 @@ async function loadStudentsForTeacher() {
       btn.addEventListener("click", async (e) => {
         const code = e.target.dataset.code;
         await loadStudentIntoForm(code);
-      });
-    });
-
-    // أزرار حذف
-    document.querySelectorAll(".btn-delete-student").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        const code = e.target.dataset.code;
-        if (!confirm(`هل تريد حذف الطالب ${code} نهائياً؟`)) return;
-        try {
-          await deleteDoc(doc(db, "students", code));
-          showMessage(authMessage, `تم حذف الطالب ${code}.`, "success");
-          loadStudentsForTeacher();
-        } catch (error) {
-          console.error("Error delete student:", error);
-          showMessage(
-            authMessage,
-            `خطأ في حذف الطالب: ${error.message}`,
-            "error"
-          );
-        }
       });
     });
   } catch (error) {
@@ -1025,17 +1133,30 @@ async function loadStudentIntoForm(code) {
     editingStudentCode = s.code;
     studentFormTitle.textContent = `تعديل بيانات الطالب: ${s.name}`;
 
+    if (!newStudentHifzStart.options.length || !newStudentHifzEnd.options.length) {
+      populateHifzSelects();
+    }
+
     newStudentCodeInput.value = s.code;
     newStudentNameInput.value = s.name;
+    newStudentParentNameInput.value = s.parent_name || "";
     newStudentParentCodeInput.value = s.parent_code || "";
+
     newStudentHifzStart.value = s.hifz_start_id ?? s.hifz_progress ?? 0;
     newStudentHifzEnd.value =
       s.hifz_end_id ?? HIFZ_CURRICULUM.length - 1;
     newStudentHifzLevel.value = s.hifz_level || 1;
-    newStudentMurajaaLevel.value = s.murajaa_level || "BUILDING";
 
-    const murIndex = s.murajaa_progress_index ?? 0;
-    populateMurajaaStartSelect(newStudentMurajaaLevel.value, murIndex);
+    newStudentMurajaaLevel.value = s.murajaa_level || "BUILDING";
+    populateMurajaaStartSelect();
+    const arr = getReviewArrayForLevel(newStudentMurajaaLevel.value);
+    const defaultStart =
+      s.murajaa_start_index ?? s.murajaa_progress_index ?? 0;
+    const clamped =
+      arr && arr.length > 0
+        ? Math.min(defaultStart, arr.length - 1)
+        : 0;
+    newStudentMurajaaStart.value = clamped.toString();
 
     // فتح تبويب إدارة الطلاب
     activateTab("manage-students-tab");
@@ -1047,17 +1168,19 @@ async function loadStudentIntoForm(code) {
 registerStudentButton.addEventListener("click", async () => {
   const code = newStudentCodeInput.value.trim();
   const name = newStudentNameInput.value.trim();
+  const parentName = newStudentParentNameInput.value.trim() || null;
   const parentCode = newStudentParentCodeInput.value.trim() || null;
+
   const hifzStartIndex = parseInt(newStudentHifzStart.value, 10);
   const hifzEndIndex = parseInt(newStudentHifzEnd.value, 10);
   const hifzLevel = parseInt(newStudentHifzLevel.value, 10);
   const murajaaLevel = newStudentMurajaaLevel.value;
-  const murajaaStartIndex = parseInt(newStudentMurajaaStart.value, 10);
+  const murajaaStartIndex = parseInt(newStudentMurajaaStart.value, 10) || 0;
 
   if (!code || !name || isNaN(hifzStartIndex) || isNaN(hifzEndIndex)) {
     showMessage(
       registerStudentMessage,
-      "الرجاء تعبئة جميع الحقول الأساسية (رمز، اسم، بداية/نهاية الحفظ).",
+      "الرجاء تعبئة جميع الحقول الأساسية بشكل صحيح.",
       "error"
     );
     return;
@@ -1066,7 +1189,7 @@ registerStudentButton.addEventListener("click", async () => {
   if (hifzEndIndex < hifzStartIndex) {
     showMessage(
       registerStudentMessage,
-      "نقطة نهاية الحفظ يجب أن تكون بعد أو مساوية لنقطة البداية.",
+      "نقطة نهاية الحفظ يجب أن تكون بعد نقطة البداية.",
       "error"
     );
     return;
@@ -1075,21 +1198,26 @@ registerStudentButton.addEventListener("click", async () => {
   try {
     const studentRef = doc(db, "students", code);
     const snap = await getDoc(studentRef);
+    const existing = snap.exists() ? snap.data() : null;
 
     const baseData = {
       code,
       name,
       role: "student",
+      parent_name: parentName,
       parent_code: parentCode,
       hifz_start_id: hifzStartIndex,
       hifz_end_id: hifzEndIndex,
-      // نعيد تعيين التقدم ليتماشى مع الخطة الجديدة
-      hifz_progress: hifzStartIndex,
+      hifz_progress: existing
+        ? existing.hifz_progress ?? hifzStartIndex
+        : hifzStartIndex,
       hifz_level: hifzLevel,
       murajaa_level: murajaaLevel,
-      murajaa_progress_index: isNaN(murajaaStartIndex) ? 0 : murajaaStartIndex,
-      total_points: snap.exists() ? snap.data().total_points || 0 : 0,
-      tasks: snap.exists() ? snap.data().tasks || [] : [],
+      murajaa_start_index: murajaaStartIndex,
+      murajaa_progress_index: murajaaStartIndex,
+      murajaa_cycles: existing ? existing.murajaa_cycles || 0 : 0,
+      total_points: existing ? existing.total_points || 0 : 0,
+      tasks: existing ? existing.tasks || [] : [],
     };
 
     await setDoc(studentRef, baseData, { merge: true });
@@ -1098,7 +1226,8 @@ registerStudentButton.addEventListener("click", async () => {
     editingStudentCode = null;
     studentFormTitle.textContent = "إضافة / تعديل طالب";
 
-    loadStudentsForTeacher();
+    await loadStudentsForTeacher();
+    await loadHonorBoard();
   } catch (error) {
     console.error("Error registerStudent:", error);
     showMessage(
@@ -1151,11 +1280,20 @@ function displayCurriculumsInTeacherPanel() {
 async function displayParentDashboard(parentCode) {
   try {
     const colRef = collection(db, "students");
-    const q = query(colRef, where("parent_code", "==", parentCode));
-    const snap = await getDocs(q);
 
+    // جلب أبناء هذا الولي
+    const q = query(colRef, where("parent_code", "==", parentCode));
+    const snapChildren = await getDocs(q);
     const children = [];
-    snap.forEach((docSnap) => children.push(docSnap.data()));
+    snapChildren.forEach((docSnap) => children.push(docSnap.data()));
+
+    // جلب كل الطلاب لحساب الترتيب
+    const allStudents = await fetchAllStudentsSortedByPoints();
+    const totalStudents = allStudents.length;
+    const rankMap = {};
+    allStudents.forEach((s, index) => {
+      rankMap[s.code] = index + 1;
+    });
 
     welcomeParent.textContent = `مرحبًا بك يا ولي الأمر (${parentCode})`;
 
@@ -1170,33 +1308,35 @@ async function displayParentDashboard(parentCode) {
         card.className = "child-card";
 
         const hifzPercent = computeHifzPercent(s);
-        const murPercent = computeMurajaaPercent(s);
 
-        const startIdx = s.hifz_start_id ?? 0;
-        const endIdx = s.hifz_end_id ?? (HIFZ_CURRICULUM.length - 1);
-        const startSeg = HIFZ_CURRICULUM[startIdx] || null;
-        const endSeg = HIFZ_CURRICULUM[endIdx] || null;
+        const startSeg = HIFZ_CURRICULUM[s.hifz_start_id ?? 0];
+        const endSeg =
+          HIFZ_CURRICULUM[s.hifz_end_id ?? HIFZ_CURRICULUM.length - 1];
 
-        const hifzPlanText =
+        const planText =
           startSeg && endSeg
-            ? `من ${startSeg.surah_name_ar} (${startSeg.start_ayah}-${startSeg.end_ayah}) إلى ${endSeg.surah_name_ar} (${endSeg.start_ayah}-${endSeg.end_ayah})`
-            : "غير محددة";
+            ? `${startSeg.surah_name_ar} (${startSeg.start_ayah}-${startSeg.end_ayah}) → ${endSeg.surah_name_ar} (${endSeg.start_ayah}-${endSeg.end_ayah})`
+            : "لم تُحدد خطة الحفظ";
 
         const hifzMission = getCurrentHifzMission(s);
         const murMission = getCurrentMurajaaMission(s);
+        const rank = rankMap[s.code] || "-";
 
         card.innerHTML = `
           <div class="child-name">${s.name} (${s.code})</div>
-          <div class="child-line">خطة الحفظ: ${hifzPlanText}</div>
+          <div class="child-line">خطة الحفظ: ${planText}</div>
+          <div class="child-line">مهمة الحفظ الحالية: ${
+            hifzMission ? hifzMission.description : "لا توجد مهمة حالياً"
+          }</div>
+          <div class="child-line">مهمة المراجعة الحالية: ${
+            murMission ? murMission.description : "لا توجد مهمة حالياً"
+          }</div>
+          <div class="child-line">نقاط الطالب: ${s.total_points || 0}</div>
+          <div class="child-line">ترتيب الطالب: ${rank} من ${totalStudents}</div>
           <div class="child-line">تقدم الحفظ: ${hifzPercent}%</div>
-          <div class="child-line">تقدم المراجعة: ${murPercent}%</div>
-          <div class="child-line">المهمة الحالية في الحفظ: ${
-            hifzMission ? hifzMission.description : "لا توجد حالياً"
-          }</div>
-          <div class="child-line">المهمة الحالية في المراجعة: ${
-            murMission ? murMission.description : "لا توجد حالياً"
-          }</div>
-          <div class="child-line">مجموع النقاط: ${s.total_points || 0}</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${hifzPercent}%;"></div>
+          </div>
         `;
 
         parentChildrenList.appendChild(card);
@@ -1232,6 +1372,7 @@ function activateTab(tabId) {
 
   if (tabId === "review-tasks-tab") {
     loadPendingTasksForReview();
+    loadHonorBoard();
   } else if (tabId === "manage-students-tab") {
     loadStudentsForTeacher();
   } else if (tabId === "curriculum-tab") {
@@ -1262,7 +1403,7 @@ loginButton.addEventListener("click", async () => {
       currentUser = { role: "teacher", name: "المعلم" };
       hideAllScreens();
       teacherScreen.classList.remove("hidden");
-      activateTab("review-tasks-tab"); // أول واجهة: مراجعة المهام
+      activateTab("review-tasks-tab"); // أول واجهة: مراجعة المهام + لوحة الشرف
       return;
     }
 
@@ -1271,7 +1412,7 @@ loginButton.addEventListener("click", async () => {
     const studentSnap = await getDoc(studentRef);
     if (studentSnap.exists()) {
       const student = { code, ...studentSnap.data() };
-      displayStudentDashboard(student);
+      await displayStudentDashboard(student);
       return;
     }
 
@@ -1282,7 +1423,7 @@ loginButton.addEventListener("click", async () => {
 
     if (!snap.empty) {
       currentUser = { role: "parent", code };
-      displayParentDashboard(code);
+      await displayParentDashboard(code);
       return;
     }
 
@@ -1308,12 +1449,7 @@ logoutButtonParent.addEventListener("click", logout);
 // =======================
 // تهيئة أولية
 // =======================
+
 populateHifzSelects();
-populateMurajaaStartSelect(newStudentMurajaaLevel.value || "BUILDING", 0);
-
-newStudentMurajaaLevel.addEventListener("change", () => {
-  const level = newStudentMurajaaLevel.value;
-  populateMurajaaStartSelect(level, 0);
-});
-
+populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
