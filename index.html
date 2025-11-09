@@ -80,6 +80,10 @@
         <h3>الرصيد التحفيزي</h3>
         <p class="big-number"><span id="student-total-points">0</span> نقطة</p>
         <p class="small-text">استمر في الإنجاز لتحصل على المزيد 🌟</p>
+        <p class="small-text">
+          ترتيبك بين الطلاب:
+          <strong id="student-rank-text">غير متوفر</strong>
+        </p>
       </div>
     </section>
 
@@ -122,6 +126,13 @@
 
       <!-- تبويب: مراجعة المهام -->
       <div id="review-tasks-tab" class="tab-content">
+        <h3>لوحة الشرف (أعلى الطلاب نقاطاً)</h3>
+        <div id="honor-board" class="tasks-review-container">
+          <p class="message info">جارٍ تحميل لوحة الشرف...</p>
+        </div>
+
+        <hr />
+
         <h3>مهام بانتظار مراجعتك</h3>
         <p class="info-text">
           هنا تظهر المهام التي أرسلها الطلاب للمراجعة. يمكنك قبولها أو رفضها.
@@ -181,6 +192,7 @@
 
       <!-- تبويب: إدارة الطلاب -->
       <div id="manage-students-tab" class="tab-content hidden">
+        <!-- أولاً نموذج الطالب -->
         <h3 id="student-form-title">إضافة / تعديل طالب</h3>
 
         <div class="student-form">
@@ -195,11 +207,20 @@
           </div>
 
           <div class="input-group">
+            <label for="new-student-parent-name">اسم ولي الأمر (اختياري):</label>
+            <input
+              type="text"
+              id="new-student-parent-name"
+              placeholder="اسم ولي الأمر"
+            />
+          </div>
+
+          <div class="input-group">
             <label for="new-student-parent-code">رمز ولي الأمر (اختياري):</label>
             <input
               type="text"
               id="new-student-parent-code"
-              placeholder="مثال: P100 (نفسه يستخدمه ولي الأمر للدخول)"
+              placeholder="مثال: P100 (يستخدمه ولي الأمر للدخول)"
             />
           </div>
 
@@ -234,6 +255,9 @@
           <div class="input-group">
             <label for="new-student-murajaa-start">نقطة بداية المراجعة:</label>
             <select id="new-student-murajaa-start"></select>
+            <p class="info-text">
+              هذه أول مهمة مراجعة يبدأ منها الطالب في دورته الحالية.
+            </p>
           </div>
 
           <button id="register-student-button" class="button primary">
@@ -244,6 +268,7 @@
 
         <hr />
 
+        <!-- ثانياً قائمة الطلاب -->
         <h3>قائمة الطلاب</h3>
         <ul id="student-list" class="data-list"></ul>
       </div>
