@@ -16,13 +16,14 @@ import {
   arrayUnion,
   writeBatch,
   query,
-  where
+  where,
+  onSnapshot,
 } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
 
-import { HIFZ_CURRICULUM, REVIEW_CURRICULUM, LEVEL_CONFIG } from "./curriculum.js";
+import { HIFZ_CURRICULUM, REVIEW_CURRICULUM } from "./curriculum.js";
 
-// إعدادات المشروع (نفس الإعدادات السابقة)
+// إعدادات المشروع
 const firebaseConfig = {
   apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
   authDomain: "studenttasksmanager.firebaseapp.com",
@@ -38,7 +39,10 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// =======================
 // مراجع DOM
+// =======================
+
 // شاشة الدخول
 const authScreen = document.getElementById("auth-screen");
 const userCodeInput = document.getElementById("user-code");
@@ -48,33 +52,66 @@ const authMessage = document.getElementById("auth-message");
 // شاشة الطالب
 const studentScreen = document.getElementById("student-screen");
 const welcomeStudent = document.getElementById("welcome-student");
-const studentHifzProgressLabel = document.getElementById("student-hifz-progress-label");
-const studentMurajaaProgressLabel = document.getElementById("student-murajaa-progress-label");
-const studentHifzProgressBar = document.getElementById("student-hifz-progress-bar");
-const studentMurajaaProgressBar = document.getElementById("student-murajaa-progress-bar");
-const studentHifzProgressPercent = document.getElementById("student-hifz-progress-percent");
-const studentMurajaaProgressPercent = document.getElementById("student-murajaa-progress-percent");
-const studentMurajaaLevelLabel = document.getElementById("student-murajaa-level-label");
+const studentHifzProgressLabel = document.getElementById(
+  "student-hifz-progress-label"
+);
+const studentMurajaaProgressLabel = document.getElementById(
+  "student-murajaa-progress-label"
+);
+const studentHifzProgressBar = document.getElementById(
+  "student-hifz-progress-bar"
+);
+const studentMurajaaProgressBar = document.getElementById(
+  "student-murajaa-progress-bar"
+);
+const studentHifzProgressPercent = document.getElementById(
+  "student-hifz-progress-percent"
+);
+const studentMurajaaProgressPercent = document.getElementById(
+  "student-murajaa-progress-percent"
+);
+const studentMurajaaLevelLabel = document.getElementById(
+  "student-murajaa-level-label"
+);
 const studentTotalPoints = document.getElementById("student-total-points");
 const studentTasksDiv = document.getElementById("student-tasks");
 const logoutButtonStudent = document.getElementById("logout-button-student");
+const studentProgressSection = document.querySelector(
+  "#student-screen .progress-section"
+);
+let studentRankInfoEl = null;
+if (studentProgressSection) {
+  studentRankInfoEl = document.createElement("p");
+  studentRankInfoEl.className = "small-text";
+  studentProgressSection.appendChild(studentRankInfoEl);
+}
 
 // شاشة المعلم
 const teacherScreen = document.getElementById("teacher-screen");
 const logoutButtonTeacher = document.getElementById("logout-button-teacher");
 const tabButtons = document.querySelectorAll(".tab-button");
-const reviewTasksTab = document.getElementById("review-tasks-tab");
-const assignTasksTab = document.getElementById("assign-tasks-tab");
-const manageStudentsTab = document.getElementById("manage-students-tab");
-const curriculumTab = document.getElementById("curriculum-tab");
+
+// تبويبات المعلم
+const reviewTasksTabEl = document.getElementById("review-tasks-tab");
+const assignTasksTabEl = document.getElementById("assign-tasks-tab");
+const manageStudentsTabEl = document.getElementById("manage-students-tab");
+const curriculumTabEl = document.getElementById("curriculum-tab");
 
 // حقول تعيين المهام
-const assignTaskStudentCode = document.getElementById("assign-task-student-code");
+const assignTaskStudentCode = document.getElementById(
+  "assign-task-student-code"
+);
 const assignTaskType = document.getElementById("assign-task-type");
-const assignTaskDescription = document.getElementById("assign-task-description");
+const assignTaskDescription = document.getElementById(
+  "assign-task-description"
+);
 const assignTaskPoints = document.getElementById("assign-task-points");
-const assignIndividualTaskButton = document.getElementById("assign-individual-task-button");
-const assignGroupTaskButton = document.getElementById("assign-group-task-button");
+const assignIndividualTaskButton = document.getElementById(
+  "assign-individual-task-button"
+);
+const assignGroupTaskButton = document.getElementById(
+  "assign-group-task-button"
+);
 const assignTaskMessage = document.getElementById("assign-task-message");
 
 // إدارة الطلاب
@@ -82,16 +119,28 @@ const studentList = document.getElementById("student-list");
 const studentFormTitle = document.getElementById("student-form-title");
 const newStudentCodeInput = document.getElementById("new-student-code");
 const newStudentNameInput = document.getElementById("new-student-name");
-const newStudentParentCodeInput = document.getElementById("new-student-parent-code");
+const newStudentParentCodeInput = document.getElementById(
+  "new-student-parent-code"
+);
 const newStudentHifzStart = document.getElementById("new-student-hifz-start");
 const newStudentHifzLevel = document.getElementById("new-student-hifz-level");
-const newStudentMurajaaLevel = document.getElementById("new-student-murajaa-level");
-const registerStudentButton = document.getElementById("register-student-button");
-const registerStudentMessage = document.getElementById("register-student-message");
+const newStudentMurajaaLevel = document.getElementById(
+  "new-student-murajaa-level"
+);
+const registerStudentButton = document.getElementById(
+  "register-student-button"
+);
+const registerStudentMessage = document.getElementById(
+  "register-student-message"
+);
 
 // عرض المنهج
-const hifzCurriculumDisplay = document.getElementById("hifz-curriculum-display");
-const murajaaCurriculumDisplay = document.getElementById("murajaa-curriculum-display");
+const hifzCurriculumDisplay = document.getElementById(
+  "hifz-curriculum-display"
+);
+const murajaaCurriculumDisplay = document.getElementById(
+  "murajaa-curriculum-display"
+);
 
 // مراجعة المهام (المعلم)
 const pendingTasksList = document.getElementById("pending-tasks-list");
@@ -102,9 +151,12 @@ const welcomeParent = document.getElementById("welcome-parent");
 const logoutButtonParent = document.getElementById("logout-button-parent");
 const parentChildrenList = document.getElementById("parent-children-list");
 
-// حالة المستخدم الحالي
+// =======================
+// حالة عامة
+// =======================
 let currentUser = null;
 let editingStudentCode = null;
+let studentUnsubscribe = null;
 
 // =======================
 // دوال مساعدة عامة
@@ -129,7 +181,9 @@ function hideAllScreens() {
 
 // توليد ID بسيط
 function generateUniqueId() {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+  return (
+    Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
+  );
 }
 
 // =======================
@@ -166,8 +220,7 @@ function getCurrentHifzMission(student) {
 
   const description = segments
     .map(
-      (seg) =>
-        `${seg.surah_name_ar} (${seg.start_ayah}-${seg.end_ayah})`
+      (seg) => `${seg.surah_name_ar} (${seg.start_ayah}-${seg.end_ayah})`
     )
     .join(" + ");
 
@@ -204,7 +257,7 @@ function getCurrentMurajaaMission(student) {
   };
 }
 
-// نسبة التقدم في الحفظ (بسيطة: من بداية الحفظ حتى الفهرس الحالي)
+// نسبة التقدم في الحفظ (من بداية الخطة حتى الفهرس الحالي)
 function computeHifzPercent(student) {
   const all = HIFZ_CURRICULUM;
   if (!all || all.length === 0) return 0;
@@ -230,6 +283,47 @@ function computeMurajaaPercent(student) {
 }
 
 // =======================
+// حساب الترتيب (Ranking)
+// =======================
+
+// إرجاع خريطة: code -> { rank, total }
+async function getRanksMap() {
+  const colRef = collection(db, "students");
+  const snap = await getDocs(colRef);
+  const arr = [];
+  snap.forEach((docSnap) => {
+    arr.push(docSnap.data());
+  });
+  arr.sort(
+    (a, b) => (b.total_points || 0) - (a.total_points || 0)
+  );
+  const total = arr.length;
+  const map = {};
+  arr.forEach((s, idx) => {
+    if (s.code) {
+      map[s.code] = { rank: idx + 1, total };
+    }
+  });
+  return map;
+}
+
+// تحديث سطر الترتيب في لوحة الطالب
+async function updateStudentRankInfo(student) {
+  if (!student || !student.code || !studentRankInfoEl) return;
+  try {
+    const ranksMap = await getRanksMap();
+    const info = ranksMap[student.code];
+    if (!info) {
+      studentRankInfoEl.textContent = "";
+      return;
+    }
+    studentRankInfoEl.textContent = `ترتيبك بين الطلاب: ${info.rank} من ${info.total}`;
+  } catch (error) {
+    console.error("Error updateStudentRankInfo:", error);
+  }
+}
+
+// =======================
 // شاشة الطالب: عرض الداشبورد
 // =======================
 
@@ -237,7 +331,6 @@ function renderStudentTasks(student) {
   studentTasksDiv.innerHTML = "";
 
   const tasksContainer = document.createElement("div");
-
   const tasksArray = Array.isArray(student.tasks) ? student.tasks : [];
 
   // 1) مهمة الحفظ الحالية
@@ -254,7 +347,7 @@ function renderStudentTasks(student) {
     card.className = "task-card";
     card.innerHTML = `
       <div class="task-header">
-        <div class="task-title">🎯 مهمة الحفظ الحالية</div>
+        <div class="task-title">🎯 الحفظ</div>
         <span class="task-type-tag hifz">حفظ</span>
       </div>
       <div class="task-body">
@@ -302,7 +395,7 @@ function renderStudentTasks(student) {
     card.className = "task-card";
     card.innerHTML = `
       <div class="task-header">
-        <div class="task-title">📖 مهمة المراجعة الحالية</div>
+        <div class="task-title">📖 المراجعة</div>
         <span class="task-type-tag murajaa">مراجعة</span>
       </div>
       <div class="task-body">
@@ -394,11 +487,13 @@ function renderStudentTasks(student) {
   }
 }
 
-// عرض الداشبورد للطالب
-function displayStudentDashboard(student) {
+// هذه الدالة فقط ترسم الداشبورد (بدون إخفاء/إظهار الشاشات)
+function renderStudentDashboard(student) {
   currentUser = student;
 
-  welcomeStudent.textContent = `أهلاً بك يا ${student.name || "طالب"}`;
+  welcomeStudent.textContent = `أهلاً بك يا ${
+    student.name || "طالب"
+  }`;
 
   const hifzMission = getCurrentHifzMission(student);
   if (hifzMission) {
@@ -417,7 +512,8 @@ function displayStudentDashboard(student) {
         ? "التطوير"
         : "المتقدم";
   } else {
-    studentMurajaaProgressLabel.textContent = "لا توجد مهمة مراجعة حالياً.";
+    studentMurajaaProgressLabel.textContent =
+      "لا توجد مهمة مراجعة حالياً.";
     studentMurajaaLevelLabel.textContent = "غير محدد";
   }
 
@@ -433,9 +529,31 @@ function displayStudentDashboard(student) {
   studentTotalPoints.textContent = student.total_points || 0;
 
   renderStudentTasks(student);
+  updateStudentRankInfo(student);
+}
 
+// بدء عرض الطالب + تفعيل الاستماع الفوري
+function displayStudentDashboard(student) {
   hideAllScreens();
   studentScreen.classList.remove("hidden");
+  renderStudentDashboard(student);
+  subscribeToStudentRealtime(student.code);
+}
+
+// اشتراك في تحديثات الطالب لحظياً
+function subscribeToStudentRealtime(code) {
+  if (!code) return;
+  const studentRef = doc(db, "students", code);
+  if (studentUnsubscribe) {
+    studentUnsubscribe();
+    studentUnsubscribe = null;
+  }
+  studentUnsubscribe = onSnapshot(studentRef, (snap) => {
+    if (snap.exists()) {
+      const student = { code, ...snap.data() };
+      renderStudentDashboard(student);
+    }
+  });
 }
 
 // =======================
@@ -473,10 +591,8 @@ async function submitCurriculumTask(studentCode, mission) {
     };
 
     tasks.push(newTask);
-
     await updateDoc(studentRef, { tasks });
 
-    displayStudentDashboard({ code: studentCode, ...student, tasks });
     showMessage(authMessage, "تم إرسال مهمة الحفظ للمراجعة.", "success");
   } catch (error) {
     console.error("Error submitCurriculumTask:", error);
@@ -502,9 +618,11 @@ async function cancelCurriculumTask(studentCode, type, missionStartIndex) {
     );
 
     await updateDoc(studentRef, { tasks });
-
-    displayStudentDashboard({ code: studentCode, ...student, tasks });
-    showMessage(authMessage, "تم إلغاء إرسال المهمة وإعادتها لك.", "success");
+    showMessage(
+      authMessage,
+      "تم إلغاء إرسال مهمة الحفظ وإعادتها لك.",
+      "success"
+    );
   } catch (error) {
     console.error("Error cancelCurriculumTask:", error);
     showMessage(authMessage, `حدث خطأ: ${error.message}`, "error");
@@ -544,10 +662,8 @@ async function submitMurajaaTask(studentCode, mission) {
     };
 
     tasks.push(newTask);
-
     await updateDoc(studentRef, { tasks });
 
-    displayStudentDashboard({ code: studentCode, ...student, tasks });
     showMessage(authMessage, "تم إرسال مهمة المراجعة للمراجعة.", "success");
   } catch (error) {
     console.error("Error submitMurajaaTask:", error);
@@ -575,8 +691,11 @@ async function cancelMurajaaTask(studentCode, mission) {
 
     await updateDoc(studentRef, { tasks });
 
-    displayStudentDashboard({ code: studentCode, ...student, tasks });
-    showMessage(authMessage, "تم إلغاء إرسال مهمة المراجعة وإعادتها لك.", "success");
+    showMessage(
+      authMessage,
+      "تم إلغاء إرسال مهمة المراجعة وإعادتها لك.",
+      "success"
+    );
   } catch (error) {
     console.error("Error cancelMurajaaTask:", error);
     showMessage(authMessage, `حدث خطأ: ${error.message}`, "error");
@@ -601,10 +720,8 @@ async function submitGeneralTask(studentCode, taskId) {
     }
 
     tasks[idx].status = "pending";
-
     await updateDoc(studentRef, { tasks });
 
-    displayStudentDashboard({ code: studentCode, ...student, tasks });
     showMessage(authMessage, "تم إرسال المهمة العامة للمراجعة.", "success");
   } catch (error) {
     console.error("Error submitGeneralTask:", error);
@@ -629,7 +746,6 @@ async function cancelGeneralTask(studentCode, taskId) {
 
     await updateDoc(studentRef, { tasks });
 
-    displayStudentDashboard({ code: studentCode, ...student, tasks });
     showMessage(authMessage, "تم إلغاء إرسال المهمة العامة.", "success");
   } catch (error) {
     console.error("Error cancelGeneralTask:", error);
@@ -742,7 +858,11 @@ async function reviewTask(studentCode, taskId, action) {
     const task = tasks[idx];
 
     if (task.status !== "pending") {
-      showMessage(authMessage, "المهمة ليست في حالة بانتظار المراجعة.", "error");
+      showMessage(
+        authMessage,
+        "المهمة ليست في حالة بانتظار المراجعة.",
+        "error"
+      );
       return;
     }
 
@@ -758,7 +878,8 @@ async function reviewTask(studentCode, taskId, action) {
       } else if (task.type === "murajaa") {
         const level = student.murajaa_level || task.murajaa_level || "BUILDING";
         const arr = getReviewArrayForLevel(level);
-        let curIndex = student.murajaa_progress_index ?? task.murajaa_index ?? 0;
+        let curIndex =
+          student.murajaa_progress_index ?? task.murajaa_index ?? 0;
         let nextIndex = arr.length > 0 ? (curIndex + 1) % arr.length : 0;
         student.murajaa_level = level;
         student.murajaa_progress_index = nextIndex;
@@ -798,7 +919,11 @@ async function reviewTask(studentCode, taskId, action) {
     loadPendingTasksForReview();
   } catch (error) {
     console.error("Error reviewTask:", error);
-    showMessage(authMessage, `خطأ في مراجعة المهمة: ${error.message}`, "error");
+    showMessage(
+      authMessage,
+      `خطأ في مراجعة المهمة: ${error.message}`,
+      "error"
+    );
   }
 }
 
@@ -889,7 +1014,11 @@ assignGroupTaskButton.addEventListener("click", async () => {
     });
 
     await batch.commit();
-    showMessage(assignTaskMessage, "تم تعيين المهمة لجميع الطلاب.", "success");
+    showMessage(
+      assignTaskMessage,
+      "تم تعيين المهمة لجميع الطلاب.",
+      "success"
+    );
   } catch (error) {
     console.error("Error assignGroupTask:", error);
     showMessage(
@@ -918,14 +1047,66 @@ async function loadStudentsForTeacher() {
     const colRef = collection(db, "students");
     const snap = await getDocs(colRef);
 
+    const students = [];
+    snap.forEach((docSnap) => {
+      students.push(docSnap.data());
+    });
+
+    // ترتيب حسب النقاط لعمل لوحة الشرف
+    const sortedByPoints = [...students].sort(
+      (a, b) => (b.total_points || 0) - (a.total_points || 0)
+    );
+    const total = sortedByPoints.length;
+    const ranksMap = {};
+    sortedByPoints.forEach((s, idx) => {
+      if (s.code) ranksMap[s.code] = idx + 1;
+    });
+
+    // لوحة الشرف (Top 3)
+    let honorBoard = manageStudentsTabEl.querySelector("#honor-board");
+    if (!honorBoard) {
+      honorBoard = document.createElement("div");
+      honorBoard.id = "honor-board";
+      honorBoard.className = "tasks-section";
+      const titleEl = document.createElement("h3");
+      titleEl.textContent = "لوحة الشرف (أعلى النقاط)";
+      manageStudentsTabEl.insertBefore(
+        honorBoard,
+        document.getElementById("student-list")
+      );
+      honorBoard.insertBefore(titleEl, honorBoard.firstChild);
+    }
+    honorBoard.innerHTML = "<h3>لوحة الشرف (أعلى النقاط)</h3>";
+
+    const top3Container = document.createElement("div");
+    sortedByPoints.slice(0, 3).forEach((s, idx) => {
+      const card = document.createElement("div");
+      card.className = "task-card";
+      card.innerHTML = `
+        <div class="task-header">
+          <div class="task-title">🏅 ${idx + 1}. ${s.name} (${s.code})</div>
+        </div>
+        <div class="task-body">
+          مجموع النقاط: ${s.total_points || 0}
+        </div>
+      `;
+      top3Container.appendChild(card);
+    });
+    if (sortedByPoints.length === 0) {
+      top3Container.innerHTML =
+        '<p class="message info">لا يوجد طلاب مسجلون بعد.</p>';
+    }
+    honorBoard.appendChild(top3Container);
+
+    // قائمة الطلاب
     studentList.innerHTML = "";
 
-    snap.forEach((docSnap) => {
-      const s = docSnap.data();
+    students.forEach((s) => {
       const li = document.createElement("li");
 
       const hifzPercent = computeHifzPercent(s);
       const murPercent = computeMurajaaPercent(s);
+      const rank = ranksMap[s.code] || "-";
 
       li.innerHTML = `
         <div class="student-line">
@@ -933,7 +1114,7 @@ async function loadStudentsForTeacher() {
           <div class="student-sub">
             حفظ: ${hifzPercent}% | مراجعة: ${murPercent}% | نقاط: ${
         s.total_points || 0
-      }
+      } | الترتيب: ${rank} من ${total}
           </div>
           <div class="student-sub">
             ولي الأمر: ${s.parent_code || "غير محدد"}
@@ -1003,7 +1184,6 @@ async function loadStudentIntoForm(code) {
     newStudentHifzLevel.value = s.hifz_level || 1;
     newStudentMurajaaLevel.value = s.murajaa_level || "BUILDING";
 
-    // فتح تبويب إدارة الطلاب
     activateTab("manage-students-tab");
   } catch (error) {
     console.error("Error loadStudentIntoForm:", error);
@@ -1115,6 +1295,9 @@ async function displayParentDashboard(parentCode) {
     const children = [];
     snap.forEach((docSnap) => children.push(docSnap.data()));
 
+    // حساب الترتيب لكل الطلاب
+    const ranksMap = await getRanksMap();
+
     welcomeParent.textContent = `مرحبًا بك يا ولي الأمر (${parentCode})`;
 
     parentChildrenList.innerHTML = "";
@@ -1123,18 +1306,27 @@ async function displayParentDashboard(parentCode) {
       parentChildrenList.innerHTML =
         '<p class="message info">لا يوجد أبناء مربوطون بهذا الرمز.</p>';
     } else {
+      const total =
+        Object.values(ranksMap)[0]?.total || children.length;
+
       children.forEach((s) => {
         const card = document.createElement("div");
         card.className = "child-card";
 
         const hifzPercent = computeHifzPercent(s);
         const murPercent = computeMurajaaPercent(s);
+        const rankInfo = ranksMap[s.code];
 
         card.innerHTML = `
           <div class="child-name">${s.name} (${s.code})</div>
           <div class="child-line">حفظ: ${hifzPercent}%</div>
           <div class="child-line">مراجعة: ${murPercent}%</div>
           <div class="child-line">النقاط: ${s.total_points || 0}</div>
+          <div class="child-line">${
+            rankInfo
+              ? `ترتيبه بين الطلاب: ${rankInfo.rank} من ${rankInfo.total}`
+              : ""
+          }</div>
         `;
 
         parentChildrenList.appendChild(card);
@@ -1196,15 +1388,20 @@ loginButton.addEventListener("click", async () => {
   }
 
   try {
+    // معلم
     if (code === "teacher") {
       currentUser = { role: "teacher", name: "المعلم" };
+      if (studentUnsubscribe) {
+        studentUnsubscribe();
+        studentUnsubscribe = null;
+      }
       hideAllScreens();
       teacherScreen.classList.remove("hidden");
       activateTab("review-tasks-tab"); // أول واجهة: مراجعة المهام
       return;
     }
 
-    // تجربة كطالب
+    // طالب
     const studentRef = doc(db, "students", code);
     const studentSnap = await getDoc(studentRef);
     if (studentSnap.exists()) {
@@ -1213,13 +1410,17 @@ loginButton.addEventListener("click", async () => {
       return;
     }
 
-    // تجربة كولي أمر (عن طريق البحث عن طلاب parent_code = code)
+    // ولي أمر (عن طريق البحث عن طلاب parent_code = code)
     const colRef = collection(db, "students");
     const q = query(colRef, where("parent_code", "==", code));
     const snap = await getDocs(q);
 
     if (!snap.empty) {
       currentUser = { role: "parent", code };
+      if (studentUnsubscribe) {
+        studentUnsubscribe();
+        studentUnsubscribe = null;
+      }
       displayParentDashboard(code);
       return;
     }
@@ -1227,13 +1428,21 @@ loginButton.addEventListener("click", async () => {
     showMessage(authMessage, "رمز الدخول غير صحيح.", "error");
   } catch (error) {
     console.error("Login error:", error);
-    showMessage(authMessage, `خطأ في الاتصال بالخادم: ${error.message}`, "error");
+    showMessage(
+      authMessage,
+      `خطأ في الاتصال بالخادم: ${error.message}`,
+      "error"
+    );
   }
 });
 
 function logout() {
   currentUser = null;
   userCodeInput.value = "";
+  if (studentUnsubscribe) {
+    studentUnsubscribe();
+    studentUnsubscribe = null;
+  }
   hideAllScreens();
   authScreen.classList.remove("hidden");
   showMessage(authMessage, "تم تسجيل الخروج بنجاح.", "success");
