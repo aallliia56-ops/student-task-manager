@@ -83,6 +83,11 @@
       </div>
     </section>
 
+    <!-- ترتيب الطالب -->
+    <p id="student-rank-info" class="small-text hidden">
+      ترتيبي بين الطلاب: —
+    </p>
+
     <!-- مهامي -->
     <section class="tasks-section">
       <h3>مهامي الحالية</h3>
@@ -181,11 +186,8 @@
 
       <!-- تبويب: إدارة الطلاب -->
       <div id="manage-students-tab" class="tab-content hidden">
-        <h3>قائمة الطلاب</h3>
-        <ul id="student-list" class="data-list"></ul>
 
-        <hr />
-
+        <!-- نموذج إضافة / تعديل الطالب (أعلى الصفحة كما طلبت) -->
         <h3 id="student-form-title">إضافة / تعديل طالب</h3>
 
         <div class="student-form">
@@ -236,6 +238,18 @@
           </button>
           <p id="register-student-message" class="message hidden"></p>
         </div>
+
+        <hr />
+
+        <!-- لوحة الشرف -->
+        <h3>لوحة الشرف (أعلى الطلاب نقاطًا)</h3>
+        <ul id="teacher-honor-list" class="honor-list"></ul>
+
+        <hr />
+
+        <!-- قائمة الطلاب (أسفل النموذج) -->
+        <h3>قائمة الطلاب</h3>
+        <ul id="student-list" class="data-list"></ul>
       </div>
 
       <!-- تبويب: عرض المنهج -->
