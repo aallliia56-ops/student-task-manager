@@ -247,27 +247,30 @@ h1 {
   margin-top: 10px;
 }
 
+/* بطاقة المهمة نفسها أصغر وأنحف قليلاً */
 .task-card {
   background-color: #ffffff;
   border-radius: 12px;
   border: 1px solid #e0e6ed;
-  padding: 12px;
-  margin-bottom: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
 }
 
+/* الهيدر: عنوان صغير + شارة نوع المهمة */
 .task-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .task-title {
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
+/* شارة نوع المهمة */
 .task-type-tag {
   font-size: 0.8rem;
   padding: 3px 8px;
@@ -290,20 +293,23 @@ h1 {
   color: #1565c0;
 }
 
+/* النص العادي داخل البطاقة */
 .task-body {
-  margin-top: 8px;
+  margin-top: 6px;
   font-size: 0.9rem;
 }
-/* نص المنهج في بطاقات المهام (الحفظ / المراجعة) */
-.task-body.mission-text {
-  font-size: 1.15rem;      /* تكبير الخط */
-  font-weight: 700;        /* جعله عريض */
-  color: #2c3e50;          /* لون واضح */
-  line-height: 1.8;        /* تباعد مريح بين الأسطر لو كانت طويلة */
+
+/* 🔊 تكبير نص المنهج (المقطع) فقط */
+.mission-text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.7;
+  color: #2c3e50;
 }
 
+/* الفوتر: النقاط + حالة المهمة + زر الإنجاز */
 .task-footer {
-  margin-top: 10px;
+  margin-top: 8px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -321,6 +327,7 @@ h1 {
   font-size: 0.8rem;
   font-weight: 600;
 }
+
 
 /* تبويبات المعلم */
 .tabs {
