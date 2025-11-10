@@ -341,25 +341,24 @@ function renderStudentTasks(student) {
 
     const card = document.createElement("div");
     card.className = "task-card";
-    card.innerHTML = `
-      <div class="task-header">
-        <div class="task-title">🎯 الحفظ</div>
-        <span class="task-type-tag hifz">حفظ</span>
-      </div>
-      <div class="task-body">
-        ${hifzMission.description}
-      </div>
-      <div class="task-footer">
-        <span class="task-points-tag">النقاط: ${hifzMission.points}</span>
-        <span class="task-status-text">
-          ${
-            pendingTask
-              ? "قيد المراجعة لدى المعلم..."
-              : "بانتظار أن تضغط أنجزت المهمة"
-          }
-        </span>
-      </div>
-    `;
+  card.innerHTML = `
+    <div class="task-header">
+      <div class="task-title">🎯 مهمة الحفظ الحالية</div>
+      <span class="task-type-tag hifz">حفظ</span>
+    </div>
+    <div class="task-body mission-text">
+      ${hifzMission.description}
+    </div>
+    <div class="task-footer">
+      <span class="task-points-tag">النقاط: ${hifzMission.points}</span>
+      <span class="task-status-text">${
+        pendingTask
+          ? "قيد المراجعة لدى المعلم..."
+          : "بانتظار أن تضغط أنجزت المهمة"
+      }</span>
+    </div>
+  `;
+
 
     const footer = card.querySelector(".task-footer");
     const btnDone = document.createElement("button");
@@ -391,25 +390,24 @@ function renderStudentTasks(student) {
 
     const card = document.createElement("div");
     card.className = "task-card";
-    card.innerHTML = `
-      <div class="task-header">
-        <div class="task-title">📖 المراجعة</div>
-        <span class="task-type-tag murajaa">مراجعة</span>
-      </div>
-      <div class="task-body">
-        ${murMission.description}
-      </div>
-      <div class="task-footer">
-        <span class="task-points-tag">النقاط: ${murMission.points}</span>
-        <span class="task-status-text">
-          ${
-            pendingTask
-              ? "قيد المراجعة لدى المعلم..."
-              : "بانتظار أن تضغط أنجزت المهمة"
-          }
-        </span>
-      </div>
-    `;
+     card.innerHTML = `
+    <div class="task-header">
+      <div class="task-title">📖 مهمة المراجعة الحالية</div>
+      <span class="task-type-tag murajaa">مراجعة</span>
+    </div>
+    <div class="task-body mission-text">
+      ${murMission.description}
+    </div>
+    <div class="task-footer">
+      <span class="task-points-tag">النقاط: ${murMission.points}</span>
+      <span class="task-status-text">${
+        pendingTask
+          ? "قيد المراجعة لدى المعلم..."
+          : "بانتظار أن تضغط أنجزت المهمة"
+      }</span>
+    </div>
+  `;
+
 
     const footer = card.querySelector(".task-footer");
     const btnDone = document.createElement("button");
@@ -1579,6 +1577,7 @@ if (refreshTeacherButton) {
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
 
 
 
