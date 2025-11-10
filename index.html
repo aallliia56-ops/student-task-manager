@@ -46,9 +46,12 @@
         <h2 id="welcome-student">أهلاً بك يا طالب</h2>
         <p class="subtitle">تابع تقدمك في الحفظ والمراجعة 👇</p>
       </div>
-      <button id="logout-button-student" class="button danger">تسجيل الخروج</button>
+      <div class="header-actions">
+        <button id="refresh-student-button" class="button primary">تحديث الصفحة 🔄</button>
+        <button id="logout-button-student" class="button danger">تسجيل الخروج</button>
+      </div>
     </header>
-
+    
     <!-- كروت التقدم -->
     <section class="progress-section">
       <div class="progress-card hifz">
@@ -99,12 +102,15 @@
   <!-- شاشة المعلم -->
   <div id="teacher-screen" class="container hidden">
     <header class="dashboard-header">
-      <div>
-        <h2>لوحة تحكم المعلم</h2>
-        <p class="subtitle">إدارة مهام الطلاب وخططهم</p>
-      </div>
-      <button id="logout-button-teacher" class="button danger">تسجيل الخروج</button>
-    </header>
+  <div>
+    <h2>لوحة تحكم المعلم</h2>
+    <p class="subtitle">إدارة مهام الطلاب وخططهم</p>
+  </div>
+  <div class="header-actions">
+    <button id="refresh-teacher-button" class="button primary">تحديث البيانات 🔄</button>
+    <button id="logout-button-teacher" class="button danger">تسجيل الخروج</button>
+  </div>
+</header>
 
     <!-- تبويبات المعلم -->
     <nav class="tabs">
@@ -313,4 +319,5 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
