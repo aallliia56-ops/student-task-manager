@@ -1325,22 +1325,41 @@ function displayCurriculumsInTeacherPanel() {
 // شاشة ولي الأمر
 // =======================
 
+// =======================
+// شاشة ولي الأمر (مُحدّثة)
+// =======================
 async function displayParentDashboard(parentCode) {
   try {
     const colRef = collection(db, "students");
+    const snap = await getDocs(colRef);
 
-    // جلب أبناء هذا الولي
-    const q = query(colRef, where("parent_code", "==", parentCode));
-    const snapChildren = await getDocs(q);
-    const children = [];
-    snapChildren.forEach((docSnap) => children.push(docSnap.data()));
+    const allStudents = [];
+    snap.forEach((docSnap) => allStudents.push(docSnap.data()));
 
-    // جلب كل الطلاب لحساب الترتيب
-    const allStudents = await fetchAllStudentsSortedByPoints();
-    const totalStudents = allStudents.length;
+    // أبناؤه فقط
+    const children = allStudents.filter(
+      (s) => s.parent_code === parentCode
+    );
+
+    // ترتيب عام لكل الطلاب حسب النقاط (لإظهار رتبة الابن)
+    const sortedByPoints = [...allStudents].sort(
+      (a, b) => (b.total_points || 0) - (a.total_points || 0)
+    );
+
     const rankMap = {};
-    allStudents.forEach((s, index) => {
-      rankMap[s.code] = index + 1;
+    let lastPoints = null;
+    let currentRank = 0;
+
+    sortedByPoints.forEach((s, index) => {
+      const pts = s.total_points || 0;
+      if (lastPoints === null) {
+        currentRank = 1;
+      } else if (pts < lastPoints) {
+        // إذا قلّت النقاط، يتغيّر ترتيب الرقم
+        currentRank = index + 1;
+      }
+      rankMap[s.code] = currentRank;
+      lastPoints = pts;
     });
 
     welcomeParent.textContent = `مرحبًا بك يا ولي الأمر (${parentCode})`;
@@ -1355,35 +1374,81 @@ async function displayParentDashboard(parentCode) {
         const card = document.createElement("div");
         card.className = "child-card";
 
+        // خطة الحفظ من–إلى (بالسور)
+        const startIndex =
+          typeof s.hifz_start_id === "number" ? s.hifz_start_id : 0;
+        const endIndex =
+          typeof s.hifz_end_id === "number"
+            ? s.hifz_end_id
+            : HIFZ_CURRICULUM.length - 1;
+
+        const startItem = HIFZ_CURRICULUM[startIndex] || null;
+        const endItem = HIFZ_CURRICULUM[endIndex] || null;
+
+        const startSurah = startItem ? startItem.surah_name_ar : "غير محددة";
+        const endSurah = endItem ? endItem.surah_name_ar : "غير محددة";
+
+        // نسبة الحفظ + الشارة التحفيزية
         const hifzPercent = computeHifzPercent(s);
 
-        const startSeg = HIFZ_CURRICULUM[s.hifz_start_id ?? 0];
-        const endSeg =
-          HIFZ_CURRICULUM[s.hifz_end_id ?? HIFZ_CURRICULUM.length - 1];
+        let motivationLabel = "🔵 في بداية الطريق";
+        if (hifzPercent >= 75) {
+          motivationLabel = "🟢 قارب على إنهاء خطته";
+        } else if (hifzPercent >= 30) {
+          motivationLabel = "🟡 في منتصف الخطة";
+        }
 
-        const planText =
-          startSeg && endSeg
-            ? `${startSeg.surah_name_ar} (${startSeg.start_ayah}-${startSeg.end_ayah}) → ${endSeg.surah_name_ar} (${endSeg.start_ayah}-${endSeg.end_ayah})`
-            : "لم تُحدد خطة الحفظ";
-
+        // مهمة الحفظ الحالية
         const hifzMission = getCurrentHifzMission(s);
-        const murMission = getCurrentMurajaaMission(s);
+        const hifzMissionText = hifzMission
+          ? hifzMission.description
+          : "لا توجد مهمة حفظ حالياً.";
+
+        // مهمة المراجعة الحالية
+        const murajaaMission = getCurrentMurajaaMission(s);
+        const murajaaMissionText = murajaaMission
+          ? murajaaMission.description
+          : "لا توجد مهمة مراجعة حالياً.";
+
+        // ترتيب الطالب (رقم فقط)
         const rank = rankMap[s.code] || "-";
 
+        // بناء بطاقة الابن
         card.innerHTML = `
           <div class="child-name">${s.name} (${s.code})</div>
-          <div class="child-line">خطة الحفظ: ${planText}</div>
-          <div class="child-line">مهمة الحفظ الحالية: ${
-            hifzMission ? hifzMission.description : "لا توجد مهمة حالياً"
-          }</div>
-          <div class="child-line">مهمة المراجعة الحالية: ${
-            murMission ? murMission.description : "لا توجد مهمة حالياً"
-          }</div>
-          <div class="child-line">نقاط الطالب: ${s.total_points || 0}</div>
-          <div class="child-line">ترتيب الطالب: ${rank} من ${totalStudents}</div>
-          <div class="child-line">تقدم الحفظ: ${hifzPercent}%</div>
+
+          <div class="child-line">
+            خطة الحفظ: من سورة <strong>${startSurah}</strong>
+            إلى سورة <strong>${endSurah}</strong>
+          </div>
+
+          <div class="child-line">
+            إنجاز الحفظ: <strong>${hifzPercent}%</strong>
+          </div>
           <div class="progress-bar">
             <div class="progress-fill" style="width: ${hifzPercent}%;"></div>
+          </div>
+
+          <div class="child-line">
+            ${motivationLabel}
+          </div>
+
+          <div class="child-line">
+            مجموع النقاط: <strong>${s.total_points || 0}</strong>
+          </div>
+
+          <div class="child-line">
+            الترتيب: <strong>${rank}</strong>
+          </div>
+
+          <div class="child-line">
+            مهمة الحفظ الحالية:
+            <span>${hifzMissionText}</span>
+          </div>
+
+          <div class="child-line">
+            مهمة المراجعة الحالية:
+            <span>${murajaaMissionText}</span>
           </div>
         `;
 
@@ -1398,6 +1463,7 @@ async function displayParentDashboard(parentCode) {
     parentChildrenList.innerHTML = `<p class="message error">خطأ في تحميل بيانات الأبناء: ${error.message}</p>`;
   }
 }
+
 
 // =======================
 // تبويبات المعلم
@@ -1513,6 +1579,7 @@ if (refreshTeacherButton) {
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
 
 
 
