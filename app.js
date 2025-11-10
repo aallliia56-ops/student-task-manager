@@ -68,6 +68,10 @@ const teacherScreen = document.getElementById("teacher-screen");
 const logoutButtonTeacher = document.getElementById("logout-button-teacher");
 const tabButtons = document.querySelectorAll(".tab-button");
 
+// أزرار التحديث
+const refreshStudentButton = document.getElementById("refresh-student-button");
+const refreshTeacherButton = document.getElementById("refresh-teacher-button");
+
 // حقول تعيين المهام
 const assignTaskStudentCode = document.getElementById("assign-task-student-code");
 const assignTaskType = document.getElementById("assign-task-type");
@@ -109,6 +113,56 @@ const parentChildrenList = document.getElementById("parent-children-list");
 // حالة المستخدم الحالي
 let currentUser = null;
 let editingStudentCode = null;
+
+// =======================
+// أزرار التحديث (طالب / معلم)
+// =======================
+
+// تحديث واجهة الطالب من Firestore
+async function refreshStudentView() {
+  // نتأكد أن المستخدم طالب وله كود
+  if (!currentUser || !currentUser.code) return;
+
+  try {
+    const studentRef = doc(db, "students", currentUser.code);
+    const snap = await getDoc(studentRef);
+
+    if (!snap.exists()) {
+      showMessage(authMessage, "تعذر العثور على بيانات الطالب.", "error");
+      return;
+    }
+
+    const student = { code: currentUser.code, ...snap.data() };
+    displayStudentDashboard(student);
+  } catch (error) {
+    console.error("Error refreshStudentView:", error);
+    showMessage(
+      authMessage,
+      `خطأ في تحديث بيانات الطالب: ${error.message}`,
+      "error"
+    );
+  }
+}
+
+// معرفة التبويب النشط للمعلم
+function getActiveTeacherTabId() {
+  const activeTab = document.querySelector(".tab-content:not(.hidden)");
+  return activeTab ? activeTab.id : null;
+}
+
+// تحديث واجهة المعلم حسب التبويب المفتوح
+function refreshTeacherView() {
+  const activeId = getActiveTeacherTabId();
+  if (!activeId) return;
+
+  if (activeId === "review-tasks-tab") {
+    loadPendingTasksForReview();
+  } else if (activeId === "manage-students-tab") {
+    loadStudentsForTeacher();
+  } else if (activeId === "curriculum-tab") {
+    displayCurriculumsInTeacherPanel();
+  }
+}
 
 // =======================
 // دوال مساعدة عامة
@@ -1439,6 +1493,18 @@ function logout() {
 logoutButtonStudent.addEventListener("click", logout);
 logoutButtonTeacher.addEventListener("click", logout);
 logoutButtonParent.addEventListener("click", logout);
+// ربط أزرار التحديث
+if (refreshStudentButton) {
+  refreshStudentButton.addEventListener("click", () => {
+    refreshStudentView();
+  });
+}
+
+if (refreshTeacherButton) {
+  refreshTeacherButton.addEventListener("click", () => {
+    refreshTeacherView();
+  });
+}
 
 // =======================
 // تهيئة أولية
@@ -1447,5 +1513,6 @@ logoutButtonParent.addEventListener("click", logout);
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
 
 
