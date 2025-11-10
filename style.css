@@ -159,6 +159,11 @@ h1 {
   border-bottom: 1px solid #ecf0f1;
   padding-bottom: 12px;
 }
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
 /* قسم التقدم */
 .progress-section {
