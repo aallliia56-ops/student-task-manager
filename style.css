@@ -564,3 +564,10 @@ h1 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+/* تكبير نص المنهج داخل بطاقة مهمة الحفظ والمراجعة بشكل صريح */
+.task-card .task-body.mission-text {
+  font-size: 1.4rem !important;   /* تكبير واضح */
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.9;
+}
