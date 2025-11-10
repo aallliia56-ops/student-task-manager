@@ -294,6 +294,13 @@ h1 {
   margin-top: 8px;
   font-size: 0.9rem;
 }
+/* نص المنهج في بطاقات المهام (الحفظ / المراجعة) */
+.task-body.mission-text {
+  font-size: 1.15rem;      /* تكبير الخط */
+  font-weight: 700;        /* جعله عريض */
+  color: #2c3e50;          /* لون واضح */
+  line-height: 1.8;        /* تباعد مريح بين الأسطر لو كانت طويلة */
+}
 
 .task-footer {
   margin-top: 10px;
