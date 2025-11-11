@@ -490,7 +490,6 @@ function renderStudentTasks(student) {
   } else {
     studentTasksDiv.appendChild(tasksContainer);
   }
-}
 
 // عرض الداشبورد للطالب
 function displayStudentDashboard(student) {
@@ -1473,6 +1472,7 @@ logoutButtonParent.addEventListener("click", logout);
 // =======================
 populateHifzStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
 
 
 
