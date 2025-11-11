@@ -658,7 +658,7 @@ if (refreshButtonTeacher) {
 
   hideAllScreens();
   studentScreen.classList.remove("hidden");
-}
+
 
 // =======================
 // إرسال / إلغاء مهام الطالب
@@ -1544,6 +1544,7 @@ logoutButtonParent.addEventListener("click", logout);
 // =======================
 populateHifzStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
 
 
 
