@@ -487,6 +487,7 @@ h1 {
 }
 
 /* شاشة ولي الأمر */
+/* شاشة ولي الأمر */
 .children-list {
   margin-top: 10px;
 }
@@ -508,6 +509,11 @@ h1 {
   font-size: 0.85rem;
   margin: 2px 0;
 }
+
+.child-card .progress-bar {
+  margin: 6px 0 4px;
+}
+
 
 /* استجابة للشاشات الكبيرة */
 @media (min-width: 768px) {
