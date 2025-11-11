@@ -392,7 +392,11 @@ function renderStudentTasks(student) {
   }
 
   // 3) المهام العامة المعينة
-  const generalTasks = tasksArray.filter((t) => t.type === "general");
+    // 3) المهام العامة المعينة (نستبعد المنجزة نهائيًا من واجهة الطالب)
+  const generalTasks = tasksArray.filter(
+    (t) => t.type === "general" && t.status !== "completed"
+  );
+
 
   if (generalTasks.length > 0) {
     generalTasks.forEach((task) => {
@@ -1334,4 +1338,5 @@ logoutButtonParent.addEventListener("click", logout);
 // =======================
 populateHifzStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
 
