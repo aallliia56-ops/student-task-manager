@@ -30,6 +30,9 @@
         id="user-code"
         placeholder="رمز المعلم / الطالب / ولي الأمر"
       />
+      <p class="info-text" style="display: none;">
+  مثال: <strong>teacher</strong> للمعلم – رمز الطالب – أو رمز ولي الأمر.
+      </p>
     </div>
 
     <button id="login-button" class="button primary">دخول</button>
@@ -38,70 +41,51 @@
 
   <!-- شاشة الطالب -->
   <div id="student-screen" class="container hidden">
-    
     <header class="dashboard-header">
-  <div>
-    <h2 id="welcome-student">أهلاً بك يا طالب</h2>
-  </div>
-  <div>
-    <button id="refresh-button-student" class="button">تحديث 🔄</button>
-    <button id="logout-button-student" class="button danger">تسجيل الخروج</button>
-  </div>
-</header>
-
-
-
-    <!-- شريط الإحصائيات النحيف -->
-    <section class="stats-bar">
-      <div class="stat-chip">
-        <span class="stat-label">نقاطي</span>
-        <span class="stat-value"><span id="student-total-points">0</span></span>
+      <div>
+        <h2 id="welcome-student">أهلاً بك يا طالب</h2>
       </div>
-      <div class="stat-chip">
-        <span class="stat-label">ترتيبي</span>
-        <span class="stat-value" id="student-rank-value">-</span>
+      <div class="header-actions">
+        <button id="refresh-student-button" class="button primary">تحديث الصفحة 🔄</button>
+        <button id="logout-button-student" class="button danger">تسجيل الخروج</button>
       </div>
-      <div class="stat-chip stat-badge" id="student-hifz-stage-badge">
-        🔵 في بداية الطريق
-      </div>
-    </section>
-
-    <!-- بطاقات التقدم (حفظ + مراجعة فقط) -->
+    </header>
+    
+    <!-- كروت التقدم -->
     <section class="progress-section">
-      <!-- بطاقة الحفظ -->
       <div class="progress-card hifz">
-        <div class="progress-card-header">
-          <h3>الحفظ</h3>
-          <span class="progress-percent">
-            <span id="student-hifz-progress-percent">0</span>%
-          </span>
-        </div>
-        <p class="progress-label" id="student-hifz-progress-label">
-          لا توجد مهمة قادمة حالياً.
-        </p>
+        <h3>تقدم الحفظ</h3>
+        <p class="progress-label" id="student-hifz-progress-label">لا يوجد منهج بعد</p>
         <div class="progress-bar">
           <div id="student-hifz-progress-bar" class="progress-fill"></div>
         </div>
+        <p class="progress-percent">
+          <span id="student-hifz-progress-percent">0</span>%
+        </p>
       </div>
 
-      <!-- بطاقة المراجعة -->
       <div class="progress-card murajaa">
-        <div class="progress-card-header">
-          <h3>المراجعة</h3>
-          <span class="progress-percent">
-            <span id="student-murajaa-progress-percent">0</span>%
-          </span>
-        </div>
-        <p class="progress-label" id="student-murajaa-progress-label">
-          لا توجد مهمة قادمة حالياً.
-        </p>
-        <p class="small-text">
-          مستوى المراجعة:
-          <strong id="student-murajaa-level-label">غير محدد</strong>
-        </p>
+        <h3>تقدم المراجعة</h3>
+        <p class="progress-label" id="student-murajaa-progress-label">لا يوجد منهج بعد</p>
         <div class="progress-bar">
           <div id="student-murajaa-progress-bar" class="progress-fill"></div>
         </div>
+        <p class="progress-percent">
+          <span id="student-murajaa-progress-percent">0</span>%
+        </p>
+        <p class="small-text">
+          مستوى المراجعة: <strong id="student-murajaa-level-label">غير محدد</strong>
+        </p>
+      </div>
+
+      <div class="progress-card points">
+        <h3>الرصيد التحفيزي</h3>
+        <p class="big-number"><span id="student-total-points">0</span> نقطة</p>
+        <p class="small-text">استمر في الإنجاز لتحصل على المزيد 🌟</p>
+        <p class="small-text">
+          ترتيبك بين الطلاب:
+          <strong id="student-rank-text">غير متوفر</strong>
+        </p>
       </div>
     </section>
 
@@ -116,18 +100,16 @@
 
   <!-- شاشة المعلم -->
   <div id="teacher-screen" class="container hidden">
-    
-   <header class="dashboard-header">
+    <header class="dashboard-header">
   <div>
     <h2>لوحة تحكم المعلم</h2>
     <p class="subtitle">إدارة مهام الطلاب وخططهم</p>
   </div>
-  <div>
-    <button id="refresh-button-teacher" class="button">تحديث 🔄</button>
+  <div class="header-actions">
+    <button id="refresh-teacher-button" class="button primary">تحديث البيانات 🔄</button>
     <button id="logout-button-teacher" class="button danger">تسجيل الخروج</button>
   </div>
 </header>
-
 
     <!-- تبويبات المعلم -->
     <nav class="tabs">
@@ -149,6 +131,13 @@
 
       <!-- تبويب: مراجعة المهام -->
       <div id="review-tasks-tab" class="tab-content">
+        <h3>لوحة الشرف (أعلى الطلاب نقاطاً)</h3>
+        <div id="honor-board" class="tasks-review-container">
+          <p class="message info">جارٍ تحميل لوحة الشرف...</p>
+        </div>
+
+        <hr />
+
         <h3>مهام بانتظار مراجعتك</h3>
         <p class="info-text">
           هنا تظهر المهام التي أرسلها الطلاب للمراجعة. يمكنك قبولها أو رفضها.
@@ -208,11 +197,7 @@
 
       <!-- تبويب: إدارة الطلاب -->
       <div id="manage-students-tab" class="tab-content hidden">
-        <h3>قائمة الطلاب</h3>
-        <ul id="student-list" class="data-list"></ul>
-
-        <hr />
-
+        <!-- أولاً نموذج الطالب -->
         <h3 id="student-form-title">إضافة / تعديل طالب</h3>
 
         <div class="student-form">
@@ -227,17 +212,31 @@
           </div>
 
           <div class="input-group">
+            <label for="new-student-parent-name">اسم ولي الأمر (اختياري):</label>
+            <input
+              type="text"
+              id="new-student-parent-name"
+              placeholder="اسم ولي الأمر"
+            />
+          </div>
+
+          <div class="input-group">
             <label for="new-student-parent-code">رمز ولي الأمر (اختياري):</label>
             <input
               type="text"
               id="new-student-parent-code"
-              placeholder="مثال: P100 (نفسه يستخدمه ولي الأمر للدخول)"
+              placeholder="مثال: P100 (يستخدمه ولي الأمر للدخول)"
             />
           </div>
 
           <div class="input-group">
             <label for="new-student-hifz-start">نقطة بداية الحفظ:</label>
             <select id="new-student-hifz-start"></select>
+          </div>
+
+          <div class="input-group">
+            <label for="new-student-hifz-end">نقطة نهاية الحفظ:</label>
+            <select id="new-student-hifz-end"></select>
           </div>
 
           <div class="input-group">
@@ -258,11 +257,25 @@
             </select>
           </div>
 
+          <div class="input-group">
+            <label for="new-student-murajaa-start">نقطة بداية المراجعة:</label>
+            <select id="new-student-murajaa-start"></select>
+            <p class="info-text">
+              هذه أول مهمة مراجعة يبدأ منها الطالب في دورته الحالية.
+            </p>
+          </div>
+
           <button id="register-student-button" class="button primary">
             حفظ بيانات الطالب
           </button>
           <p id="register-student-message" class="message hidden"></p>
         </div>
+
+        <hr />
+
+        <!-- ثانياً قائمة الطلاب -->
+        <h3>قائمة الطلاب</h3>
+        <ul id="student-list" class="data-list"></ul>
       </div>
 
       <!-- تبويب: عرض المنهج -->
@@ -284,28 +297,28 @@
   </div>
 
   <!-- شاشة ولي الأمر -->
-  <!-- شاشة ولي الأمر -->
-<div id="parent-screen" class="container hidden">
-  <header class="dashboard-header">
-    <div>
-      <h2 id="welcome-parent">مرحبًا بك يا ولي الأمر</h2>
-      <p class="subtitle">متابعة إنجاز الأبناء في الحفظ والمراجعة</p>
-    </div>
-    <button id="logout-button-parent" class="button danger">تسجيل الخروج</button>
-  </header>
+  <div id="parent-screen" class="container hidden">
+    <header class="dashboard-header">
+      <div>
+        <h2 id="welcome-parent">مرحبًا بك يا ولي الأمر</h2>
+        <p class="subtitle">متابعة إنجاز الأبناء في الحفظ والمراجعة</p>
+      </div>
+      <button id="logout-button-parent" class="button danger">تسجيل الخروج</button>
+    </header>
 
-  <section>
-    <h3>أبناؤك المسجلون</h3>
-    <div id="parent-children-list" class="children-list">
-      <p class="message info">جارٍ تحميل بيانات الأبناء...</p>
-    </div>
-  </section>
-</div>
-
-
+    <section>
+      <h3>أبناؤك المسجلون</h3>
+      <div id="parent-children-list" class="children-list">
+        <p class="message info">جارٍ تحميل بيانات الأبناء...</p>
+      </div>
+    </section>
+  </div>
 
   <!-- منطق التطبيق -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
+
+
+
 
