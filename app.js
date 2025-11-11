@@ -188,6 +188,21 @@ function getCurrentHifzMission(student) {
   };
 }
 
+// مهمة الحفظ القادمة (بعد إنهاء المهمة الحالية)
+function getNextHifzMission(student) {
+  const current = getCurrentHifzMission(student);
+  if (!current) return null;
+
+  // نحاكي أنه أنهى المهمة الحالية (خطوة واحدة للأمام)
+  const virtualStudent = {
+    ...student,
+    hifz_progress: current.lastIndex + 1,
+  };
+
+  return getCurrentHifzMission(virtualStudent);
+}
+
+
 // مهمة المراجعة الحالية (خطية، مع إعادة من البداية بعد النهاية)
 function getCurrentMurajaaMission(student) {
   const level = student.murajaa_level || "BUILDING";
@@ -209,6 +224,28 @@ function getCurrentMurajaaMission(student) {
     points,
   };
 }
+
+// مهمة المراجعة القادمة (بعد إنهاء الحالية)
+function getNextMurajaaMission(student) {
+  const current = getCurrentMurajaaMission(student);
+  if (!current) return null;
+
+  const level = student.murajaa_level || current.level || "BUILDING";
+  const arr = getReviewArrayForLevel(level);
+  if (!arr || arr.length === 0) return null;
+
+  const arrLen = arr.length;
+  const nextIndex = (current.index + 1) % arrLen;
+
+  const virtualStudent = {
+    ...student,
+    murajaa_level: level,
+    murajaa_progress_index: nextIndex,
+  };
+
+  return getCurrentMurajaaMission(virtualStudent);
+}
+
 
 // نسبة التقدم في الحفظ (بسيطة: من بداية الحفظ حتى الفهرس الحالي)
 function computeHifzPercent(student) {
@@ -297,47 +334,48 @@ function renderStudentTasks(student) {
   const tasksArray = Array.isArray(student.tasks) ? student.tasks : [];
 
   // 1) مهمة الحفظ الحالية
-  const hifzMission = getCurrentHifzMission(student);
-  if (hifzMission) {
-    const pendingTask = tasksArray.find(
-      (t) =>
-        t.type === "hifz" &&
-        t.status === "pending" &&
-        t.mission_start === hifzMission.startIndex
-    );
+   // --- بطاقة الحفظ: عرض المهمة القادمة ---
+  const currentHifzMission = getCurrentHifzMission(student);
+  const nextHifzMission = getNextHifzMission(student);
 
-    const card = document.createElement("div");
-    card.className = "task-card";
-    card.innerHTML = `
-      <div class="task-header">
-        <div class="task-title">📖 الحفظ</div>
-        <span class="task-type-tag hifz">حفظ</span>
-      </div>
-      <div class="task-body">
-        ${hifzMission.description}
-      </div>
-      <div class="task-footer">
-        <span class="task-points-tag">النقاط: ${hifzMission.points}</span>
-        <span class="task-status-text">${
-          pendingTask
-            ? "قيد المراجعة لدى المعلم..."
-            : "بانتظار أن تضغط أنجزت المهمة"
-        }</span>
-      </div>
-    `;
+  if (nextHifzMission) {
+    // نعرض المهمة القادمة
+    studentHifzProgressLabel.textContent =
+      `المهمة القادمة: ${nextHifzMission.description}`;
+  } else if (currentHifzMission) {
+    // لو مافي مهمة قادمة (مثلاً في آخر الخطة) نعرض الحالية
+    studentHifzProgressLabel.textContent =
+      `المهمة الحالية: ${currentHifzMission.description}`;
+  } else {
+    studentHifzProgressLabel.textContent = "لا توجد مهمة حفظ حالياً.";
+  }
 
-    const footer = card.querySelector(".task-footer");
-    const btnDone = document.createElement("button");
-    btnDone.className = "button success";
-    btnDone.textContent = pendingTask ? "إلغاء الإرسال" : "أنجزت المهمة ✅";
+  // --- بطاقة المراجعة: عرض المهمة القادمة أيضاً ---
+  const currentMurMission = getCurrentMurajaaMission(student);
+  const nextMurMission = getNextMurajaaMission(student);
 
-    btnDone.addEventListener("click", () => {
-      if (pendingTask) {
-        cancelCurriculumTask(student.code, "hifz", hifzMission.startIndex);
-      } else {
-        submitCurriculumTask(student.code, hifzMission);
-      }
-    });
+  if (nextMurMission) {
+    studentMurajaaProgressLabel.textContent =
+      `المهمة القادمة: ${nextMurMission.description}`;
+  } else if (currentMurMission) {
+    studentMurajaaProgressLabel.textContent =
+      `المهمة الحالية: ${currentMurMission.description}`;
+  } else {
+    studentMurajaaProgressLabel.textContent = "لا توجد مهمة مراجعة حالياً.";
+  }
+
+  // نص مستوى المراجعة يبقى مبني على المستوى الحالي
+  if (currentMurMission) {
+    studentMurajaaLevelLabel.textContent =
+      currentMurMission.level === "BUILDING"
+        ? "البناء"
+        : currentMurMission.level === "DEVELOPMENT"
+        ? "التطوير"
+        : "المتقدم";
+  } else {
+    studentMurajaaLevelLabel.textContent = "غير محدد";
+  }
+
 
     footer.appendChild(btnDone);
     tasksContainer.appendChild(card);
@@ -1435,6 +1473,7 @@ logoutButtonParent.addEventListener("click", logout);
 // =======================
 populateHifzStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
 
 
 
