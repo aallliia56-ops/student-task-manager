@@ -159,13 +159,41 @@ h1 {
   border-bottom: 1px solid #ecf0f1;
   padding-bottom: 12px;
 }
-.header-actions {
+
+/* شريط الإحصائيات (الطالب) */
+.stats-bar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 16px;
 }
 
-/* قسم التقدم */
+.stat-chip {
+  background-color: #ffffff;
+  border-radius: 999px;
+  border: 1px solid #d0d7de;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-label {
+  color: #7f8c8d;
+}
+
+.stat-value {
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.stat-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* قسم التقدم (الطالب) */
 .progress-section {
   display: grid;
   grid-template-columns: 1fr;
@@ -175,7 +203,7 @@ h1 {
 
 .progress-card {
   background-color: #f9fbff;
-  padding: 15px;
+  padding: 12px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
@@ -188,18 +216,32 @@ h1 {
   border-right: 4px solid #ffb74d;
 }
 
-.progress-card.points {
-  border-right: 4px solid #3498db;
+.progress-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.progress-card h3 {
+  margin: 0;
+  font-size: 0.95rem;
 }
 
 .progress-label {
-  margin-bottom: 8px;
+  margin: 4px 0 8px;
   font-size: 0.9rem;
+}
+
+.progress-percent {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0;
 }
 
 .progress-bar {
   width: 100%;
-  height: 10px;
+  height: 8px;
   background-color: #e0e6ed;
   border-radius: 999px;
   overflow: hidden;
@@ -212,30 +254,10 @@ h1 {
   transition: width 0.4s ease;
 }
 
-.progress-percent {
-  margin: 6px 0 0;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.big-number {
-  font-size: 1.4rem;
-  margin: 5px 0 0;
-}
-
 .small-text {
   font-size: 0.8rem;
   color: #7f8c8d;
-}
-
-/* سطر ترتيب الطالب */
-#student-rank-info {
-  margin-top: 5px;
-  margin-bottom: 10px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background-color: #f9fbff;
-  border-right: 3px solid #f1c40f;
+  margin: 0 0 6px;
 }
 
 /* قسم المهام (طالب) */
@@ -247,30 +269,27 @@ h1 {
   margin-top: 10px;
 }
 
-/* بطاقة المهمة نفسها أصغر وأنحف قليلاً */
 .task-card {
   background-color: #ffffff;
   border-radius: 12px;
   border: 1px solid #e0e6ed;
-  padding: 10px 12px;
+  padding: 10px;
   margin-bottom: 8px;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
 }
 
-/* الهيدر: عنوان صغير + شارة نوع المهمة */
 .task-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .task-title {
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
-/* شارة نوع المهمة */
 .task-type-tag {
   font-size: 0.8rem;
   padding: 3px 8px;
@@ -293,21 +312,12 @@ h1 {
   color: #1565c0;
 }
 
-/* النص العادي داخل البطاقة */
 .task-body {
-  margin-top: 6px;
-  font-size: 0.9rem;
+  margin-top: 8px;
+  font-size: 1rem;       /* تكبير نص المنهج */
+  font-weight: 600;       /* جعله أوضح */
 }
 
-/* 🔊 تكبير نص المنهج (المقطع) فقط */
-.mission-text {
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1.7;
-  color: #2c3e50;
-}
-
-/* الفوتر: النقاط + حالة المهمة + زر الإنجاز */
 .task-footer {
   margin-top: 8px;
   display: flex;
@@ -327,7 +337,6 @@ h1 {
   font-size: 0.8rem;
   font-weight: 600;
 }
-
 
 /* تبويبات المعلم */
 .tabs {
@@ -402,47 +411,8 @@ h1 {
 
 /* نموذج الطالب داخل تبويب الإدارة */
 .student-form {
-  margin-top: 5px;
-  padding-top: 5px;
-}
-
-/* لوحة الشرف */
-.honor-list {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-}
-
-.honor-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 10px;
-  margin-bottom: 6px;
-  border-radius: 10px;
-  background-color: #f9fbff;
-  border-right: 4px solid #95a5a6;
-  font-size: 0.85rem;
-}
-
-.honor-item span {
-  display: inline-block;
-}
-
-/* ميداليات للمراتب الأولى */
-.honor-item.rank-1 {
-  border-right-color: #f1c40f;
-  background: #fff9e0;
-}
-
-.honor-item.rank-2 {
-  border-right-color: #bdc3c7;
-  background: #f7f9fb;
-}
-
-.honor-item.rank-3 {
-  border-right-color: #e67e22;
-  background: #fff3e6;
+  margin-top: 15px;
+  padding-top: 10px;
 }
 
 /* مراجعة المهام (المعلم) */
@@ -454,39 +424,38 @@ h1 {
   background-color: #ffffff;
   border-radius: 10px;
   border: 1px solid #e0e6ed;
-  padding: 8px;
-  margin-bottom: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
 }
 
 .review-student-title {
   font-weight: 700;
-  margin-bottom: 6px;
-  font-size: 0.9rem;
+  margin-bottom: 8px;
 }
 
 .review-task-item {
   background-color: #fff8e1;
   border-radius: 8px;
-  border-right: 3px solid #ffb300;
-  padding: 6px 7px;          /* تصغير السمك هنا */
-  margin-bottom: 6px;
+  border-right: 4px solid #ffb300;
+  padding: 8px;
+  margin-bottom: 8px;
 }
 
 .review-task-header {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font-size: 0.8rem;         /* خط أصغر */
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
 .review-task-body {
-  font-size: 0.8rem;
-  margin-top: 3px;
+  font-size: 0.85rem;
+  margin-top: 4px;
 }
 
 .review-task-footer {
-  margin-top: 4px;
+  margin-top: 6px;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -539,9 +508,6 @@ h1 {
   font-size: 0.85rem;
   margin: 2px 0;
 }
-.child-card .progress-bar {
-  margin: 6px 0 4px;
-}
 
 /* استجابة للشاشات الكبيرة */
 @media (min-width: 768px) {
@@ -564,17 +530,10 @@ h1 {
   }
 
   .progress-section {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .curriculum-view {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
-/* تكبير نص المنهج داخل بطاقة مهمة الحفظ والمراجعة بشكل صريح */
-.task-card .task-body.mission-text {
-  font-size: 1.4rem !important;   /* تكبير واضح */
-  font-weight: 700;
-  color: #2c3e50;
-  line-height: 1.9;
 }
