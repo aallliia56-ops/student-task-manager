@@ -382,7 +382,7 @@ function renderStudentTasks(student) {
   }
 
   // 2) مهمة المراجعة الحالية
-  const murMission = getCurrentMurajaaMission(student);
+const current = getCurrentHifzMission(student);
   if (murMission) {
     const pendingTask = tasksArray.find(
       (t) =>
@@ -492,10 +492,82 @@ function renderStudentTasks(student) {
   }
 
 // عرض الداشبورد للطالب
-function displayStudentDashboard(student) {
-  currentUser = student;
+// ===============================
+// واجهة الطالب (عرض التقدّم والمهام)
+// ===============================
+async function displayStudentDashboard(student) {
+  try {
+    hideAllScreens();
+    studentScreen.classList.remove("hidden");
 
-  welcomeStudent.textContent = `أهلاً بك يا ${student.name || "طالب"}`;
+    // الاسم والترحيب
+    welcomeStudent.textContent = `أهلاً بك يا ${student.name}`;
+
+    // نقاط + ترتيب
+    const rank = await getStudentRank(student.code);
+    studentTotalPoints.textContent = student.total_points || 0;
+    studentRankText.textContent = rank ? rank : "غير متوفر";
+
+    // ======= المهمة القادمة في الحفظ =======
+    const currentHifzMission = getCurrentHifzMission(student);
+    const nextHifzMission = getNextHifzMission(student);
+
+    if (nextHifzMission) {
+      studentHifzProgressLabel.textContent =
+        `المهمة القادمة: ${nextHifzMission.description}`;
+    } else if (currentHifzMission) {
+      studentHifzProgressLabel.textContent =
+        `المهمة الحالية: ${currentHifzMission.description}`;
+    } else {
+      studentHifzProgressLabel.textContent = "لا توجد مهمة حفظ حالياً.";
+    }
+
+    // ======= المهمة القادمة في المراجعة =======
+    const currentMurajaaMission = getCurrentMurajaaMission(student);
+    const nextMurajaaMission = getNextMurajaaMission(student);
+
+    if (nextMurajaaMission) {
+      studentMurajaaProgressLabel.textContent =
+        `المهمة القادمة: ${nextMurajaaMission.description}`;
+    } else if (currentMurajaaMission) {
+      studentMurajaaProgressLabel.textContent =
+        `المهمة الحالية: ${currentMurajaaMission.description}`;
+    } else {
+      studentMurajaaProgressLabel.textContent = "لا توجد مهمة مراجعة حالياً.";
+    }
+
+    // مستوى المراجعة
+    if (currentMurajaaMission) {
+      studentMurajaaLevelLabel.textContent =
+        currentMurajaaMission.level === "BUILDING"
+          ? "البناء"
+          : currentMurajaaMission.level === "DEVELOPMENT"
+          ? "التطوير"
+          : "المتقدم";
+    } else {
+      studentMurajaaLevelLabel.textContent = "غير محدد";
+    }
+
+    // ======= التقدّم =======
+    const hifzPercent = computeHifzPercent(student);
+    const murajaaPercent = computeMurajaaPercent(student);
+
+    document.getElementById("student-hifz-progress-bar").style.width =
+      `${hifzPercent}%`;
+    document.getElementById("student-hifz-progress-percent").textContent =
+      hifzPercent;
+
+    document.getElementById("student-murajaa-progress-bar").style.width =
+      `${murajaaPercent}%`;
+    document.getElementById("student-murajaa-progress-percent").textContent =
+      murajaaPercent;
+
+    // ======= مهام الطالب =======
+    await renderStudentTasks(student);
+  } catch (error) {
+    console.error("❌ Error in displayStudentDashboard:", error);
+  }
+}
 
   // المهمة القادمة في الحفظ
   const hifzMission = getCurrentHifzMission(student);
@@ -1472,6 +1544,7 @@ logoutButtonParent.addEventListener("click", logout);
 // =======================
 populateHifzStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
 
 
 
