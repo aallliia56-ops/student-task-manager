@@ -480,7 +480,23 @@ if (refreshButtonStudent) {
     }
   });
 }
+  // زر تحديث لوحة المعلم
+if (refreshButtonTeacher) {
+  refreshButtonTeacher.addEventListener("click", () => {
+    try {
+      // نحدد التبويب النشط الحالي
+      const activeBtn = document.querySelector(".tab-button.active");
+      const tabId = activeBtn ? activeBtn.dataset.tab : "review-tasks-tab";
+      activateTab(tabId); // يعيد تحميل نفس التبويب
+    } catch (error) {
+      console.error("Error refreshing teacher panel:", error);
+      showMessage(authMessage, "حدث خطأ أثناء التحديث.", "error");
+    }
+  });
+}
 
+
+  
   
   // المهمة القادمة في المراجعة
   const murMission = getCurrentMurajaaMission(student);
@@ -1318,3 +1334,4 @@ logoutButtonParent.addEventListener("click", logout);
 // =======================
 populateHifzStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
