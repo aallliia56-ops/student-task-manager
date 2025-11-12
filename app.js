@@ -457,6 +457,16 @@ async function displayStudentDashboard(student) {
     const startSurah = startItem ? startItem.surah_name_ar : "—";
     const endSurah   = endItem ? endItem.surah_name_ar : "—";
     const pts = student.total_points || 0;
+    // ✅ تحديث سطر الخطة والنقاط والترتيب
+if (studentPlanLine) {
+  studentPlanLine.textContent =
+    `الخطة: من ${startSurah} إلى ${endSurah} • النقاط: ${pts} • الترتيب: —`;
+}
+
+if (stripPlan)   stripPlan.textContent   = `الخطة: من ${startSurah} إلى ${endSurah}`;
+if (stripPoints) stripPoints.textContent = `النقاط: ${pts}`;
+if (stripRank)   stripRank.textContent   = `الترتيب: —`;
+
 
     if (studentPlanLine) {
       studentPlanLine.textContent = `الخطة: من ${startSurah} إلى ${endSurah} • النقاط: ${pts} • الترتيب: —`;
@@ -515,6 +525,13 @@ async function displayStudentDashboard(student) {
     if (index !== -1) rankOnly = (index + 1).toString();
 
     if (els.rankText) els.rankText.textContent = rankOnly;
+
+    if (studentPlanLine) {
+  studentPlanLine.textContent =
+    `الخطة: من ${startSurah} إلى ${endSurah} • النقاط: ${pts} • الترتيب: ${rankOnly}`;
+}
+if (stripRank) stripRank.textContent = `الترتيب: ${rankOnly}`;
+
 
     // حدّث سطر الخطة ليعرض الرقم فقط أيضًا
     if (studentPlanLine) {
@@ -1720,5 +1737,6 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
