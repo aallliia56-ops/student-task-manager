@@ -638,3 +638,30 @@ h1 {
 .plan-line     { margin-top: -6px; margin-bottom: 6px; font-size: .85rem; }
 .progress-section { gap: 12px; margin-bottom: 12px; }
 
+/* صف واحد: الشريط + النسبة */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* الشريط يتمدّد، والنسبة تبقى يمينه */
+.progress-row .progress-bar {
+  flex: 1;
+  height: 8px;              /* أنحف */
+}
+
+/* رقم النسبة بمحاذاة الشريط */
+.progress-row .progress-percent {
+  margin: 0;                /* بدون مسافات فوق/تحت */
+  font-weight: 700;
+  min-width: 3ch;           /* عرض ثابت تقريبياً */
+  text-align: start;        /* يمين/يسار حسب RTL */
+}
+
+/* لو نسيت حذف سطر المهمة الحالية؛ نخفيه */
+.progress-label { display: none !important; }
+
+/* تنحيف البطاقة أكثر قليلاً */
+.progress-card { padding: 10px 12px; }
+
