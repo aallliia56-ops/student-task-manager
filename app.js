@@ -331,6 +331,42 @@ function getNextMurajaaMission(student) {
   };
 }
 
+// مهمة المراجعة الحالية (مع نقطة بداية مخصصة لكل طالب)
+function getCurrentMurajaaMission(student) {
+  const level = student.murajaa_level || "BUILDING";
+  const arr = getReviewArrayForLevel(level);
+  if (!arr || arr.length === 0) return null;
+
+  const arrLen = arr.length;
+
+  // نقطة بداية الدورة لهذا الطالب
+  let startIndex = student.murajaa_start_index ?? 0;
+  if (arrLen > 0) {
+    startIndex = ((startIndex % arrLen) + arrLen) % arrLen;
+  }
+
+  // أين وصل الآن داخل الدورة
+  let index = student.murajaa_progress_index;
+  if (index == null) {
+    index = startIndex;
+  } else if (arrLen > 0) {
+    index = ((index % arrLen) + arrLen) % arrLen;
+  }
+
+  const item = arr[index];
+  const description = item.name;
+  const points = item.points || 3;
+
+  return {
+    type: "murajaa",
+    level,
+    index,
+    description,
+    points,
+  };
+}
+
+
 // نسبة التقدم في الحفظ داخل الخطة (من–إلى)
 function computeHifzPercent(student) {
   const all = HIFZ_CURRICULUM;
@@ -1651,6 +1687,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
   // end of file
+
 
 
 
