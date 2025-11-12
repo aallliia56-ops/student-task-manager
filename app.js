@@ -581,7 +581,7 @@ function renderStudentTasks(student) {
         <span class="task-status-text">${
           pendingTask
             ? "قيد المراجعة لدى المعلم..."
-            : "بانتظار أن تضغط أنجزت المهمة"
+            : ""
         }</span>
       </div>
     `;
@@ -629,7 +629,7 @@ function renderStudentTasks(student) {
         <span class="task-status-text">${
           pendingTask
             ? "قيد المراجعة لدى المعلم..."
-            : "بانتظار أن تضغط أنجزت المهمة"
+            : ""
         }</span>
       </div>
     `;
@@ -1737,6 +1737,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
