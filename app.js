@@ -51,21 +51,21 @@ const authMessage = document.getElementById("auth-message");
 // شاشة الطالب
 const studentScreen = document.getElementById("student-screen");
 const welcomeStudent = document.getElementById("welcome-student");
-// شريط الخطة تحت اسم الطالب
-const studentPlanStrip = document.getElementById("student-plan-strip");
-const stripPlan = document.getElementById("strip-plan");
-const stripPoints = document.getElementById("strip-points");
-const stripRank = document.getElementById("strip-rank");
 
+// شريط/سطر الخطة (اختياري إذا موجود في الـ HTML)
+const studentPlanStrip = document.getElementById("student-plan-strip");
+const stripPlan   = document.getElementById("strip-plan");
+const stripPoints = document.getElementById("strip-points");
+const stripRank   = document.getElementById("strip-rank");
+
+// سطر الخطة النحيف تحت الاسم (إذا موجود)
 const studentPlanLine = document.getElementById("student-plan-line");
+
+// عناوين المهمة القادمة (إن وجدت في الـ HTML)
 const studentHifzNextLabel = document.getElementById("student-hifz-next-label");
 const studentMurajaaNextLabel = document.getElementById("student-murajaa-next-label");
 
-
-// المهمة القادمة
-const nextHifzMissionSpan = document.getElementById("next-hifz-mission");
-const nextMurajaaMissionSpan = document.getElementById("next-murajaa-mission");
-
+// عناصر التقدم
 const studentHifzProgressLabel = document.getElementById("student-hifz-progress-label");
 const studentMurajaaProgressLabel = document.getElementById("student-murajaa-progress-label");
 const studentHifzProgressBar = document.getElementById("student-hifz-progress-bar");
@@ -130,15 +130,38 @@ let currentUser = null;
 let editingStudentCode = null;
 
 // =======================
+// أدوات مساعدة صغيرة للسلامة مع DOM
+// =======================
+function safeSetText(el, text) { if (el) el.textContent = text; }
+function safeSetWidth(el, pct) { if (el) el.style.width = `${pct}%`; }
+function getStudentEls() {
+  return {
+    welcome: document.getElementById("welcome-student"),
+    hifzLabel: document.getElementById("student-hifz-progress-label"),
+    murLabel: document.getElementById("student-murajaa-progress-label"),
+    hifzBar: document.getElementById("student-hifz-progress-bar"),
+    murBar: document.getElementById("student-murajaa-progress-bar"),
+    hifzPct: document.getElementById("student-hifz-progress-percent"),
+    murPct: document.getElementById("student-murajaa-progress-percent"),
+    murLevel: document.getElementById("student-murajaa-level-label"),
+    totalPoints: document.getElementById("student-total-points"),
+    rankText: document.getElementById("student-rank-text"),
+  };
+}
+
+// =======================
 // أزرار التحديث (طالب / معلم)
 // =======================
 
 // تحديث واجهة الطالب من Firestore
 async function refreshStudentView() {
   // نتأكد أن المستخدم طالب وله كود
-  if (!currentUser || !currentUser.code) return;
-  console.warn("No currentUser/code at refresh:", currentUser);
+  if (!currentUser || !currentUser.code) {
+    console.warn("No currentUser/code at refresh:", currentUser);
     return;
+  }
+  // FIX: كان فيه return زائد يوقف التنفيذ بعد الـ console.warn
+
   try {
     const studentRef = doc(db, "students", currentUser.code);
     const snap = await getDoc(studentRef);
@@ -228,8 +251,6 @@ async function fetchAllStudentsSortedByPoints() {
 // منطق المنهج: حفظ + مراجعة
 // =======================
 
-// مهمة الحفظ الحالية (تجميع 1-3 مقاطع من نفس السورة حسب hifz_level)
-
 // مهمة الحفظ الحالية حسب مستوى الطالب (1 / 2 / 3 مقاطع)
 function getCurrentHifzMission(student) {
   const all = HIFZ_CURRICULUM;
@@ -254,11 +275,11 @@ function getCurrentHifzMission(student) {
     i++;
   }
 
-  // دمج الوصف: من أول آية إلى آخر آية في المقاطع المدموجة
+  // دمج الوصف
   const lastSeg = segments[segments.length - 1];
   const description = `${firstSeg.surah_name_ar} (${firstSeg.start_ayah}-${lastSeg.end_ayah})`;
 
-  // نقاط المهمة: ثابتة (٥ نقاط) بغض النظر عن عدد المقاطع
+  // نقاط المهمة: ثابتة (٥ نقاط)
   const pointsPerMission = firstSeg.points || 5;
 
   return {
@@ -369,7 +390,6 @@ function getNextMurajaaMission(student) {
   };
 }
 
-
 // نسبة التقدم في الحفظ داخل الخطة (من–إلى)
 function computeHifzPercent(student) {
   const all = HIFZ_CURRICULUM;
@@ -399,7 +419,7 @@ function computeMurajaaPercent(student) {
   }
   progressIndex = ((progressIndex % arrLen) + arrLen) % arrLen;
 
-  const distance = (progressIndex - start + arrLen) % arrLen; // عدد المهام المنجزة في الدورة الحالية
+  const distance = (progressIndex - start + arrLen) % arrLen;
   return Math.round((distance / arrLen) * 100);
 }
 
@@ -417,35 +437,106 @@ function buildPlanText(student) {
   return `الخطة: من سورة ${startSurah} إلى سورة ${endSurah}`;
 }
 
-
 // =======================
 // شاشة الطالب: عرض الداشبورد
 // =======================
 
-// Helpers to avoid null crashes
-function safeSetText(el, text) { if (el) el.textContent = text; }
-function safeSetWidth(el, pct) { if (el) el.style.width = `${pct}%`; }
-function getStudentEls() {
-  return {
-    welcome: document.getElementById("welcome-student"),
-    hifzLabel: document.getElementById("student-hifz-progress-label"),
-    murLabel: document.getElementById("student-murajaa-progress-label"),
-    hifzBar: document.getElementById("student-hifz-progress-bar"),
-    murBar: document.getElementById("student-murajaa-progress-bar"),
-    hifzPct: document.getElementById("student-hifz-progress-percent"),
-    murPct: document.getElementById("student-murajaa-progress-percent"),
-    murLevel: document.getElementById("student-murajaa-level-label"),
-    totalPoints: document.getElementById("student-total-points"),
-    rankText: document.getElementById("student-rank-text"),
-  };
-}
+async function displayStudentDashboard(student) {
+  // FIX: أزلت try{} داخلي متداخل كان يسبب "Missing catch..." وأبقيت try واحد فقط
+  try {
+    const els = getStudentEls();
 
+    // ترحيب
+    safeSetText(els.welcome, `أهلاً بك يا ${student.name || "طالب"}`);
+
+    // سطر الخطة تحت الاسم (إن وُجد)
+    const startIdx = student.hifz_start_id ?? 0;
+    const endIdx   = student.hifz_end_id ?? (HIFZ_CURRICULUM.length - 1);
+    const startItem = HIFZ_CURRICULUM[startIdx];
+    const endItem   = HIFZ_CURRICULUM[endIdx];
+    const startSurah = startItem ? startItem.surah_name_ar : "—";
+    const endSurah   = endItem ? endItem.surah_name_ar : "—";
+    const pts = student.total_points || 0;
+
+    if (studentPlanLine) {
+      studentPlanLine.textContent = `الخطة: من ${startSurah} إلى ${endSurah} • النقاط: ${pts} • الترتيب: —`;
+    }
+
+    // مهمة الحفظ الحالية
+    const hifzMission = getCurrentHifzMission(student);
+    if (hifzMission) {
+      safeSetText(els.hifzLabel, hifzMission.description);
+    } else {
+      safeSetText(els.hifzLabel, "لا توجد مهمة حفظ حالياً.");
+    }
+
+    // مهمة المراجعة الحالية + مستوى الحلقة
+    const murMission = getCurrentMurajaaMission(student);
+    if (murMission) {
+      safeSetText(els.murLabel, murMission.description);
+      safeSetText(
+        els.murLevel,
+        murMission.level === "BUILDING" ? "البناء" :
+        murMission.level === "DEVELOPMENT" ? "التطوير" : "المتقدم"
+      );
+    } else {
+      safeSetText(els.murLabel, "لا توجد مهمة مراجعة حالياً.");
+      safeSetText(els.murLevel, "غير محدد");
+    }
+
+    // المهمة القادمة للحفظ تحت شريط الإنجاز (إن وُجد مكانها)
+    const nextH = getNextHifzMission(student);
+    if (studentHifzNextLabel) {
+      studentHifzNextLabel.textContent = `المهمة القادمة: ${nextH ? nextH.description : "—"}`;
+    }
+
+    // المهمة القادمة للمراجعة تحت شريط الإنجاز (إن وُجد مكانها)
+    const nextM = getNextMurajaaMission(student);
+    if (studentMurajaaNextLabel) {
+      studentMurajaaNextLabel.textContent = `المهمة القادمة: ${nextM ? nextM.description : "—"}`;
+    }
+
+    // النِّسَب وأشرطة التقدم
+    const hifzPercent = computeHifzPercent(student);
+    const murPercent  = computeMurajaaPercent(student);
+
+    safeSetText(els.hifzPct, hifzPercent);
+    safeSetText(els.murPct,  murPercent);
+    safeSetWidth(els.hifzBar, hifzPercent);
+    safeSetWidth(els.murBar,  murPercent);
+
+    // النقاط
+    safeSetText(els.totalPoints, student.total_points || 0);
+
+    // ترتيب الطالب (رقم فقط)
+    const allStudents = await fetchAllStudentsSortedByPoints();
+    const index = allStudents.findIndex((s) => s.code === student.code);
+    let rankOnly = "—";
+    if (index !== -1) rankOnly = (index + 1).toString();
+
+    if (els.rankText) els.rankText.textContent = rankOnly;
+
+    // حدّث سطر الخطة ليعرض الرقم فقط أيضًا
+    if (studentPlanLine) {
+      studentPlanLine.textContent = `الخطة: من ${startSurah} إلى ${endSurah} • النقاط: ${pts} • الترتيب: ${rankOnly}`;
+    }
+
+    // بطاقات المهام
+    renderStudentTasks(student);
+
+    hideAllScreens();
+    const screen = document.getElementById("student-screen");
+    if (screen) screen.classList.remove("hidden");
+  } catch (err) {
+    console.error("displayStudentDashboard error:", err);
+    showMessage(authMessage, `خطأ في عرض واجهة الطالب: ${err.message}`, "error");
+  }
+} // FIX: إغلاق دالة displayStudentDashboard كان ناقص
 
 function renderStudentTasks(student) {
   studentTasksDiv.innerHTML = "";
 
   const tasksContainer = document.createElement("div");
-
   const tasksArray = Array.isArray(student.tasks) ? student.tasks : [];
 
   // 1) مهمة الحفظ الحالية
@@ -460,24 +551,23 @@ function renderStudentTasks(student) {
 
     const card = document.createElement("div");
     card.className = "task-card";
-  card.innerHTML = `
-    <div class="task-header">
-      <div class="task-title">🎯 الحفظ </div>
-      <span class="task-type-tag hifz">حفظ</span>
-    </div>
-    <div class="task-body mission-text">
-      ${hifzMission.description}
-    </div>
-    <div class="task-footer">
-      <span class="task-points-tag">النقاط: ${hifzMission.points}</span>
-      <span class="task-status-text">${
-        pendingTask
-          ? "قيد المراجعة لدى المعلم..."
-          : "بانتظار أن تضغط أنجزت المهمة"
-      }</span>
-    </div>
-  `;
-
+    card.innerHTML = `
+      <div class="task-header">
+        <div class="task-title">🎯 الحفظ </div>
+        <span class="task-type-tag hifz">حفظ</span>
+      </div>
+      <div class="task-body mission-text">
+        ${hifzMission.description}
+      </div>
+      <div class="task-footer">
+        <span class="task-points-tag">النقاط: ${hifzMission.points}</span>
+        <span class="task-status-text">${
+          pendingTask
+            ? "قيد المراجعة لدى المعلم..."
+            : "بانتظار أن تضغط أنجزت المهمة"
+        }</span>
+      </div>
+    `;
 
     const footer = card.querySelector(".task-footer");
     const btnDone = document.createElement("button");
@@ -509,24 +599,23 @@ function renderStudentTasks(student) {
 
     const card = document.createElement("div");
     card.className = "task-card";
-     card.innerHTML = `
-    <div class="task-header">
-      <div class="task-title">📖 المراجعة </div>
-      <span class="task-type-tag murajaa">مراجعة</span>
-    </div>
-    <div class="task-body mission-text">
-      ${murMission.description}
-    </div>
-    <div class="task-footer">
-      <span class="task-points-tag">النقاط: ${murMission.points}</span>
-      <span class="task-status-text">${
-        pendingTask
-          ? "قيد المراجعة لدى المعلم..."
-          : "بانتظار أن تضغط أنجزت المهمة"
-      }</span>
-    </div>
-  `;
-
+    card.innerHTML = `
+      <div class="task-header">
+        <div class="task-title">📖 المراجعة </div>
+        <span class="task-type-tag murajaa">مراجعة</span>
+      </div>
+      <div class="task-body mission-text">
+        ${murMission.description}
+      </div>
+      <div class="task-footer">
+        <span class="task-points-tag">النقاط: ${murMission.points}</span>
+        <span class="task-status-text">${
+          pendingTask
+            ? "قيد المراجعة لدى المعلم..."
+            : "بانتظار أن تضغط أنجزت المهمة"
+        }</span>
+      </div>
+    `;
 
     const footer = card.querySelector(".task-footer");
     const btnDone = document.createElement("button");
@@ -547,7 +636,6 @@ function renderStudentTasks(student) {
 
   // 3) المهام العامة
   const generalTasks = tasksArray.filter((t) => t.type === "general");
-
   if (generalTasks.length > 0) {
     generalTasks.forEach((task) => {
       const card = document.createElement("div");
@@ -606,106 +694,6 @@ function renderStudentTasks(student) {
   }
 }
 
-// عرض الداشبورد للطالب (مع الترتيب)
-
-async function displayStudentDashboard(student) {
-  try {
-    const els = getStudentEls();
-
-    // ترحيب
-    safeSetText(els.welcome, `أهلاً بك يا ${student.name || "طالب"}`);
-
-    // سطر الخطة تحت الاسم
-const startIdx = student.hifz_start_id ?? 0;
-const endIdx   = student.hifz_end_id ?? (HIFZ_CURRICULUM.length - 1);
-const startItem = HIFZ_CURRICULUM[startIdx];
-const endItem   = HIFZ_CURRICULUM[endIdx];
-const startSurah = startItem ? startItem.surah_name_ar : "—";
-const endSurah   = endItem ? endItem.surah_name_ar : "—";
-const pts = student.total_points || 0;
-
-// الترتيب سنحسّنه لاحقًا بعد الحساب؛ الآن نضع شرطة
-if (studentPlanLine) {
-  studentPlanLine.textContent = `الخطة: من ${startSurah} إلى ${endSurah} • النقاط: ${pts} • الترتيب: —`;
-}
-
-
-    // مهمة الحفظ الحالية
-    const hifzMission = getCurrentHifzMission(student);
-    if (hifzMission) {
-      safeSetText(els.hifzLabel, hifzMission.description);
-    } else {
-      safeSetText(els.hifzLabel, "لا توجد مهمة حفظ حالياً.");
-    }
-
-    // مهمة المراجعة الحالية + مستوى الحلقة
-    const murMission = getCurrentMurajaaMission(student);
-    if (murMission) {
-      safeSetText(els.murLabel, murMission.description);
-      safeSetText(
-        els.murLevel,
-        murMission.level === "BUILDING" ? "البناء" :
-        murMission.level === "DEVELOPMENT" ? "التطوير" : "المتقدم"
-      );
-    } else {
-      safeSetText(els.murLabel, "لا توجد مهمة مراجعة حالياً.");
-      safeSetText(els.murLevel, "غير محدد");
-    }
-
-    // المهمة القادمة للحفظ تحت شريط الإنجاز
-const nextH = getNextHifzMission(student);
-if (studentHifzNextLabel) {
-  studentHifzNextLabel.textContent = `المهمة القادمة: ${nextH ? nextH.description : "—"}`;
-}
-
-// المهمة القادمة للمراجعة تحت شريط الإنجاز
-const nextM = getNextMurajaaMission(student);
-if (studentMurajaaNextLabel) {
-  studentMurajaaNextLabel.textContent = `المهمة القادمة: ${nextM ? nextM.description : "—"}`;
-}
-
-
-    // النِّسَب وأشرطة التقدم
-    const hifzPercent = computeHifzPercent(student);
-    const murPercent  = computeMurajaaPercent(student);
-
-    safeSetText(els.hifzPct, hifzPercent);
-    safeSetText(els.murPct,  murPercent);
-    safeSetWidth(els.hifzBar, hifzPercent);
-    safeSetWidth(els.murBar,  murPercent);
-
-    // النقاط
-    safeSetText(els.totalPoints, student.total_points || 0);
-
-    // ترتيب الطالب
-    try {
-      const allStudents = await fetchAllStudentsSortedByPoints();
-const index = allStudents.findIndex((s) => s.code === student.code);
-let rankOnly = "—";
-if (index !== -1) rankOnly = (index + 1).toString();
-
-// اكتب الرقم فقط في خانة الترتيب (إن أردت إبقاءها) أو تجاهلها
-if (studentRankText) studentRankText.textContent = rankOnly;
-
-// حدّث سطر الخطة ليعرض الرقم فقط
-if (studentPlanLine) {
-  const planBits = studentPlanLine.textContent.split("•");
-  // أعيد بناء السطر بنفس البداية مع إدخال الترتيب الجديد
-  studentPlanLine.textContent = `الخطة: من ${startSurah} إلى ${endSurah} • النقاط: ${pts} • الترتيب: ${rankOnly}`;
-}
-
-    // بطاقات المهام
-    renderStudentTasks(student);
-
-    hideAllScreens();
-    const screen = document.getElementById("student-screen");
-    if (screen) screen.classList.remove("hidden");
-  } catch (err) {
-    console.error("displayStudentDashboard error:", err);
-    showMessage(authMessage, `خطأ في عرض واجهة الطالب: ${err.message}`, "error");
-  }
-
-
 // =======================
 // إرسال / إلغاء مهام الطالب
 // =======================
@@ -741,7 +729,6 @@ async function submitCurriculumTask(studentCode, mission) {
     };
 
     tasks.push(newTask);
-
     await updateDoc(studentRef, { tasks });
 
     await displayStudentDashboard({ code: studentCode, ...student, tasks });
@@ -812,7 +799,6 @@ async function submitMurajaaTask(studentCode, mission) {
     };
 
     tasks.push(newTask);
-
     await updateDoc(studentRef, { tasks });
 
     await displayStudentDashboard({ code: studentCode, ...student, tasks });
@@ -869,7 +855,6 @@ async function submitGeneralTask(studentCode, taskId) {
     }
 
     tasks[idx].status = "pending";
-
     await updateDoc(studentRef, { tasks });
 
     await displayStudentDashboard({ code: studentCode, ...student, tasks });
@@ -1480,10 +1465,6 @@ function displayCurriculumsInTeacherPanel() {
 }
 
 // =======================
-// شاشة ولي الأمر
-// =======================
-
-// =======================
 // شاشة ولي الأمر (مُحدّثة)
 // =======================
 async function displayParentDashboard(parentCode) {
@@ -1513,7 +1494,6 @@ async function displayParentDashboard(parentCode) {
       if (lastPoints === null) {
         currentRank = 1;
       } else if (pts < lastPoints) {
-        // إذا قلّت النقاط، يتغيّر ترتيب الرقم
         currentRank = index + 1;
       }
       rankMap[s.code] = currentRank;
@@ -1622,7 +1602,6 @@ async function displayParentDashboard(parentCode) {
   }
 }
 
-
 // =======================
 // تبويبات المعلم
 // =======================
@@ -1688,7 +1667,7 @@ loginButton.addEventListener("click", async () => {
       return;
     }
 
-    // تجربة كولي أمر (عن طريق البحث عن طلاب parent_code = code)
+    // تجربة كولي أمر
     const colRef = collection(db, "students");
     const q = query(colRef, where("parent_code", "==", code));
     const snap = await getDocs(q);
@@ -1717,6 +1696,7 @@ function logout() {
 logoutButtonStudent.addEventListener("click", logout);
 logoutButtonTeacher.addEventListener("click", logout);
 logoutButtonParent.addEventListener("click", logout);
+
 // ربط أزرار التحديث
 if (refreshStudentButton) {
   refreshStudentButton.addEventListener("click", () => {
@@ -1730,19 +1710,11 @@ if (refreshTeacherButton) {
   });
 }
 
+// =======================
 // تهيئة أولية
 // =======================
 
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
-  // end of file
-
-
-
-
-
-
-
-
-
+// end of file
