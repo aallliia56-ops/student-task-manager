@@ -1667,9 +1667,3 @@ if (refreshTeacherButton) {
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
-
-
-
-
-
-
