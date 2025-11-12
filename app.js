@@ -223,6 +223,7 @@ async function fetchAllStudentsSortedByPoints() {
 // =======================
 
 // مهمة الحفظ الحالية حسب مستوى الطالب (1 / 2 / 3 مقاطع)
+// مهمة الحفظ الحالية
 function getCurrentHifzMission(student) {
   const all = HIFZ_CURRICULUM;
   if (!all || all.length === 0) return null;
@@ -246,7 +247,22 @@ function getCurrentHifzMission(student) {
     i++;
   }
 
-  function getNextHifzMission(student) {
+  // تكوين وصف المهمة ونقاطها
+  const lastSeg = segments[segments.length - 1];
+  const description = `${firstSeg.surah_name_ar} (${firstSeg.start_ayah}-${lastSeg.end_ayah})`;
+  const pointsPerMission = firstSeg.points || 5;
+
+  return {
+    type: "hifz",
+    startIndex,
+    lastIndex: startIndex + segments.length - 1,
+    description,
+    points: pointsPerMission,
+  };
+}
+
+// المهمة القادمة للحفظ
+function getNextHifzMission(student) {
   const all = HIFZ_CURRICULUM;
   if (!all || all.length === 0) return null;
 
@@ -290,6 +306,7 @@ function getCurrentHifzMission(student) {
     points: pointsPerMission,
   };
 }
+
 
   
   // ✅ دمج الوصف: من أول آية إلى آخر آية في المقاطع المدموجة
@@ -1686,5 +1703,6 @@ if (refreshTeacherButton) {
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
 
 
