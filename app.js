@@ -268,11 +268,9 @@ function getNextHifzMission(student) {
   const all = HIFZ_CURRICULUM;
   if (!all || all.length === 0) return null;
 
-  // حدود الخطة
   const planStart = student.hifz_start_id ?? 0;
   const planEnd   = student.hifz_end_id ?? (all.length - 1);
 
-  // اعتمد المهمة الحالية كنقطة انطلاق
   const cur = getCurrentHifzMission(student);
   if (!cur) return null;
 
@@ -287,7 +285,6 @@ function getNextHifzMission(student) {
   if (!firstSeg) return null;
   segments.push(firstSeg);
 
-  // نجمع حتى 3 مقاطع لاحقة بشرط نفس السورة وعدم تخطي planEnd
   let i = candidateStart + 1;
   while (segments.length < maxSegments && i <= planEnd && i < all.length) {
     const seg = all[i];
@@ -306,66 +303,6 @@ function getNextHifzMission(student) {
     lastIndex: candidateStart + segments.length - 1,
     description,
     points: pointsPerMission,
-  };
-}
-
-
-// مهمة الحفظ "المهمة التالية" بعد الحالية ضمن حدود الخطة
-function getNextHifzMission(student) {
-  const all = HIFZ_CURRICULUM;
-  if (!all || all.length === 0) return null;
-
-  // حدود الخطة
-  const planStart = student.hifz_start_id ?? 0;
-  const planEnd = student.hifz_end_id ?? (all.length - 1);
-
-  // اعتمد المهمة الحالية كنقطة انطلاق
-  const cur = getCurrentHifzMission(student);
-  if (!cur) return null;
-
-  const candidateStart = cur.lastIndex + 1;
-  if (candidateStart > planEnd) return null;
-
-  const level = parseInt(student.hifz_level || 1, 10);
-  const maxSegments = Math.max(1, Math.min(3, level));
-
-  const segments = [];
-  const firstSeg = all[candidateStart];
-  if (!firstSeg) return null;
-  segments.push(firstSeg);
-
-  // نجمع حتى 3
-
-
-// مهمة المراجعة الحالية (مع نقطة بداية مخصصة لكل طالب)
-function getCurrentMurajaaMission(student) {
-  const level = student.murajaa_level || "BUILDING";
-  const arr = getReviewArrayForLevel(level);
-  if (!arr || arr.length === 0) return null;
-
-  const arrLen = arr.length;
-  let startIndex = student.murajaa_start_index ?? 0;
-  if (arrLen > 0) {
-    startIndex = ((startIndex % arrLen) + arrLen) % arrLen;
-  }
-
-  let index = student.murajaa_progress_index;
-  if (index == null) {
-    index = startIndex;
-  } else if (arrLen > 0) {
-    index = ((index % arrLen) + arrLen) % arrLen;
-  }
-
-  const item = arr[index];
-  const description = item.name;
-  const points = item.points || 3;
-
-  return {
-    type: "murajaa",
-    level,
-    index,
-    description,
-    points,
   };
 }
 
@@ -1714,6 +1651,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
   // end of file
+
 
 
 
