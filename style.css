@@ -664,17 +664,3 @@ h1 {
 
 /* تنحيف البطاقة أكثر قليلاً */
 .progress-card { padding: 10px 12px; }
-
-.plan-line{
-  display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;
-  margin:4px 0 10px;font-size:.9rem
-}
-.plan-badge{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:26px;height:26px;border-radius:50%;font-size:1rem;color:#fff;font-weight:700
-}
-.plan-icon{background:#5b8def}     /* الخطة */
-.points-icon{background:#f4b400}   /* النقاط */
-.rank-icon{background:#34a853}     /* الترتيب */
-.plan-text{font-weight:600;color:#333;margin-inline-end:10px}
-
