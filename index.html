@@ -39,31 +39,24 @@
     <p id="auth-message" class="message hidden"></p>
   </div>
 
-<!-- شاشة الطالب -->
-<div id="student-screen" class="container hidden">
-  <header class="dashboard-header">
-    <div>
-      <h2 id="welcome-student">أهلاً بك يا طالب</h2>
-
-      <!-- شريط الخطة المنسّق بالدوائر -->
-      <div id="student-plan-line" class="plan-line">
-        <span class="plan-badge plan-icon">📘</span>
-        <span id="strip-plan" class="plan-text">—</span>
-
-        <span class="plan-badge points-icon">⭐</span>
-        <span id="strip-points" class="plan-text">0</span>
-
-        <span class="plan-badge rank-icon">🏅</span>
-        <span id="strip-rank" class="plan-text">—</span>
+  <!-- شاشة الطالب -->
+  <div id="student-screen" class="container hidden">
+    <header class="dashboard-header">
+      <div>
+        <h2 id="welcome-student">أهلاً بك يا طالب</h2>
+        <p id="student-plan-strip" class="plan-strip">
+          <span id="strip-plan">الخطة: —</span>
+          <span class="dot">•</span>
+          <span id="strip-points">النقاط: 0</span>
+          <span class="dot">•</span>
+          <span id="strip-rank">الترتيب: —</span>
+        </p>
       </div>
-    </div>
-
-    <div class="header-actions">
-      <button id="refresh-student-button" class="button primary">تحديث الصفحة 🔄</button>
-      <button id="logout-button-student" class="button danger">تسجيل الخروج</button>
-    </div>
-  </header>
-</div>
+      <div class="header-actions">
+        <button id="refresh-student-button" class="button primary">تحديث الصفحة 🔄</button>
+        <button id="logout-button-student" class="button danger">تسجيل الخروج</button>
+      </div>
+    </header>
 
     
     <!-- كروت التقدم -->
@@ -328,6 +321,7 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
 
 
