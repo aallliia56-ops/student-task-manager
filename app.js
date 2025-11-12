@@ -1650,31 +1650,30 @@ loginButton.addEventListener("click", async () => {
   }
 
   try {
+    // معلم
     if (code === "teacher1") {
       currentUser = { role: "teacher", name: "المعلم" };
       hideAllScreens();
       teacherScreen.classList.remove("hidden");
-      activateTab("review-tasks-tab"); // أول واجهة: مراجعة المهام + لوحة الشرف
+      activateTab("review-tasks-tab");
       return;
     }
 
-    // تجربة كطالب
-
-    // داخل loginButton.addEventListener(...)
+    // طالب
+    const studentRef = doc(db, "students", code);              // ✅ تعريف studentRef
     const studentSnap = await getDoc(studentRef);
     if (studentSnap.exists()) {
       const data = studentSnap.data();
-      currentUser = { role: "student", code, name: data.name || "طالب" }; // 👈 أهم سطر
+      currentUser = { role: "student", code, name: data.name || "طالب" }; // ✅ نحفظ currentUser
       await displayStudentDashboard({ code, ...data });
       return;
     }
-    
-    // تجربة كولي أمر
-    const colRef = collection(db, "students");
-    const q = query(colRef, where("parent_code", "==", code));
-    const snap = await getDocs(q);
 
-    if (!snap.empty) {
+    // ولي أمر
+    const colRef = collection(db, "students");
+    const qRef = query(colRef, where("parent_code", "==", code));
+    const qSnap = await getDocs(qRef);
+    if (!qSnap.empty) {
       currentUser = { role: "parent", code };
       await displayParentDashboard(code);
       return;
@@ -1686,6 +1685,7 @@ loginButton.addEventListener("click", async () => {
     showMessage(authMessage, `خطأ في الاتصال بالخادم: ${error.message}`, "error");
   }
 });
+
 
 function logout() {
   currentUser = null;
@@ -1720,4 +1720,5 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
