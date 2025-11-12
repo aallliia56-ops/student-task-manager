@@ -610,3 +610,22 @@ h1 {
   color: #2c3e50;
   line-height: 1.9;
 }
+/* سطر الخطة تحت الاسم يكون نحيف ومتماسك */
+.plan-line {
+  margin-top: -6px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  color: #607d8b;
+}
+
+/* نخلي كروت التقدم أنحف */
+.progress-card { padding: 10px 12px; }
+.progress-bar { height: 8px; }
+
+/* نخفي بطاقة النقاط (طلبك بطاقتين فقط) */
+.progress-card.points { display: none; }
+
+/* بطاقات الحفظ/المراجعة أنحف */
+.task-card { padding: 8px 10px; }
+.task-title { font-size: 0.85rem; }
+.mission-text { font-size: 1.2rem; } /* إبراز نص المنهج */
