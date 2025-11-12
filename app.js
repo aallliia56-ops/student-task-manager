@@ -222,8 +222,7 @@ async function fetchAllStudentsSortedByPoints() {
 // منطق المنهج: حفظ + مراجعة
 // =======================
 
-// مهمة الحفظ الحالية حسب مستوى الطالب (1 / 2 / 3 مقاطع)
-// مهمة الحفظ الحالية
+// مهمة الحفظ الحالية (تجميع 1-3 مقاطع من نفس السورة حسب hifz_level)
 function getCurrentHifzMission(student) {
   const all = HIFZ_CURRICULUM;
   if (!all || all.length === 0) return null;
@@ -247,7 +246,6 @@ function getCurrentHifzMission(student) {
     i++;
   }
 
-  // تكوين وصف المهمة ونقاطها
   const lastSeg = segments[segments.length - 1];
   const description = `${firstSeg.surah_name_ar} (${firstSeg.start_ayah}-${lastSeg.end_ayah})`;
   const pointsPerMission = firstSeg.points || 5;
@@ -261,16 +259,14 @@ function getCurrentHifzMission(student) {
   };
 }
 
-// المهمة القادمة للحفظ
+// المهمة التالية مباشرة بعد الحالية (مع احترام حدود خطة الطالب)
 function getNextHifzMission(student) {
   const all = HIFZ_CURRICULUM;
   if (!all || all.length === 0) return null;
 
-  // حدود الخطة
   const planStart = student.hifz_start_id ?? 0;
   const planEnd = student.hifz_end_id ?? (all.length - 1);
 
-  // اعتمد المهمة الحالية كنقطة انطلاق
   const cur = getCurrentHifzMission(student);
   if (!cur) return null;
 
@@ -306,7 +302,6 @@ function getNextHifzMission(student) {
     points: pointsPerMission,
   };
 }
-
 
   
   // ✅ دمج الوصف: من أول آية إلى آخر آية في المقاطع المدموجة
@@ -1703,6 +1698,7 @@ if (refreshTeacherButton) {
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
 
 
 
