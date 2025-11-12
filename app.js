@@ -704,7 +704,6 @@ if (studentPlanLine) {
     console.error("displayStudentDashboard error:", err);
     showMessage(authMessage, `خطأ في عرض واجهة الطالب: ${err.message}`, "error");
   }
-}
 
 
 // =======================
@@ -1738,6 +1737,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
   // end of file
+
 
 
 
