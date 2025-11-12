@@ -248,11 +248,11 @@ function getCurrentHifzMission(student) {
     i++;
   }
 
-  // ✅ دمج الوصف: من أول آية إلى آخر آية في المقاطع المدموجة
+  // دمج الوصف: من أول آية إلى آخر آية في المقاطع المدموجة
   const lastSeg = segments[segments.length - 1];
   const description = `${firstSeg.surah_name_ar} (${firstSeg.start_ayah}-${lastSeg.end_ayah})`;
 
-  // ✅ نقاط المهمة: ثابتة (٥ نقاط) بغض النظر عن عدد المقاطع
+  // نقاط المهمة: ثابتة (٥ نقاط) بغض النظر عن عدد المقاطع
   const pointsPerMission = firstSeg.points || 5;
 
   return {
@@ -263,6 +263,52 @@ function getCurrentHifzMission(student) {
     points: pointsPerMission,
   };
 }
+
+function getNextHifzMission(student) {
+  const all = HIFZ_CURRICULUM;
+  if (!all || all.length === 0) return null;
+
+  // حدود الخطة
+  const planStart = student.hifz_start_id ?? 0;
+  const planEnd   = student.hifz_end_id ?? (all.length - 1);
+
+  // اعتمد المهمة الحالية كنقطة انطلاق
+  const cur = getCurrentHifzMission(student);
+  if (!cur) return null;
+
+  const candidateStart = cur.lastIndex + 1;
+  if (candidateStart > planEnd) return null;
+
+  const level = parseInt(student.hifz_level || 1, 10);
+  const maxSegments = Math.max(1, Math.min(3, level));
+
+  const segments = [];
+  const firstSeg = all[candidateStart];
+  if (!firstSeg) return null;
+  segments.push(firstSeg);
+
+  // نجمع حتى 3 مقاطع لاحقة بشرط نفس السورة وعدم تخطي planEnd
+  let i = candidateStart + 1;
+  while (segments.length < maxSegments && i <= planEnd && i < all.length) {
+    const seg = all[i];
+    if (seg.surah_number !== firstSeg.surah_number) break;
+    segments.push(seg);
+    i++;
+  }
+
+  const lastSeg = segments[segments.length - 1];
+  const description = `${firstSeg.surah_name_ar} (${firstSeg.start_ayah}-${lastSeg.end_ayah})`;
+  const pointsPerMission = firstSeg.points || 5;
+
+  return {
+    type: "hifz",
+    startIndex: candidateStart,
+    lastIndex: candidateStart + segments.length - 1,
+    description,
+    points: pointsPerMission,
+  };
+}
+
 
 // مهمة الحفظ "المهمة التالية" بعد الحالية ضمن حدود الخطة
 function getNextHifzMission(student) {
@@ -1668,5 +1714,6 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
   // end of file
+
 
 
