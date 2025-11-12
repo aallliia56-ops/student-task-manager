@@ -312,31 +312,6 @@ function getNextHifzMission(student) {
   };
 }
 
-
-function getNextMurajaaMission(student) {
-  const level = student.murajaa_level || "BUILDING";
-  const arr = getReviewArrayForLevel(level);
-  if (!arr || arr.length === 0) return null;
-
-  const arrLen = arr.length;
-  const startIndex = ((student.murajaa_start_index ?? 0) % arrLen + arrLen) % arrLen;
-
-  let currentIndex = student.murajaa_progress_index;
-  if (currentIndex == null) currentIndex = startIndex;
-  currentIndex = ((currentIndex % arrLen) + arrLen) % arrLen;
-
-  const nextIndex = (currentIndex + 1) % arrLen;
-  const item = arr[nextIndex];
-
-  return {
-    type: "murajaa",
-    level,
-    index: nextIndex,
-    description: item.name,
-    points: item.points || 3,
-  };
-}
-
 // مهمة المراجعة الحالية (مع نقطة بداية مخصصة لكل طالب)
 function getCurrentMurajaaMission(student) {
   const level = student.murajaa_level || "BUILDING";
@@ -1763,6 +1738,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
   // end of file
+
 
 
 
