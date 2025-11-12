@@ -1659,14 +1659,16 @@ loginButton.addEventListener("click", async () => {
     }
 
     // تجربة كطالب
-    const studentRef = doc(db, "students", code);
+
+    // داخل loginButton.addEventListener(...)
     const studentSnap = await getDoc(studentRef);
     if (studentSnap.exists()) {
-      const student = { code, ...studentSnap.data() };
-      await displayStudentDashboard(student);
+      const data = studentSnap.data();
+      currentUser = { role: "student", code, name: data.name || "طالب" }; // 👈 أهم سطر
+      await displayStudentDashboard({ code, ...data });
       return;
     }
-
+    
     // تجربة كولي أمر
     const colRef = collection(db, "students");
     const q = query(colRef, where("parent_code", "==", code));
@@ -1718,3 +1720,4 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
