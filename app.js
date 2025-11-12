@@ -419,6 +419,25 @@ function buildPlanText(student) {
 // شاشة الطالب: عرض الداشبورد
 // =======================
 
+// Helpers to avoid null crashes
+function safeSetText(el, text) { if (el) el.textContent = text; }
+function safeSetWidth(el, pct) { if (el) el.style.width = `${pct}%`; }
+function getStudentEls() {
+  return {
+    welcome: document.getElementById("welcome-student"),
+    hifzLabel: document.getElementById("student-hifz-progress-label"),
+    murLabel: document.getElementById("student-murajaa-progress-label"),
+    hifzBar: document.getElementById("student-hifz-progress-bar"),
+    murBar: document.getElementById("student-murajaa-progress-bar"),
+    hifzPct: document.getElementById("student-hifz-progress-percent"),
+    murPct: document.getElementById("student-murajaa-progress-percent"),
+    murLevel: document.getElementById("student-murajaa-level-label"),
+    totalPoints: document.getElementById("student-total-points"),
+    rankText: document.getElementById("student-rank-text"),
+  };
+}
+
+
 function renderStudentTasks(student) {
   studentTasksDiv.innerHTML = "";
 
@@ -587,74 +606,73 @@ function renderStudentTasks(student) {
 // عرض الداشبورد للطالب (مع الترتيب)
 
 async function displayStudentDashboard(student) {
-  currentUser = student;
-
-  // اسم الطالب
-  welcomeStudent.textContent = `أهلاً بك يا ${student.name || "طالب"}`;
-
-  // شريط الخطة + النقاط + الترتيب
-  if (stripPlan) stripPlan.textContent = buildPlanText(student);
-  if (stripPoints) stripPoints.textContent = `النقاط: ${student.total_points || 0}`;
-
-  // ترتيب الطالب (رقم فقط)
   try {
-    const allStudents = await fetchAllStudentsSortedByPoints();
-    const total = allStudents.length;
-    const index = allStudents.findIndex((s) => s.code === student.code);
-    if (index !== -1) {
-      const rank = index + 1;
-      if (stripRank) stripRank.textContent = `الترتيب: ${rank}`;
-      if (studentRankText) studentRankText.textContent = `${rank}`; // إبقاءه رقم فقط لو احتجناه لاحقاً
+    const els = getStudentEls();
+
+    // ترحيب
+    safeSetText(els.welcome, `أهلاً بك يا ${student.name || "طالب"}`);
+
+    // مهمة الحفظ الحالية
+    const hifzMission = getCurrentHifzMission(student);
+    if (hifzMission) {
+      safeSetText(els.hifzLabel, hifzMission.description);
     } else {
-      if (stripRank) stripRank.textContent = `الترتيب: —`;
-      if (studentRankText) studentRankText.textContent = `—`;
+      safeSetText(els.hifzLabel, "لا توجد مهمة حفظ حالياً.");
     }
-  } catch (e) {
-    if (stripRank) stripRank.textContent = `الترتيب: —`;
-    if (studentRankText) studentRankText.textContent = `—`;
+
+    // مهمة المراجعة الحالية + مستوى الحلقة
+    const murMission = getCurrentMurajaaMission(student);
+    if (murMission) {
+      safeSetText(els.murLabel, murMission.description);
+      safeSetText(
+        els.murLevel,
+        murMission.level === "BUILDING" ? "البناء" :
+        murMission.level === "DEVELOPMENT" ? "التطوير" : "المتقدم"
+      );
+    } else {
+      safeSetText(els.murLabel, "لا توجد مهمة مراجعة حالياً.");
+      safeSetText(els.murLevel, "غير محدد");
+    }
+
+    // النِّسَب وأشرطة التقدم
+    const hifzPercent = computeHifzPercent(student);
+    const murPercent  = computeMurajaaPercent(student);
+
+    safeSetText(els.hifzPct, hifzPercent);
+    safeSetText(els.murPct,  murPercent);
+    safeSetWidth(els.hifzBar, hifzPercent);
+    safeSetWidth(els.murBar,  murPercent);
+
+    // النقاط
+    safeSetText(els.totalPoints, student.total_points || 0);
+
+    // ترتيب الطالب
+    try {
+      const allStudents = await fetchAllStudentsSortedByPoints();
+      const total = allStudents.length;
+      const index = allStudents.findIndex((s) => s.code === student.code);
+      if (index !== -1) {
+        const rank = index + 1;
+        if (els.rankText) els.rankText.textContent = `${rank} من ${total}`;
+      } else {
+        safeSetText(els.rankText, "غير متوفر");
+      }
+    } catch {
+      safeSetText(els.rankText, "غير متوفر");
+    }
+
+    // بطاقات المهام
+    renderStudentTasks(student);
+
+    hideAllScreens();
+    const screen = document.getElementById("student-screen");
+    if (screen) screen.classList.remove("hidden");
+  } catch (err) {
+    console.error("displayStudentDashboard error:", err);
+    showMessage(authMessage, `خطأ في عرض واجهة الطالب: ${err.message}`, "error");
   }
-
-  // الحفظ: الحالية في الملصق العلوي، القادمة تحت الشريط
-  const hifzMission = getCurrentHifzMission(student);
-  if (hifzMission) {
-    studentHifzProgressLabel.textContent = hifzMission.description;
-  } else {
-    studentHifzProgressLabel.textContent = "لا توجد مهمة حفظ حالياً.";
-  }
-  const nextHifz = getNextHifzMission(student);
-  if (nextHifzMissionSpan) nextHifzMissionSpan.textContent = nextHifz ? nextHifz.description : "—";
-
-  // المراجعة: الحالية في الملصق العلوي، القادمة تحت الشريط
-  const murMission = getCurrentMurajaaMission(student);
-  if (murMission) {
-    studentMurajaaProgressLabel.textContent = murMission.description;
-    studentMurajaaLevelLabel.textContent =
-      murMission.level === "BUILDING" ? "البناء"
-      : murMission.level === "DEVELOPMENT" ? "التطوير" : "المتقدم";
-  } else {
-    studentMurajaaProgressLabel.textContent = "لا توجد مهمة مراجعة حالياً.";
-    studentMurajaaLevelLabel.textContent = "غير محدد";
-  }
-  const nextMur = getNextMurajaaMission(student);
-  if (nextMurajaaMissionSpan) nextMurajaaMissionSpan.textContent = nextMur ? nextMur.description : "—";
-
-  // نسب التقدّم
-  const hifzPercent = computeHifzPercent(student);
-  const murPercent = computeMurajaaPercent(student);
-  studentHifzProgressPercent.textContent = hifzPercent;
-  studentMurajaaProgressPercent.textContent = murPercent;
-  studentHifzProgressBar.style.width = `${hifzPercent}%`;
-  studentMurajaaProgressBar.style.width = `${murPercent}%`;
-
-  // النقاط (موجودة في الشريط الآن)
-  studentTotalPoints.textContent = student.total_points || 0;
-
-
-  renderStudentTasks(student);
-
-  hideAllScreens();
-  studentScreen.classList.remove("hidden");
 }
+
 
 // =======================
 // إرسال / إلغاء مهام الطالب
@@ -1687,6 +1705,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
   // end of file
+
 
 
 
