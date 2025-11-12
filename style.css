@@ -50,6 +50,38 @@ h1 {
   display: none !important;
 }
 
+/* شريط الخطة النحيف تحت اسم الطالب */
+.plan-strip {
+  margin-top: -6px;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  color: #586a7a;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.plan-strip .dot { opacity: 0.5; }
+
+/* بطاقات التقدّم أنحف */
+.progress-card { padding: 12px; }
+.progress-label { margin-bottom: 6px; }
+.progress-percent { margin-top: 4px; }
+
+/* سطر المهمة القادمة أسفل الشريط */
+.next-mission {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: #2c3e50;
+  font-weight: 700;
+}
+
+/* بطاقات مهامي أنحف قليلًا */
+.task-card { padding: 8px 10px; }
+.task-title { font-size: 0.9rem; }
+.task-footer { gap: 6px; }
+
+
 /* رسائل */
 .message {
   margin-top: 15px;
