@@ -57,6 +57,11 @@ const stripPlan = document.getElementById("strip-plan");
 const stripPoints = document.getElementById("strip-points");
 const stripRank = document.getElementById("strip-rank");
 
+const studentPlanLine = document.getElementById("student-plan-line");
+const studentHifzNextLabel = document.getElementById("student-hifz-next-label");
+const studentMurajaaNextLabel = document.getElementById("student-murajaa-next-label");
+
+
 // المهمة القادمة
 const nextHifzMissionSpan = document.getElementById("next-hifz-mission");
 const nextMurajaaMissionSpan = document.getElementById("next-murajaa-mission");
@@ -132,7 +137,8 @@ let editingStudentCode = null;
 async function refreshStudentView() {
   // نتأكد أن المستخدم طالب وله كود
   if (!currentUser || !currentUser.code) return;
-
+  console.warn("No currentUser/code at refresh:", currentUser);
+    return;
   try {
     const studentRef = doc(db, "students", currentUser.code);
     const snap = await getDoc(studentRef);
@@ -363,6 +369,28 @@ function getCurrentMurajaaMission(student) {
     index,
     description,
     points,
+  };
+}
+
+function getNextMurajaaMission(student) {
+  const level = student.murajaa_level || "BUILDING";
+  const arr = getReviewArrayForLevel(level);
+  if (!arr || arr.length === 0) return null;
+
+  const arrLen = arr.length;
+  const startIndex = ((student.murajaa_start_index ?? 0) % arrLen + arrLen) % arrLen;
+  let curIndex = student.murajaa_progress_index;
+  if (curIndex == null) curIndex = startIndex;
+  curIndex = ((curIndex % arrLen) + arrLen) % arrLen;
+
+  const nextIndex = (curIndex + 1) % arrLen;
+  const item = arr[nextIndex];
+  return {
+    type: "murajaa",
+    level,
+    index: nextIndex,
+    description: item.name,
+    points: item.points || 3,
   };
 }
 
@@ -612,6 +640,21 @@ async function displayStudentDashboard(student) {
     // ترحيب
     safeSetText(els.welcome, `أهلاً بك يا ${student.name || "طالب"}`);
 
+    // سطر الخطة تحت الاسم
+const startIdx = student.hifz_start_id ?? 0;
+const endIdx   = student.hifz_end_id ?? (HIFZ_CURRICULUM.length - 1);
+const startItem = HIFZ_CURRICULUM[startIdx];
+const endItem   = HIFZ_CURRICULUM[endIdx];
+const startSurah = startItem ? startItem.surah_name_ar : "—";
+const endSurah   = endItem ? endItem.surah_name_ar : "—";
+const pts = student.total_points || 0;
+
+// الترتيب سنحسّنه لاحقًا بعد الحساب؛ الآن نضع شرطة
+if (studentPlanLine) {
+  studentPlanLine.textContent = `الخطة: من ${startSurah} إلى ${endSurah} • النقاط: ${pts} • الترتيب: —`;
+}
+
+
     // مهمة الحفظ الحالية
     const hifzMission = getCurrentHifzMission(student);
     if (hifzMission) {
@@ -634,6 +677,19 @@ async function displayStudentDashboard(student) {
       safeSetText(els.murLevel, "غير محدد");
     }
 
+    // المهمة القادمة للحفظ تحت شريط الإنجاز
+const nextH = getNextHifzMission(student);
+if (studentHifzNextLabel) {
+  studentHifzNextLabel.textContent = `المهمة القادمة: ${nextH ? nextH.description : "—"}`;
+}
+
+// المهمة القادمة للمراجعة تحت شريط الإنجاز
+const nextM = getNextMurajaaMission(student);
+if (studentMurajaaNextLabel) {
+  studentMurajaaNextLabel.textContent = `المهمة القادمة: ${nextM ? nextM.description : "—"}`;
+}
+
+
     // النِّسَب وأشرطة التقدم
     const hifzPercent = computeHifzPercent(student);
     const murPercent  = computeMurajaaPercent(student);
@@ -649,17 +705,19 @@ async function displayStudentDashboard(student) {
     // ترتيب الطالب
     try {
       const allStudents = await fetchAllStudentsSortedByPoints();
-      const total = allStudents.length;
-      const index = allStudents.findIndex((s) => s.code === student.code);
-      if (index !== -1) {
-        const rank = index + 1;
-        if (els.rankText) els.rankText.textContent = `${rank} من ${total}`;
-      } else {
-        safeSetText(els.rankText, "غير متوفر");
-      }
-    } catch {
-      safeSetText(els.rankText, "غير متوفر");
-    }
+const index = allStudents.findIndex((s) => s.code === student.code);
+let rankOnly = "—";
+if (index !== -1) rankOnly = (index + 1).toString();
+
+// اكتب الرقم فقط في خانة الترتيب (إن أردت إبقاءها) أو تجاهلها
+if (studentRankText) studentRankText.textContent = rankOnly;
+
+// حدّث سطر الخطة ليعرض الرقم فقط
+if (studentPlanLine) {
+  const planBits = studentPlanLine.textContent.split("•");
+  // أعيد بناء السطر بنفس البداية مع إدخال الترتيب الجديد
+  studentPlanLine.textContent = `الخطة: من ${startSurah} إلى ${endSurah} • النقاط: ${pts} • الترتيب: ${rankOnly}`;
+}
 
     // بطاقات المهام
     renderStudentTasks(student);
@@ -1705,6 +1763,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
   // end of file
+
 
 
 
