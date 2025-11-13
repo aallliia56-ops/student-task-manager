@@ -640,66 +640,136 @@ async function cancelGeneralTask(studentCode, taskId){
 // =======================
 // شاشة المعلم: مراجعة + لوحة الشرف
 // =======================
+
+// شاشة المعلم: مراجعة + لوحة الشرف (نسخة جديدة من loadPendingTasksForReview)
 async function loadPendingTasksForReview(){
   pendingTasksList.innerHTML = '<p class="message info">جارٍ تحميل المهام...</p>';
   try{
     const colRef = collection(db,"students");
-    const snap = await getDocs(colRef);
+    const snap   = await getDocs(colRef);
 
-    pendingTasksList.innerHTML = "";
-    let any = false;
+    // مصفوفات منفصلة حسب نوع المهمة
+    const pendingHifz     = [];
+    const pendingMurajaa  = [];
+    const pendingGeneral  = [];
 
     snap.forEach(docSnap=>{
       const student = docSnap.data();
-      const pending = (student.tasks||[]).filter(t=> t.status==="pending");
-      if (!pending.length) return;
+      const tasks   = Array.isArray(student.tasks) ? student.tasks : [];
 
-      any = true;
-      const block = document.createElement("div");
-      block.className = "review-student-block";
+      tasks.forEach(task=>{
+        if (task.status !== "pending") return;
 
-      const title = document.createElement("div");
-      title.className  = "review-student-title";
-      title.textContent= `الطالب: ${student.name} (${student.code})`;
-      block.appendChild(title);
+        const entry = {
+          studentCode: student.code,
+          studentName: student.name,
+          task,
+        };
 
-      pending.forEach(task=>{
+        if (task.type === "hifz") {
+          pendingHifz.push(entry);
+        } else if (task.type === "murajaa") {
+          pendingMurajaa.push(entry);
+        } else {
+          // general أو أي نوع آخر
+          pendingGeneral.push(entry);
+        }
+      });
+    });
+
+    // ترتيب حسب الأقدم أولاً (created_at تصاعدي)
+    const sortByCreatedAt = (arr) => {
+      arr.sort((a,b)=> (a.task.created_at || 0) - (b.task.created_at || 0));
+    };
+    sortByCreatedAt(pendingHifz);
+    sortByCreatedAt(pendingMurajaa);
+    sortByCreatedAt(pendingGeneral);
+
+    const totalCount = pendingHifz.length + pendingMurajaa.length + pendingGeneral.length;
+    if (!totalCount){
+      pendingTasksList.innerHTML = '<p class="message success">لا توجد مهام بانتظار المراجعة حالياً 🎉</p>';
+      return;
+    }
+
+    // دالة مساعدة لبناء قسم لكل نوع مهمة
+    const buildSection = (titleText, arr) => {
+      if (!arr.length) return;
+
+      const section = document.createElement("div");
+      // كلاس إضافي اختياري، ما يحتاج يكون له ستايل في CSS
+      section.className = "review-section-by-type";
+
+      const h4 = document.createElement("h4");
+      h4.textContent = titleText;
+      section.appendChild(h4);
+
+      let lastStudentCode = null;
+      let block = null;
+
+      arr.forEach(({ studentCode, studentName, task }) => {
+        // إذا تغيّر الطالب، نبدأ بلوك جديد
+        if (studentCode !== lastStudentCode) {
+          block = document.createElement("div");
+          block.className = "review-student-block";
+
+          const title = document.createElement("div");
+          title.className  = "review-student-title";
+          title.textContent= `الطالب: ${studentName} (${studentCode})`;
+          block.appendChild(title);
+
+          section.appendChild(block);
+          lastStudentCode = studentCode;
+        }
+
         const item = document.createElement("div");
         item.className = "review-task-item";
         item.innerHTML = `
           <div class="review-task-header">
-            <span>${ task.type==="hifz" ? "مهمة حفظ" : task.type==="murajaa" ? "مهمة مراجعة" : "مهمة عامة" }</span>
+            <span>${
+              task.type === "hifz"
+                ? "مهمة حفظ"
+                : task.type === "murajaa"
+                ? "مهمة مراجعة"
+                : "مهمة عامة"
+            }</span>
             <span>النقاط: ${task.points}</span>
           </div>
           <div class="review-task-body">${task.description}</div>
         `;
+
         const footer = document.createElement("div");
         footer.className = "review-task-footer";
 
         const ok = document.createElement("button");
-        ok.className = "button success"; ok.textContent = "قبول ✅";
-        ok.addEventListener("click", ()=> reviewTask(student.code, task.id, "approve"));
+        ok.className = "button success";
+        ok.textContent = "قبول ✅";
+        ok.addEventListener("click", () => reviewTask(studentCode, task.id, "approve"));
 
         const no = document.createElement("button");
-        no.className = "button danger"; no.textContent = "رفض ❌";
-        no.addEventListener("click", ()=> reviewTask(student.code, task.id, "reject"));
+        no.className = "button danger";
+        no.textContent = "رفض ❌";
+        no.addEventListener("click", () => reviewTask(studentCode, task.id, "reject"));
 
-        footer.append(ok,no);
+        footer.append(ok, no);
         item.appendChild(footer);
         block.appendChild(item);
       });
 
-      pendingTasksList.appendChild(block);
-    });
+      pendingTasksList.appendChild(section);
+    };
 
-    if (!any){
-      pendingTasksList.innerHTML = '<p class="message success">لا توجد مهام بانتظار المراجعة حالياً 🎉</p>';
-    }
+    // تفريغ القائمة وبناء الأقسام الثلاثة
+    pendingTasksList.innerHTML = "";
+    buildSection("مهام الحفظ بانتظار المراجعة", pendingHifz);
+    buildSection("مهام المراجعة بانتظار المراجعة", pendingMurajaa);
+    buildSection("مهام عامة بانتظار المراجعة", pendingGeneral);
+
   }catch(e){
     console.error("Error loadPendingTasksForReview:", e);
     pendingTasksList.innerHTML = `<p class="message error">خطأ في تحميل المهام: ${e.message}</p>`;
   }
 }
+
 
 async function loadHonorBoard(){
   if (!honorBoardDiv) return;
@@ -1185,3 +1255,4 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
