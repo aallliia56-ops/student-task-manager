@@ -178,6 +178,52 @@ async function fetchAllStudentsSortedByPoints(){
   return arr;
 }
 
+// ترتيب مجموعات المستويات:
+// - مجموعة البناء (BUILDING) لوحدها
+// - مجموعة التطوير + المتقدم معًا
+function computeRankMapForGroup(students){
+  const sorted = [...students].sort((a,b)=>(b.total_points||0)-(a.total_points||0));
+  const rankMap = {};
+  let lastPts = null;
+  let currentRank = 0;
+
+  sorted.forEach((s,i)=>{
+    const pts = s.total_points || 0;
+    if (lastPts === null){
+      currentRank = 1;
+    } else if (pts < lastPts){
+      currentRank = i + 1;
+    }
+    rankMap[s.code] = currentRank;
+    lastPts = pts;
+  });
+
+  return { sorted, rankMap };
+}
+
+function buildGroupedRanks(students){
+  const building = [];
+  const devAdv   = [];
+
+  students.forEach((s)=>{
+    const level = s.murajaa_level || "BUILDING";
+    if (level === "BUILDING"){
+      building.push(s);
+    } else if (level === "DEVELOPMENT" || level === "ADVANCED"){
+      devAdv.push(s);
+    } else {
+      // أي قيمة غير معروفة نلحقها بمجموعة التطوير/المتقدم
+      devAdv.push(s);
+    }
+  });
+
+  const { sorted: buildingSorted, rankMap: buildingRankMap } = computeRankMapForGroup(building);
+  const { sorted: devAdvSorted,   rankMap: devAdvRankMap   } = computeRankMapForGroup(devAdv);
+
+  return { buildingSorted, buildingRankMap, devAdvSorted, devAdvRankMap };
+}
+
+
 // سطر الخطة/النقاط/الترتيب (يوحّد التحديث في مكان واحد)
 function updatePlanStrip({startSurah="—", endSurah="—", points=0, rank="—"}) {
   // السطر النحيف (إن وُجد)
@@ -327,10 +373,28 @@ async function displayStudentDashboard(student){
     const points     = student.total_points || 0;
 
     // ترتيب
+    
+        // ترتيب داخل المجموعة (البناء لوحده، التطوير+المتقدم معًا)
     const all = await fetchAllStudentsSortedByPoints();
-    const idx = all.findIndex(s=> s.code === student.code);
-    const rankOnly = (idx !== -1) ? String(idx+1) : "—";
+    const {
+      buildingRankMap,
+      devAdvRankMap,
+    } = buildGroupedRanks(all);
 
+    const level = student.murajaa_level || "BUILDING";
+    let rankOnly = "—";
+
+    if (level === "BUILDING"){
+      if (buildingRankMap[student.code] != null){
+        rankOnly = String(buildingRankMap[student.code]);
+      }
+    } else {
+      if (devAdvRankMap[student.code] != null){
+        rankOnly = String(devAdvRankMap[student.code]);
+      }
+    }
+
+    
     updatePlanStrip({ startSurah, endSurah, points, rank: rankOnly });
 
     // مهام حالية
@@ -780,23 +844,54 @@ async function loadHonorBoard(){
       honorBoardDiv.innerHTML = '<p class="message info">لا يوجد طلاب مسجلون بعد.</p>';
       return;
     }
-    const top = students.slice(0,5);
-    const list = document.createElement("ol");
-    top.forEach(s=>{
-      const li = document.createElement("li");
-      li.textContent = `${s.name} (${s.code}) – ${s.total_points||0} نقطة`;
-      list.appendChild(li);
-    });
+
+    const {
+      buildingSorted,
+      buildingRankMap,
+      devAdvSorted,
+      devAdvRankMap,
+    } = buildGroupedRanks(students);
+
     honorBoardDiv.innerHTML = "";
-    const title = document.createElement("p");
-    title.className = "small-text";
-    title.textContent = "أعلى الطلاب نقاطاً:";
-    honorBoardDiv.append(title, list);
+
+    const buildHonorSection = (titleText, sortedArr, rankMap) => {
+      if (!sortedArr.length) return;
+
+      const sectionTitle = document.createElement("p");
+      sectionTitle.className = "small-text";
+      sectionTitle.textContent = titleText;
+
+      const ul = document.createElement("ul");
+      ul.className = "honor-list";
+
+      sortedArr.slice(0,5).forEach((s)=>{
+        const rank = rankMap[s.code] || 0;
+        let rankClass = "";
+        if (rank === 1) rankClass = "rank-1";
+        else if (rank === 2) rankClass = "rank-2";
+        else if (rank === 3) rankClass = "rank-3";
+
+        const li = document.createElement("li");
+        li.className = `honor-item ${rankClass}`;
+        li.innerHTML = `
+          <span>${rank}. ${s.name} (${s.code})</span>
+          <span>${s.total_points || 0} نقطة</span>
+        `;
+        ul.appendChild(li);
+      });
+
+      honorBoardDiv.append(sectionTitle, ul);
+    };
+
+    buildHonorSection("أعلى الطلاب في مستوى البناء", buildingSorted, buildingRankMap);
+    buildHonorSection("أعلى الطلاب في مجموعة التطوير/المتقدم", devAdvSorted, devAdvRankMap);
+
   }catch(e){
     console.error("Error loadHonorBoard:", e);
     honorBoardDiv.innerHTML = `<p class="message error">خطأ في تحميل لوحة الشرف: ${e.message}</p>`;
   }
 }
+
 
 async function reviewTask(studentCode, taskId, action){
   try{
@@ -1091,16 +1186,13 @@ async function displayParentDashboard(parentCode){
     const all = []; snap.forEach(d=> all.push(d.data()));
     const children = all.filter(s=> s.parent_code===parentCode);
 
-    const sorted = [...all].sort((a,b)=> (b.total_points||0)-(a.total_points||0));
-    const rankMap = {};
-    let lastPts = null, currentRank = 0;
-    sorted.forEach((s,i)=>{
-      const pts = s.total_points||0;
-      if (lastPts===null) currentRank = 1;
-      else if (pts < lastPts) currentRank = i+1;
-      rankMap[s.code] = currentRank;
-      lastPts = pts;
-    });
+        const {
+      buildingSorted,
+      buildingRankMap,
+      devAdvSorted,
+      devAdvRankMap,
+    } = buildGroupedRanks(all);
+
 
     welcomeParent.textContent = `مرحبًا بك يا ولي الأمر (${parentCode})`;
     parentChildrenList.innerHTML = "";
@@ -1133,7 +1225,7 @@ async function displayParentDashboard(parentCode){
           <div class="progress-bar"><div class="progress-fill" style="width:${hifzPercent}%"></div></div>
           <div class="child-line">${motivation}</div>
           <div class="child-line">مجموع النقاط: <strong>${s.total_points||0}</strong></div>
-          <div class="child-line">الترتيب: <strong>${rankMap[s.code]||"-"}</strong></div>
+          <div class="child-line">الترتيب داخل ${groupTitle}: <strong>${childRank}</strong></div>
           <div class="child-line">مهمة الحفظ الحالية: <span>${hifzMission? hifzMission.description : "لا توجد"}</span></div>
           <div class="child-line">مهمة المراجعة الحالية: <span>${murMission? murMission.description : "لا توجد"}</span></div>
         `;
@@ -1255,4 +1347,5 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
