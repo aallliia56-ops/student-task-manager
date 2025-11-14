@@ -865,62 +865,98 @@ async function loadPendingTasksForReview(){
   }
 }
 
-
 async function loadHonorBoard(){
+  if (!honorBoardDiv) return;
+
+  honorBoardDiv.innerHTML =
+    '<p class="message info">جارٍ تحميل لوحة الشرف...</p>';
+
   try{
-    if (!honorBoardDiv) return;
-
-    honorBoardDiv.innerHTML = '<p class="message info">جارٍ تحميل لوحة الشرف...</p>';
-
     const snap = await getDocs(collection(db, "students"));
-    const students = [];
+    const all = [];
 
     snap.forEach(docSnap => {
       const s = docSnap.data();
 
-      // نعرض فقط طلاب الحلقة الحالية (حضوري / إلكتروني)
+      // نفلتر حسب الحلقة الحالية (حضوري / إلكتروني)
       if (!isInCurrentHalaqa(s)) return;
 
-      students.push(s);
+      all.push(s);
     });
 
-    // ترتيب عام بالنقاط من الأعلى إلى الأقل
-    students.sort((a, b) => (b.total_points || 0) - (a.total_points || 0));
-
-    const top = students.slice(0, 10); // مثلاً أفضل 10 طلاب
-
-    if (!top.length){
-      honorBoardDiv.innerHTML = '<p class="message info">لا يوجد طلاب في هذه الحلقة حتى الآن.</p>';
+    if (!all.length){
+      honorBoardDiv.innerHTML =
+        '<p class="message info">لا يوجد طلاب في هذه الحلقة حتى الآن.</p>';
       return;
     }
 
-    const ul = document.createElement("ul");
-    ul.className = "honor-list";
+    // 👇 تقسيم (بناء) لوحده و (تطوير + متقدم) لوحدهم
+    const {
+      buildingSorted,
+      devAdvSorted,
+    } = buildGroupedRanks(all);
 
-    top.forEach((s, idx) => {
-      const rank = idx + 1;
-      const li = document.createElement("li");
-      const rankClass = (rank <= 3) ? `rank-${rank}` : "rank-other";
+    const topBuilding = buildingSorted.slice(0, 5);
+    const topDevAdv   = devAdvSorted.slice(0, 5);
 
-      li.className = `honor-item ${rankClass}`;
-      li.innerHTML = `
-        <span>#${rank} - ${s.name || "طالب"} (${s.code})</span>
-        <span>${s.total_points || 0} نقطة</span>
-      `;
-      ul.appendChild(li);
-    });
+    const container = document.createElement("div");
+
+    // دالة مساعدة لبناء قسم لوحة الشرف
+    const makeSection = (title, studentsList, groupKey) => {
+      const section = document.createElement("div");
+      const h = document.createElement("h4");
+      h.textContent = title;
+      section.appendChild(h);
+
+      if (!studentsList.length){
+        const p = document.createElement("p");
+        p.className = "info-text";
+        p.textContent = "لا يوجد طلاب في هذا المستوى حتى الآن.";
+        section.appendChild(p);
+        return section;
+      }
+
+      const ul = document.createElement("ul");
+      ul.className = "honor-list";
+
+      studentsList.forEach((s, idx) => {
+        const li = document.createElement("li");
+        const rank = idx + 1;
+        const rankClass = (rank <= 3) ? `rank-${rank}` : "rank-other";
+        li.className = `honor-item ${rankClass}`;
+
+        const level = s.murajaa_level || "BUILDING";
+        let levelName = "البناء";
+        if (level === "DEVELOPMENT") levelName = "التطوير";
+        else if (level === "ADVANCED") levelName = "المتقدم";
+
+        li.innerHTML = `
+          <span>#${rank} - ${s.name || "طالب"} (${s.code})</span>
+          <span>${s.total_points || 0} نقطة – ${levelName}</span>
+        `;
+        ul.appendChild(li);
+      });
+
+      section.appendChild(ul);
+      return section;
+    };
+
+    container.appendChild(
+      makeSection("مستوى البناء", topBuilding, "BUILDING")
+    );
+    container.appendChild(
+      makeSection("مستوى التطوير / المتقدم", topDevAdv, "DEV_ADV")
+    );
 
     honorBoardDiv.innerHTML = "";
-    honorBoardDiv.appendChild(ul);
+    honorBoardDiv.appendChild(container);
+
   } catch(e){
     console.error("Error loadHonorBoard:", e);
-    if (honorBoardDiv){
-      honorBoardDiv.innerHTML =
-        `<p class="message error">خطأ في تحميل لوحة الشرف: ${e.message}</p>`;
-    }
+    honorBoardDiv.innerHTML =
+      `<p class="message error">خطأ في تحميل لوحة الشرف: ${e.message}</p>`;
   }
 }
-
 
 
 
@@ -1346,10 +1382,16 @@ function activateTab(tabId){
   const target = document.getElementById(tabId);
   target?.classList.remove("hidden");
 
-  if (tabId==="review-tasks-tab"){ loadPendingTasksForReview(); loadHonorBoard(); }
-  else if (tabId==="manage-students-tab"){ loadStudentsForTeacher(); }
-  else if (tabId==="curriculum-tab"){ displayCurriculumsInTeacherPanel(); }
+  if (tabId === "review-tasks-tab"){
+    loadPendingTasksForReview();
+  } else if (tabId === "manage-students-tab"){
+    loadStudentsForTeacher();
+  } else if (tabId === "curriculum-tab"){
+    displayCurriculumsInTeacherPanel();
+    loadHonorBoard();   // لوحة الشرف هنا فقط
+  }
 }
+
 
 tabButtons.forEach(btn=> btn.addEventListener("click", ()=> activateTab(btn.dataset.tab)));
 
@@ -1448,6 +1490,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
