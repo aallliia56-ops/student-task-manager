@@ -109,6 +109,7 @@ const newStudentHifzEnd        = $("#new-student-hifz-end");
 const newStudentHifzLevel      = $("#new-student-hifz-level");
 const newStudentMurajaaLevel   = $("#new-student-murajaa-level");
 const newStudentMurajaaStart   = $("#new-student-murajaa-start");
+const newStudentHalaqa         = $("#new-student-halaqa");
 const registerStudentButton    = $("#register-student-button");
 const registerStudentMessage   = $("#register-student-message");
 
@@ -129,6 +130,8 @@ const parentChildrenList       = $("#parent-children-list");
 // حالة المستخدم
 let currentUser = null;
 let editingStudentCode = null;
+let currentTeacherHalaqa = "ALL"; // ALL | ONSITE | ONLINE
+
 
 // =======================
 // Helpers
@@ -1347,5 +1350,6 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
