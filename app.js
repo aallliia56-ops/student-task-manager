@@ -1619,8 +1619,8 @@ function refreshTeacherView(){
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+  }
 // end of file
   // ... آخر ليستنرات عندك (مثلاً login-button وغيره)
-
 // (لازم يكون فيه أقواس } لكل الدوال)
 // تأكد ما فيه سطر ناقص أو تعليق مقطوع
