@@ -201,10 +201,11 @@ async function displayHalaqaScreen(loginCode, halaqaType){
       tile.dataset.code = s.code;   // عشان نستخدمه عند الضغط
 
       tile.innerHTML = `
-        <div class="halaqa-tile-code">${s.code} - ${s.name || "طالب"}</div>
-        <div class="halaqa-tile-line">المهام تحت المراجعة: <strong>${pendingCount}</strong></div>
-        <div class="halaqa-tile-line">الترتيب في القائمة: ${index + 1}</div>
+        <div class="halaqa-tile-code">${s.code}</div>
       `;
+
+
+
       halaqaStudentsGrid.appendChild(tile);
     });
 
@@ -1612,3 +1613,4 @@ function refreshTeacherView(){
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
+
