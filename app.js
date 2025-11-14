@@ -1195,24 +1195,60 @@ function displayCurriculumsInTeacherPanel(){
 async function displayParentDashboard(parentCode){
   try{
     const snap = await getDocs(collection(db,"students"));
-    const all = []; snap.forEach(d=> all.push(d.data()));
-    const children = all.filter(s=> s.parent_code===parentCode);
+    const all = [];
+    snap.forEach(d => all.push(d.data()));
 
-        const {
-      buildingSorted,
-      buildingRankMap,
-      devAdvSorted,
-      devAdvRankMap,
-    } = buildGroupedRanks(all);
+    // أبناء هذا الولي
+    const children = all.filter(s => s.parent_code === parentCode);
 
+    // تقسيم الطلاب حسب الحلقة (حضوري / إلكتروني)
+    const halaqaBuckets = { ONSITE: [], ONLINE: [] };
+    all.forEach(s => {
+      const h = s.halaqa || "ONSITE"; // الافتراضي حضوري
+      if (!halaqaBuckets[h]) halaqaBuckets[h] = [];
+      halaqaBuckets[h].push(s);
+    });
+
+    // بناء خرائط الرتب لكل حلقة بشكل منفصل
+    const ranksByHalaqa = {};
+    Object.keys(halaqaBuckets).forEach(h => {
+      const arr = halaqaBuckets[h];
+      if (!arr.length) return;
+      ranksByHalaqa[h] = buildGroupedRanks(arr);
+    });
 
     welcomeParent.textContent = `مرحبًا بك يا ولي الأمر (${parentCode})`;
     parentChildrenList.innerHTML = "";
 
     if (!children.length){
-      parentChildrenList.innerHTML = '<p class="message info">لا يوجد أبناء مربوطون بهذا الرمز.</p>';
+      parentChildrenList.innerHTML =
+        '<p class="message info">لا يوجد أبناء مربوطون بهذا الرمز.</p>';
     } else {
-      children.forEach(s=>{
+      children.forEach(s => {
+        // حلقة هذا الابن
+        const h = s.halaqa || "ONSITE";
+        const {
+          buildingRankMap = {},
+          devAdvRankMap = {},
+        } = ranksByHalaqa[h] || {};
+
+        const level = s.murajaa_level || "BUILDING";
+
+        let groupTitle;
+        let childRank = "-";
+
+        if (level === "BUILDING"){
+          groupTitle = "مجموعة البناء (نفس الحلقة)";
+          if (buildingRankMap[s.code] != null){
+            childRank = String(buildingRankMap[s.code]);
+          }
+        } else {
+          groupTitle = "مجموعة التطوير/المتقدم (نفس الحلقة)";
+          if (devAdvRankMap[s.code] != null){
+            childRank = String(devAdvRankMap[s.code]);
+          }
+        }
+
         const startIndex = Number.isFinite(s.hifz_start_id)? s.hifz_start_id : 0;
         const endIndex   = Number.isFinite(s.hifz_end_id)? s.hifz_end_id : (HIFZ_CURRICULUM.length-1);
         const startItem  = HIFZ_CURRICULUM[startIndex] || null;
@@ -1222,38 +1258,27 @@ async function displayParentDashboard(parentCode){
 
         const hifzPercent = computeHifzPercent(s);
         let motivation = "🔵 في بداية الطريق";
-        if (hifzPercent>=75) motivation = "🟢 قارب على إنهاء خطته";
-        else if (hifzPercent>=30) motivation = "🟡 في منتصف الخطة";
+        if (hifzPercent >= 75) motivation = "🟢 قارب على إنهاء خطته";
+        else if (hifzPercent >= 30) motivation = "🟡 في منتصف الخطة";
 
         const hifzMission = getCurrentHifzMission(s);
         const murMission  = getCurrentMurajaaMission(s);
 
-        // تحديد المجموعة الخاصة بالترتيب (بناء لوحده + تطوير/متقدم معاً)
-        const level = s.murajaa_level || "BUILDING";
-        let groupTitle;
-        let childRank;
-
-        if (level === "BUILDING"){
-          groupTitle = "مجموعة البناء";
-          childRank  = buildingRankMap[s.code] != null ? buildingRankMap[s.code] : "—";
-        } else {
-          groupTitle = "مجموعة التطوير / المتقدم";
-          childRank  = devAdvRankMap[s.code] != null ? devAdvRankMap[s.code] : "—";
-        }
+        const halaqaLabel = (h === "ONLINE") ? "حلقة إلكترونية" : "حلقة حضوري";
 
         const el = document.createElement("div");
-
         el.className = "child-card";
         el.innerHTML = `
           <div class="child-name">${s.name} (${s.code})</div>
+          <div class="child-line"><strong>${halaqaLabel}</strong></div>
           <div class="child-line">خطة الحفظ: من سورة <strong>${startSurah}</strong> إلى سورة <strong>${endSurah}</strong></div>
           <div class="child-line">إنجاز الحفظ: <strong>${hifzPercent}%</strong></div>
           <div class="progress-bar"><div class="progress-fill" style="width:${hifzPercent}%"></div></div>
           <div class="child-line">${motivation}</div>
-          <div class="child-line">مجموع النقاط: <strong>${s.total_points||0}</strong></div>
+          <div class="child-line">مجموع النقاط: <strong>${s.total_points || 0}</strong></div>
           <div class="child-line">الترتيب داخل ${groupTitle}: <strong>${childRank}</strong></div>
-          <div class="child-line">مهمة الحفظ الحالية: <span>${hifzMission? hifzMission.description : "لا توجد"}</span></div>
-          <div class="child-line">مهمة المراجعة الحالية: <span>${murMission? murMission.description : "لا توجد"}</span></div>
+          <div class="child-line">مهمة الحفظ الحالية: <span>${hifzMission ? hifzMission.description : "لا توجد"}</span></div>
+          <div class="child-line">مهمة المراجعة الحالية: <span>${murMission ? murMission.description : "لا توجد"}</span></div>
         `;
         parentChildrenList.appendChild(el);
       });
@@ -1263,9 +1288,11 @@ async function displayParentDashboard(parentCode){
     parentScreen.classList.remove("hidden");
   }catch(e){
     console.error("Error displayParentDashboard:", e);
-    parentChildrenList.innerHTML = `<p class="message error">خطأ في تحميل بيانات الأبناء: ${e.message}</p>`;
+    parentChildrenList.innerHTML =
+      `<p class="message error">خطأ في تحميل بيانات الأبناء: ${e.message}</p>`;
   }
 }
+
 
 halaqaOnsiteBtn?.addEventListener("click", () => {
   currentHalaqa = "ONSITE";
@@ -1392,6 +1419,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
