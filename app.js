@@ -49,6 +49,12 @@ const userCodeInput= $("#user-code");
 const loginButton  = $("#login-button");
 const authMessage  = $("#auth-message");
 
+const tabButtons               = document.querySelectorAll(".tab-button");
+// أزرار اختيار الحلقة
+const halaqaOnsiteBtn          = $("#halaqa-onsite-btn");
+const halaqaOnlineBtn          = $("#halaqa-online-btn");
+
+
 // شاشة الطالب
 const studentScreen= $("#student-screen");
 const welcomeStudent= $("#welcome-student");
@@ -141,6 +147,12 @@ function isInCurrentHalaqa(student){
   return h === currentHalaqa;
 }
 
+function updateHalaqaToggleUI(){
+  if (!halaqaOnsiteBtn || !halaqaOnlineBtn) return;
+  halaqaOnsiteBtn.classList.toggle("active", currentHalaqa === "ONSITE");
+  halaqaOnlineBtn.classList.toggle("active", currentHalaqa === "ONLINE");
+}
+
 
 function isInCurrentHalaqa(student){
   // لو فلتر المعلم على "كل الحلقات" رجّع كل الطلاب
@@ -208,6 +220,7 @@ async function fetchAllStudentsSortedByPoints(filterFn){
   arr.sort((a,b)=>(b.total_points||0)-(a.total_points||0));
   return arr;
 }
+
 
 
 // ترتيب مجموعات المستويات:
@@ -773,15 +786,16 @@ async function loadPendingTasksForReview(){
     const pendingMurajaa   = [];
     const pendingGeneral   = [];
 
-    snap.forEach(docSnap=>{
+    snap.forEach(docSnap => {
       const student = docSnap.data();
 
-      // لو عندك فلتر للحلقة (حضوري / إلكتروني)
-      if (typeof isInCurrentHalaqa === "function" && !isInCurrentHalaqa(student)) return;
+  // تجاهل الطلاب اللي مو في الحلقة الحالية (حضوري / إلكتروني)
+      if (!isInCurrentHalaqa(student)) return;
 
       const tasks = Array.isArray(student.tasks) ? student.tasks : [];
-      tasks.forEach(t=>{
+      tasks.forEach(t => {
         if (t.status !== "pending") return;
+
 
         if (t.type === "hifz"){
           pendingHifz.push({ student, task: t });
@@ -1271,6 +1285,20 @@ async function displayParentDashboard(parentCode){
   }
 }
 
+halaqaOnsiteBtn?.addEventListener("click", () => {
+  currentHalaqa = "ONSITE";
+  updateHalaqaToggleUI();
+  refreshTeacherView();   // يعيد تحميل المهام/الطلاب لهذه الحلقة فقط
+});
+
+halaqaOnlineBtn?.addEventListener("click", () => {
+  currentHalaqa = "ONLINE";
+  updateHalaqaToggleUI();
+  refreshTeacherView();
+});
+
+
+
 // =======================
 // تبويبات المعلم
 // =======================
@@ -1295,13 +1323,18 @@ loginButton.addEventListener("click", async ()=>{
   if (!code){ showMessage(authMessage, "الرجاء إدخال رمز الدخول.", "error"); return; }
 
   try{
-    if (code==="teacher1"){
-      currentUser = { role:"teacher", name:"المعلم" };
-      hideAllScreens();
-      teacherScreen.classList.remove("hidden");
-      activateTab("review-tasks-tab");
-      return;
-    }
+    
+if (code==="teacher1"){
+  currentUser   = { role:"teacher", name:"المعلم" };
+  currentHalaqa = "ONSITE";           // افتراضيًا حضوري
+  hideAllScreens();
+  teacherScreen.classList.remove("hidden");
+  updateHalaqaToggleUI();             // تظليل زر حضوري
+  activateTab("review-tasks-tab");    // يحمّل تبويب المراجعة مع فلتر الحلقة
+  return;
+}
+
+    
 
     // طالب
     const studentRef  = doc(db,"students",code);
@@ -1377,6 +1410,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
