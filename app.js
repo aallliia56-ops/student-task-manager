@@ -129,9 +129,18 @@ const logoutButtonParent       = $("#logout-button-parent");
 const parentChildrenList       = $("#parent-children-list");
 
 // حالة المستخدم
+// حالة المستخدم
 let currentUser = null;
 let editingStudentCode = null;
-let currentTeacherHalaqa = "ALL"; // ALL | ONSITE | ONLINE
+
+// الحلقة الحالية للمعلم (حضوري / إلكتروني)
+let currentHalaqa = "ONSITE"; // ONSITE = حضوري , ONLINE = إلكتروني
+
+function isInCurrentHalaqa(student){
+  const h = student.halaqa || "ONSITE"; // الطلاب القدامى بدون حقل halaqa يعتبرون حضوري
+  return h === currentHalaqa;
+}
+
 
 function isInCurrentHalaqa(student){
   // لو فلتر المعلم على "كل الحلقات" رجّع كل الطلاب
@@ -1368,6 +1377,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
