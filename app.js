@@ -1223,7 +1223,21 @@ async function displayParentDashboard(parentCode){
         const hifzMission = getCurrentHifzMission(s);
         const murMission  = getCurrentMurajaaMission(s);
 
+        // تحديد المجموعة الخاصة بالترتيب (بناء لوحده + تطوير/متقدم معاً)
+        const level = s.murajaa_level || "BUILDING";
+        let groupTitle;
+        let childRank;
+
+        if (level === "BUILDING"){
+          groupTitle = "مجموعة البناء";
+          childRank  = buildingRankMap[s.code] != null ? buildingRankMap[s.code] : "—";
+        } else {
+          groupTitle = "مجموعة التطوير / المتقدم";
+          childRank  = devAdvRankMap[s.code] != null ? devAdvRankMap[s.code] : "—";
+        }
+
         const el = document.createElement("div");
+
         el.className = "child-card";
         el.innerHTML = `
           <div class="child-name">${s.name} (${s.code})</div>
@@ -1354,6 +1368,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
