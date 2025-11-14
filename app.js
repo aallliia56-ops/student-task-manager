@@ -133,9 +133,22 @@ const welcomeParent            = $("#welcome-parent");
 const logoutButtonParent       = $("#logout-button-parent");
 const parentChildrenList       = $("#parent-children-list");
 
+// شاشة كود الحلقة (شبكة الطلاب)
+const halaqaScreen       = $("#halaqa-screen");
+const halaqaTitle        = $("#halaqa-title");
+const halaqaSubtitle     = $("#halaqa-subtitle");
+const halaqaBackButton   = $("#halaqa-back-button");
+const halaqaStudentsGrid = $("#halaqa-students-grid");
+
 // حالة المستخدم
 let currentUser = null;
 let editingStudentCode = null;
+// أكواد الدخول الخاصة بالحلقات (تقدر تغير القيم)
+const HALAQA_LOGIN_CODES = {
+  "HALAQA_ONSITE":  "ONSITE",   // كود يفتح شبكة طلاب الحلقة الحضورية
+  "HALAQA_ONLINE":  "ONLINE",   // كود يفتح شبكة طلاب الحلقة الإلكترونية
+};
+
 
 // الحلقة الحالية للمعلم (حضوري / إلكتروني)
 let currentHalaqa = "ONSITE"; // ONSITE = حضوري , ONLINE = إلكتروني
@@ -1282,6 +1295,100 @@ async function displayParentDashboard(parentCode){
       ranksByHalaqa[h] = buildGroupedRanks(arr);
     });
 
+    // =======================
+// شاشة كود الحلقة (شبكة الطلاب)
+// =======================
+async function displayHalaqaScreen(loginCode, halaqaType){
+  try{
+    hideAllScreens();
+    halaqaScreen.classList.remove("hidden");
+
+    // عنوان الشاشة
+    const halaqaLabel = (halaqaType === "ONLINE") ? "الحلقة الإلكترونية" : "الحلقة الحضورية";
+    safeSetText(halaqaTitle, `حسابات ${halaqaLabel}`);
+    safeSetText(halaqaSubtitle, `تم الدخول بواسطة كود الحلقة: ${loginCode}`);
+
+    // تحميل الطلاب من قاعدة البيانات
+    const snap = await getDocs(collection(db,"students"));
+    const allStudents = [];
+    snap.forEach(docSnap => {
+      const s = docSnap.data();
+      // نستخدم نفس فلتر الحلقة
+      if (!isInCurrentHalaqa(s)) return;
+      allStudents.push(s);
+    });
+
+    // ترتيب تصاعدي حسب رمز الطالب
+    allStudents.sort((a,b)=>{
+      const aCode = a.code || "";
+      const bCode = b.code || "";
+      const aNum = parseInt(aCode,10);
+      const bNum = parseInt(bCode,10);
+      if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) return aNum - bNum;
+      return String(aCode).localeCompare(String(bCode),"ar");
+    });
+
+    // لو ما فيه طلاب
+    if (!allStudents.length){
+      halaqaStudentsGrid.innerHTML = `<p class="message info">لا يوجد طلاب مسجلون في هذه الحلقة.</p>`;
+      return;
+    }
+
+    // بناء المربعات
+    halaqaStudentsGrid.innerHTML = "";
+    allStudents.forEach((s, index)=>{
+      const tasks = Array.isArray(s.tasks) ? s.tasks : [];
+      const pendingCount = tasks.filter(t=> t && t.status === "pending").length;
+
+      const tile = document.createElement("div");
+      tile.className = "halaqa-tile";
+      tile.dataset.code = s.code;   // مهم عشان نعرف الطالب عند الضغط
+
+      tile.innerHTML = `
+        <div class="halaqa-tile-code">${s.code} - ${s.name || "طالب"}</div>
+        <div class="halaqa-tile-line">المهام تحت المراجعة: <strong>${pendingCount}</strong></div>
+        <div class="halaqa-tile-line">الترتيب في القائمة: ${index + 1}</div>
+      `;
+      halaqaStudentsGrid.appendChild(tile);
+    });
+
+  }catch(e){
+    console.error("displayHalaqaScreen error:", e);
+    halaqaStudentsGrid.innerHTML = `<p class="message error">حدث خطأ في تحميل طلاب الحلقة: ${e.message}</p>`;
+  }
+}
+
+    // عند الضغط على مربع طالب في شاشة الحلقة: ندخله على حساب الطالب مباشرة
+halaqaStudentsGrid?.addEventListener("click", async (e)=>{
+  const tile = e.target.closest(".halaqa-tile");
+  if (!tile) return;
+  const code = tile.dataset.code;
+  if (!code) return;
+
+  try{
+    const student = await fetchStudentByCode(code);
+    if (!student){
+      alert("لم يتم العثور على بيانات هذا الطالب.");
+      return;
+    }
+    currentUser = { role:"student", code: student.code };
+    await displayStudentDashboard(student);
+  }catch(err){
+    console.error("login from halaqa tile error:", err);
+    alert("حدث خطأ أثناء فتح حساب الطالب.");
+  }
+});
+
+// زر الرجوع من شاشة الحلقة → رجوع لشاشة الدخول
+halaqaBackButton?.addEventListener("click", ()=>{
+  currentUser = null;
+  hideAllScreens();
+  authScreen.classList.remove("hidden");
+  userCodeInput.value = "";
+});
+
+
+    
     welcomeParent.textContent = `مرحبًا بك يا ولي الأمر (${parentCode})`;
     parentChildrenList.innerHTML = "";
 
@@ -1400,47 +1507,51 @@ tabButtons.forEach(btn=> btn.addEventListener("click", ()=> activateTab(btn.data
 // =======================
 loginButton.addEventListener("click", async ()=>{
   const code = userCodeInput.value.trim();
-  if (!code){ showMessage(authMessage, "الرجاء إدخال رمز الدخول.", "error"); return; }
+  if (!code){
+    showMessage(authMessage, "الرجاء إدخال رمز الدخول", "error");
+    return;
+  }
 
   try{
-    
-if (code==="teacher1"){
-  currentUser   = { role:"teacher", name:"المعلم" };
-  currentHalaqa = "ONSITE";           // افتراضيًا حضوري
-  hideAllScreens();
-  teacherScreen.classList.remove("hidden");
-  updateHalaqaToggleUI();             // تظليل زر حضوري
-  activateTab("review-tasks-tab");    // يحمّل تبويب المراجعة مع فلتر الحلقة
-  return;
-}
-
-    
-
-    // طالب
-    const studentRef  = doc(db,"students",code);
-    const studentSnap = await getDoc(studentRef);
-    if (studentSnap.exists()){
-      const data = studentSnap.data();
-      currentUser = { role:"student", code, name: data.name || "طالب" }; // تثبيت حالة الطالب
-      await displayStudentDashboard({ code, ...data });
+    // 1) أولاً: هل هو كود حلقة؟
+    if (HALAQA_LOGIN_CODES[code]){
+      // نحدد نوع الحلقة (حضوري / إلكتروني)
+      currentHalaqa = HALAQA_LOGIN_CODES[code]; // يستخدمها isInCurrentHalaqa أيضاً
+      await displayHalaqaScreen(code, currentHalaqa);
       return;
     }
 
-    // ولي أمر
-    const qRef = query(collection(db,"students"), where("parent_code","==",code));
-    const qSnap= await getDocs(qRef);
-    if (!qSnap.empty){
+    // 2) كود المعلم
+    if (code === "teacher1"){
+      currentUser = { role:"teacher", code };
+      hideAllScreens();
+      teacherScreen.classList.remove("hidden");
+      // إذا عندك تحديث تلقائي:
+      await refreshTeacherView?.();
+      return;
+    }
+
+    // 3) كود ولي الأمر (مثلاً يبدأ بـ P)
+    if (code.startsWith("P")){
       currentUser = { role:"parent", code };
       await displayParentDashboard(code);
       return;
     }
 
-    showMessage(authMessage,"رمز الدخول غير صحيح.","error");
+    // 4) الباقي يعتبره كود طالب
+    const student = await fetchStudentByCode(code);
+    if (!student){
+      showMessage(authMessage, "لم يتم العثور على طالب بهذا الرمز", "error");
+      return;
+    }
+    currentUser = { role:"student", code: student.code };
+    await displayStudentDashboard(student);
   }catch(e){
-    console.error("Login error:", e);
-    showMessage(authMessage, `خطأ في الاتصال بالخادم: ${e.message}`, "error");
+    console.error("login error:", e);
+    showMessage(authMessage, "حدث خطأ أثناء تسجيل الدخول", "error");
   }
 });
+
 
 function logout(){
   currentUser = null;
@@ -1490,6 +1601,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
