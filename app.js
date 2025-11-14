@@ -134,7 +134,6 @@ const logoutButtonParent       = $("#logout-button-parent");
 const parentChildrenList       = $("#parent-children-list");
 
 // حالة المستخدم
-// حالة المستخدم
 let currentUser = null;
 let editingStudentCode = null;
 
@@ -151,27 +150,6 @@ function updateHalaqaToggleUI(){
   halaqaOnsiteBtn.classList.toggle("active", currentHalaqa === "ONSITE");
   halaqaOnlineBtn.classList.toggle("active", currentHalaqa === "ONLINE");
 }
-
-// الحلقة الحالية للمعلم (حضوري / إلكتروني)
-let currentHalaqa = "ONSITE"; // ONSITE = حضوري , ONLINE = إلكتروني
-
-function isInCurrentHalaqa(student){
-  const h = student.halaqa || "ONSITE"; // الطلاب القدامى بدون حقل halaqa يعتبرون حضوري
-  return h === currentHalaqa;
-}
-
-function updateHalaqaToggleUI(){
-  if (!halaqaOnsiteBtn || !halaqaOnlineBtn) return;
-  halaqaOnsiteBtn.classList.toggle("active", currentHalaqa === "ONSITE");
-  halaqaOnlineBtn.classList.toggle("active", currentHalaqa === "ONLINE");
-}
-
-// =======================
-// Helpers
-// =======================
-const safeSetText  = (el, t="") => el && (el.textContent = t);
-const safeSetWidth = (el, pct=0) => el && (el.style.width = `${pct}%`);
-
 
 // =======================
 // Helpers
@@ -199,6 +177,7 @@ const showMessage = (el, msg, type="info") => {
   el.classList.add(type);
   setTimeout(()=> el.classList.add("hidden"), 5000);
 };
+
 
 const hideAllScreens = () => {
   authScreen.classList.add("hidden");
@@ -1413,6 +1392,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
