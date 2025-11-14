@@ -1297,62 +1297,6 @@ async function displayParentDashboard(parentCode){
 
     // =======================
 // شاشة كود الحلقة (شبكة الطلاب)
-// =======================
-async function displayHalaqaScreen(loginCode, halaqaType){
-  try{
-    hideAllScreens();
-    halaqaScreen.classList.remove("hidden");
-
-    const halaqaLabel = (halaqaType === "ONLINE") ? "الحلقة الإلكترونية" : "الحلقة الحضورية";
-    safeSetText(halaqaTitle, `حسابات ${halaqaLabel}`);
-    safeSetText(halaqaSubtitle, `تم الدخول بواسطة كود الحلقة: ${loginCode}`);
-
-    const snap = await getDocs(collection(db,"students"));
-    const allStudents = [];
-    snap.forEach(docSnap => {
-      const s = docSnap.data();
-      if (!isInCurrentHalaqa(s)) return;   // نفس الفلتر المستخدم عندك
-      allStudents.push(s);
-    });
-
-    // ترتيب تصاعدي حسب رمز الطالب
-    allStudents.sort((a,b)=>{
-      const aCode = a.code || "";
-      const bCode = b.code || "";
-      const aNum = parseInt(aCode,10);
-      const bNum = parseInt(bCode,10);
-      if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) return aNum - bNum;
-      return String(aCode).localeCompare(String(bCode),"ar");
-    });
-
-    if (!allStudents.length){
-      halaqaStudentsGrid.innerHTML = `<p class="message info">لا يوجد طلاب مسجلون في هذه الحلقة.</p>`;
-      return;
-    }
-
-    halaqaStudentsGrid.innerHTML = "";
-    allStudents.forEach((s, index)=>{
-      const tasks = Array.isArray(s.tasks) ? s.tasks : [];
-      const pendingCount = tasks.filter(t=> t && t.status === "pending").length;
-
-      const tile = document.createElement("div");
-      tile.className = "halaqa-tile";
-      tile.dataset.code = s.code;
-
-      tile.innerHTML = `
-        <div class="halaqa-tile-code">${s.code} - ${s.name || "طالب"}</div>
-        <div class="halaqa-tile-line">المهام تحت المراجعة: <strong>${pendingCount}</strong></div>
-        <div class="halaqa-tile-line">الترتيب في القائمة: ${index + 1}</div>
-      `;
-      halaqaStudentsGrid.appendChild(tile);
-    });
-
-  }catch(e){
-    console.error("displayHalaqaScreen error:", e);
-    halaqaStudentsGrid.innerHTML =
-      `<p class="message error">حدث خطأ في تحميل طلاب الحلقة: ${e.message}</p>`;
-  }
-}
 
 
     // =======================
@@ -1677,6 +1621,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
