@@ -168,11 +168,6 @@
     <section class="tab-content-container">
       <!-- مراجعة المهام -->
       <div id="review-tasks-tab" class="tab-content">
-        <h3>لوحة الشرف (أعلى الطلاب نقاطاً)</h3>
-        <div id="honor-board" class="tasks-review-container">
-          <p class="message info">جارٍ تحميل لوحة الشرف...</p>
-        </div>
-        <hr />
         <h3>مهام بانتظار مراجعتك</h3>
         <p class="info-text">هنا تظهر المهام التي أرسلها الطلاب للمراجعة. يمكنك قبولها أو رفضها.</p>
         <div id="pending-tasks-list" class="tasks-review-container">
@@ -295,21 +290,28 @@
 
       <!-- عرض المنهج -->
       <div id="curriculum-tab" class="tab-content hidden">
-        <h3>عرض المنهج</h3>
-        <div class="curriculum-view">
-          <div>
-            <h4>منهج الحفظ</h4>
-            <div id="hifz-curriculum-display" class="curriculum-list"></div>
-          </div>
-          <div>
-            <h4>منهج المراجعة</h4>
-            <div id="murajaa-curriculum-display" class="curriculum-list"></div>
-          </div>
-        </div>
-      </div>
-
-    </section>
+  <h3>عرض المنهج</h3>
+  <div class="curriculum-view">
+    <div>
+      <h4>منهج الحفظ</h4>
+      <div id="hifz-curriculum-display" class="curriculum-list"></div>
+    </div>
+    <div>
+      <h4>منهج المراجعة</h4>
+      <div id="murajaa-curriculum-display" class="curriculum-list"></div>
+    </div>
   </div>
+
+  <hr />
+
+  <h3>لوحة الشرف حسب المستوى</h3>
+  <div id="honor-board" class="tasks-review-container">
+    <p class="message info">جارٍ تحميل لوحة الشرف...</p>
+  </div>
+</div>
+
+      
+
 
   <!-- شاشة ولي الأمر -->
   <div id="parent-screen" class="container hidden">
@@ -333,6 +335,7 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
 
 
