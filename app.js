@@ -49,7 +49,7 @@ const userCodeInput= $("#user-code");
 const loginButton  = $("#login-button");
 const authMessage  = $("#auth-message");
 
-const tabButtons               = document.querySelectorAll(".tab-button");
+const tabButtons = document.querySelectorAll(".tab-button");
 // أزرار اختيار الحلقة
 const halaqaOnsiteBtn          = $("#halaqa-onsite-btn");
 const halaqaOnlineBtn          = $("#halaqa-online-btn");
@@ -89,7 +89,6 @@ const logoutButtonStudent      = $("#logout-button-student");
 const teacherScreen            = $("#teacher-screen");
 const logoutButtonTeacher      = $("#logout-button-teacher");
 const teacherHalaqaFilter      = $("#teacher-halaqa-filter");
-const tabButtons               = document.querySelectorAll(".tab-button");
 
 // أزرار التحديث
 const refreshStudentButton     = $("#refresh-student-button");
@@ -1410,6 +1409,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
