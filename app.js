@@ -133,6 +133,21 @@ let currentUser = null;
 let editingStudentCode = null;
 let currentTeacherHalaqa = "ALL"; // ALL | ONSITE | ONLINE
 
+function isInCurrentHalaqa(student){
+  // لو فلتر المعلم على "كل الحلقات" رجّع كل الطلاب
+  if (!currentTeacherHalaqa || currentTeacherHalaqa === "ALL") return true;
+
+  // الحلقة المخزنة مع الطالب (افتراضيًا حضوري لو ما فيه قيمة)
+  const h = student.halaqa || "ONSITE";
+  return h === currentTeacherHalaqa;
+}
+
+// ربط قائمة اختيار الحلقة في صفحة المعلم
+teacherHalaqaFilter?.addEventListener("change", ()=>{
+  currentTeacherHalaqa = teacherHalaqaFilter.value || "ALL";
+  refreshTeacherView();
+});
+
 
 // =======================
 // Helpers
@@ -1346,6 +1361,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
