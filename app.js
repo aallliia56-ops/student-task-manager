@@ -148,26 +148,39 @@ const HALAQA_LOGIN_CODES = {
   "HALAQA_ONSITE":  "ONSITE",   // كود يفتح شبكة طلاب الحلقة الحضورية
   "HALAQA_ONLINE":  "ONLINE",   // كود يفتح شبكة طلاب الحلقة الإلكترونية
 };
+
 // =======================
 // شاشة كود الحلقة (شبكة الطلاب)
 // =======================
 async function displayHalaqaScreen(loginCode, halaqaType){
   try{
+    // إظهار شاشة الحلقة وإخفاء الباقي
     hideAllScreens();
     halaqaScreen.classList.remove("hidden");
 
+    // عنوان الشاشة
     const halaqaLabel = (halaqaType === "ONLINE") ? "الحلقة الإلكترونية" : "الحلقة الحضورية";
     safeSetText(halaqaTitle, `حسابات ${halaqaLabel}`);
     safeSetText(halaqaSubtitle, `تم الدخول بواسطة كود الحلقة: ${loginCode}`);
 
+    // تحميل الطلاب من قاعدة البيانات
     const snap = await getDocs(collection(db,"students"));
     const allStudents = [];
     snap.forEach(docSnap => {
       const s = docSnap.data();
-      if (!isInCurrentHalaqa(s)) return;
+      const h = s.halaqa || "ONSITE";   // الطلاب القدامى = حضوري
+      if (h !== halaqaType) return;     // نعرض فقط طلاب هذه الحلقة
       allStudents.push(s);
     });
 
+    // لو ما فيه طلاب
+    if (!allStudents.length){
+      halaqaStudentsGrid.innerHTML =
+        `<p class="message info">لا يوجد طلاب مسجلون في هذه الحلقة.</p>`;
+      return;
+    }
+
+    // ترتيب تصاعدي حسب رمز الطالب
     allStudents.sort((a,b)=>{
       const aCode = a.code || "";
       const bCode = b.code || "";
@@ -177,25 +190,20 @@ async function displayHalaqaScreen(loginCode, halaqaType){
       return String(aCode).localeCompare(String(bCode),"ar");
     });
 
-    if (!allStudents.length){
-      halaqaStudentsGrid.innerHTML =
-        `<p class="message info">لا يوجد طلاب مسجلون في هذه الحلقة.</p>`;
-      return;
-    }
-
+    // بناء المربعات
     halaqaStudentsGrid.innerHTML = "";
-    allStudents.forEach((s,index)=>{
+    allStudents.forEach((s, index)=>{
       const tasks = Array.isArray(s.tasks) ? s.tasks : [];
-      const pendingCount = tasks.filter(t=> t && t.status==="pending").length;
+      const pendingCount = tasks.filter(t=> t && t.status === "pending").length;
 
       const tile = document.createElement("div");
       tile.className = "halaqa-tile";
-      tile.dataset.code = s.code;
+      tile.dataset.code = s.code;   // عشان نستخدمه عند الضغط
 
       tile.innerHTML = `
         <div class="halaqa-tile-code">${s.code} - ${s.name || "طالب"}</div>
         <div class="halaqa-tile-line">المهام تحت المراجعة: <strong>${pendingCount}</strong></div>
-        <div class="halaqa-tile-line">الترتيب في القائمة: ${index+1}</div>
+        <div class="halaqa-tile-line">الترتيب في القائمة: ${index + 1}</div>
       `;
       halaqaStudentsGrid.appendChild(tile);
     });
@@ -206,6 +214,35 @@ async function displayHalaqaScreen(loginCode, halaqaType){
       `<p class="message error">حدث خطأ في تحميل طلاب الحلقة: ${e.message}</p>`;
   }
 }
+
+// عند الضغط على مربع طالب في شاشة الحلقة: ندخله على حساب الطالب مباشرة
+halaqaStudentsGrid?.addEventListener("click", async (e)=>{
+  const tile = e.target.closest(".halaqa-tile");
+  if (!tile) return;
+  const code = tile.dataset.code;
+  if (!code) return;
+
+  try{
+    const student = await fetchStudentByCode(code);
+    if (!student){
+      alert("لم يتم العثور على بيانات هذا الطالب.");
+      return;
+    }
+    currentUser = { role:"student", code: student.code };
+    await displayStudentDashboard(student);
+  }catch(err){
+    console.error("login from halaqa tile error:", err);
+    alert("حدث خطأ أثناء فتح حساب الطالب.");
+  }
+});
+
+// زر الرجوع من شاشة الحلقة → رجوع لشاشة الدخول
+halaqaBackButton?.addEventListener("click", ()=>{
+  currentUser = null;
+  hideAllScreens();
+  authScreen.classList.remove("hidden");
+  userCodeInput.value = "";
+});
 
 
 // الحلقة الحالية للمعلم (حضوري / إلكتروني)
@@ -1355,37 +1392,6 @@ async function displayParentDashboard(parentCode){
       ranksByHalaqa[h] = buildGroupedRanks(arr);
     });
 
-
-    // عند الضغط على مربع طالب في شاشة الحلقة: ندخله على حساب الطالب مباشرة
-halaqaStudentsGrid?.addEventListener("click", async (e)=>{
-  const tile = e.target.closest(".halaqa-tile");
-  if (!tile) return;
-  const code = tile.dataset.code;
-  if (!code) return;
-
-  try{
-    const student = await fetchStudentByCode(code);
-    if (!student){
-      alert("لم يتم العثور على بيانات هذا الطالب.");
-      return;
-    }
-    currentUser = { role:"student", code: student.code };
-    await displayStudentDashboard(student);
-  }catch(err){
-    console.error("login from halaqa tile error:", err);
-    alert("حدث خطأ أثناء فتح حساب الطالب.");
-  }
-});
-
-// زر الرجوع من شاشة الحلقة → رجوع لشاشة الدخول
-halaqaBackButton?.addEventListener("click", ()=>{
-  currentUser = null;
-  hideAllScreens();
-  authScreen.classList.remove("hidden");
-  userCodeInput.value = "";
-});
-
-
     
     welcomeParent.textContent = `مرحبًا بك يا ولي الأمر (${parentCode})`;
     parentChildrenList.innerHTML = "";
@@ -1614,26 +1620,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+  // ... آخر ليستنرات عندك (مثلاً login-button وغيره)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// (لازم يكون فيه أقواس } لكل الدوال)
+// تأكد ما فيه سطر ناقص أو تعليق مقطوع
