@@ -152,20 +152,25 @@ function updateHalaqaToggleUI(){
   halaqaOnlineBtn.classList.toggle("active", currentHalaqa === "ONLINE");
 }
 
+// الحلقة الحالية للمعلم (حضوري / إلكتروني)
+let currentHalaqa = "ONSITE"; // ONSITE = حضوري , ONLINE = إلكتروني
 
-  // لو فلتر المعلم على "كل الحلقات" رجّع كل الطلاب
-  if (!currentTeacherHalaqa || currentTeacherHalaqa === "ALL") return true;
-
-  // الحلقة المخزنة مع الطالب (افتراضيًا حضوري لو ما فيه قيمة)
-  const h = student.halaqa || "ONSITE";
-  return h === currentTeacherHalaqa;
+function isInCurrentHalaqa(student){
+  const h = student.halaqa || "ONSITE"; // الطلاب القدامى بدون حقل halaqa يعتبرون حضوري
+  return h === currentHalaqa;
 }
 
-// ربط قائمة اختيار الحلقة في صفحة المعلم
-teacherHalaqaFilter?.addEventListener("change", ()=>{
-  currentTeacherHalaqa = teacherHalaqaFilter.value || "ALL";
-  refreshTeacherView();
-});
+function updateHalaqaToggleUI(){
+  if (!halaqaOnsiteBtn || !halaqaOnlineBtn) return;
+  halaqaOnsiteBtn.classList.toggle("active", currentHalaqa === "ONSITE");
+  halaqaOnlineBtn.classList.toggle("active", currentHalaqa === "ONLINE");
+}
+
+// =======================
+// Helpers
+// =======================
+const safeSetText  = (el, t="") => el && (el.textContent = t);
+const safeSetWidth = (el, pct=0) => el && (el.style.width = `${pct}%`);
 
 
 // =======================
@@ -1408,6 +1413,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
