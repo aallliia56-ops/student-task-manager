@@ -66,7 +66,7 @@
     <p id="auth-message" class="message hidden"></p>
   </div>
 
-  <!-- شاشة الطالب -->
+    <!-- شاشة الطالب -->
   <div id="student-screen" class="container hidden">
     <header class="dashboard-header">
       <div>
@@ -85,20 +85,7 @@
       </div>
     </header>
 
-        <!-- كروت التقدم -->
-    <section class="progress-section">
-      <!-- بطاقة الحفظ -->
-      <div class="progress-card hifz">
-        ...
-      </div>
-
-      <!-- بطاقة المراجعة -->
-      <div class="progress-card murajaa">
-        ...
-      </div>
-    </section>
-
-    <!-- مهامي -->
+    <!-- مهامي أولاً -->
     <section class="tasks-section">
       <h3>مهامي الحالية</h3>
       <div id="student-tasks" class="tasks-list">
@@ -106,10 +93,60 @@
       </div>
     </section>
 
+    <!-- كروت التقدم بعد المهام -->
+    <section class="progress-section">
+      <!-- بطاقة الحفظ -->
+      <div class="progress-card hifz">
+        <h3>تقدم الحفظ</h3>
 
+        <!-- المهمة الحالية (يربطها app.js بـ studentHifzProgressLabel) -->
+        <p id="student-hifz-progress-label" class="small-text">
+          المهمة الحالية: —
+        </p>
 
+        <!-- صف الشريط + النسبة -->
+        <div class="progress-inline">
+          <div class="progress-bar">
+            <div id="student-hifz-progress-bar" class="progress-fill"></div>
+          </div>
+          <p class="progress-percent">
+            <span id="student-hifz-progress-percent">0</span>%
+          </p>
+        </div>
+
+        <!-- المهمة القادمة -->
+        <p id="student-hifz-next-label" class="small-text muted" style="margin:.4rem 0 0;">
+          المهمة القادمة: —
+        </p>
+      </div>
+
+      <!-- بطاقة المراجعة -->
+      <div class="progress-card murajaa">
+        <h3>تقدم المراجعة</h3>
+
+        <!-- المهمة الحالية -->
+        <p id="student-murajaa-progress-label" class="small-text">
+          المهمة الحالية: —
+        </p>
+
+        <div class="progress-inline">
+          <div class="progress-bar">
+            <div id="student-murajaa-progress-bar" class="progress-fill"></div>
+          </div>
+          <p class="progress-percent">
+            <span id="student-murajaa-progress-percent">0</span>%
+          </p>
+        </div>
+
+        <!-- المهمة القادمة -->
+        <p id="student-murajaa-next-label" class="small-text muted" style="margin:.4rem 0 0;">
+          المهمة القادمة: —
+        </p>
+      </div>
+    </section>
   </div>
 
+  
   <!-- شاشة المعلم -->
   <div id="teacher-screen" class="container hidden">
 
@@ -313,6 +350,7 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
 
 
