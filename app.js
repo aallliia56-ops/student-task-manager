@@ -759,7 +759,6 @@ async function loadPendingTasksForReview(){
           pendingGeneral.push(entry);
         }
       });
-    });
 
     // ترتيب حسب الأقدم أولاً (created_at تصاعدي)
     const sortByCreatedAt = (arr) => {
@@ -1347,6 +1346,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
