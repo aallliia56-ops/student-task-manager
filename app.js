@@ -54,7 +54,6 @@ const tabButtons = document.querySelectorAll(".tab-button");
 const halaqaOnsiteBtn          = $("#halaqa-onsite-btn");
 const halaqaOnlineBtn          = $("#halaqa-online-btn");
 
-
 // شاشة الطالب
 const studentScreen= $("#student-screen");
 const welcomeStudent= $("#welcome-student");
@@ -143,6 +142,12 @@ const halaqaStudentsGrid = $("#halaqa-students-grid");
 // حالة المستخدم
 let currentUser = null;
 let editingStudentCode = null;
+
+// سياق الدخول:
+// "DIRECT" = دخل برمز من شاشة الدخول
+// "HALAQA" = دخل عن طريق مربع طالب في شاشة الحلقة
+let lastEntryContext = "DIRECT";
+
 // أكواد الدخول الخاصة بالحلقات (تقدر تغير القيم)
 const HALAQA_LOGIN_CODES = {
   "HALAQA_ONSITE":  "ONSITE",   // كود يفتح شبكة طلاب الحلقة الحضورية
@@ -190,12 +195,9 @@ async function displayHalaqaScreen(loginCode, halaqaType){
       return String(aCode).localeCompare(String(bCode),"ar");
     });
 
-    // بناء المربعات
+    // بناء المربعات (الرمز فقط)
     halaqaStudentsGrid.innerHTML = "";
     allStudents.forEach((s, index)=>{
-      const tasks = Array.isArray(s.tasks) ? s.tasks : [];
-      const pendingCount = tasks.filter(t=> t && t.status === "pending").length;
-
       const tile = document.createElement("div");
       tile.className = "halaqa-tile";
       tile.dataset.code = s.code;   // عشان نستخدمه عند الضغط
@@ -203,8 +205,6 @@ async function displayHalaqaScreen(loginCode, halaqaType){
       tile.innerHTML = `
         <div class="halaqa-tile-code">${s.code}</div>
       `;
-
-
 
       halaqaStudentsGrid.appendChild(tile);
     });
@@ -229,6 +229,10 @@ halaqaStudentsGrid?.addEventListener("click", async (e)=>{
       alert("لم يتم العثور على بيانات هذا الطالب.");
       return;
     }
+
+    // دخول الطالب من شاشة الحلقة
+    lastEntryContext = "HALAQA";
+
     currentUser = { role:"student", code: student.code };
     await displayStudentDashboard(student);
   }catch(err){
@@ -244,7 +248,6 @@ halaqaBackButton?.addEventListener("click", ()=>{
   authScreen.classList.remove("hidden");
   userCodeInput.value = "";
 });
-
 
 // الحلقة الحالية للمعلم (حضوري / إلكتروني)
 let currentHalaqa = "ONSITE"; // ONSITE = حضوري , ONLINE = إلكتروني
@@ -287,7 +290,6 @@ const showMessage = (el, msg, type="info") => {
   setTimeout(()=> el.classList.add("hidden"), 5000);
 };
 
-
 function hideAllScreens(){
   authScreen?.classList.add("hidden");
   studentScreen?.classList.add("hidden");
@@ -295,7 +297,6 @@ function hideAllScreens(){
   parentScreen?.classList.add("hidden");
   halaqaScreen?.classList.add("hidden");
 }
-
 
 const generateUniqueId = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2,8);
@@ -313,8 +314,6 @@ async function fetchAllStudentsSortedByPoints(filterFn){
   arr.sort((a,b)=>(b.total_points||0)-(a.total_points||0));
   return arr;
 }
-
-
 
 // ترتيب مجموعات المستويات:
 // - مجموعة البناء (BUILDING) لوحدها
@@ -356,23 +355,21 @@ function buildGroupedRanks(students){
   });
 
   function isInCurrentHalaqa(student){
-  if (!currentTeacherHalaqa || currentTeacherHalaqa === "ALL") return true;
-  const h = student.halaqa || "ONSITE";
-  return h === currentTeacherHalaqa;
-}
+    if (!currentTeacherHalaqa || currentTeacherHalaqa === "ALL") return true;
+    const h = student.halaqa || "ONSITE";
+    return h === currentTeacherHalaqa;
+  }
 
-teacherHalaqaFilter?.addEventListener("change", ()=>{
-  currentTeacherHalaqa = teacherHalaqaFilter.value || "ALL";
-  refreshTeacherView();
-});
-
+  teacherHalaqaFilter?.addEventListener("change", ()=>{
+    currentTeacherHalaqa = teacherHalaqaFilter.value || "ALL";
+    refreshTeacherView();
+  });
 
   const { sorted: buildingSorted, rankMap: buildingRankMap } = computeRankMapForGroup(building);
   const { sorted: devAdvSorted,   rankMap: devAdvRankMap   } = computeRankMapForGroup(devAdv);
 
   return { buildingSorted, buildingRankMap, devAdvSorted, devAdvRankMap };
 }
-
 
 // سطر الخطة/النقاط/الترتيب (يوحّد التحديث في مكان واحد)
 function updatePlanStrip({startSurah="—", endSurah="—", points=0, rank="—"}) {
@@ -522,7 +519,7 @@ async function displayStudentDashboard(student){
     const endSurah   = endItem   ? endItem.surah_name_ar   : "—";
     const points     = student.total_points || 0;
 
-        // ===== الترتيب =====
+    // ===== الترتيب =====
     // الحلقة الحالية (حضوري / إلكتروني) – افتراضيًا حضوري لو ما فيه حقل
     const studentHalaqa = student.halaqa || "ONSITE";
 
@@ -553,12 +550,6 @@ async function displayStudentDashboard(student){
       if (idx !== -1) rankOnly = String(idx + 1);
     }
 
-
-    
-
-
-
-    
     updatePlanStrip({ startSurah, endSurah, points, rank: rankOnly });
 
     // مهام حالية
@@ -882,13 +873,12 @@ async function loadPendingTasksForReview(){
     snap.forEach(docSnap => {
       const student = docSnap.data();
 
-  // تجاهل الطلاب اللي مو في الحلقة الحالية (حضوري / إلكتروني)
+      // تجاهل الطلاب اللي مو في الحلقة الحالية (حضوري / إلكتروني)
       if (!isInCurrentHalaqa(student)) return;
 
       const tasks = Array.isArray(student.tasks) ? student.tasks : [];
       tasks.forEach(t => {
         if (t.status !== "pending") return;
-
 
         if (t.type === "hifz"){
           pendingHifz.push({ student, task: t });
@@ -1069,8 +1059,6 @@ async function loadHonorBoard(){
   }
 }
 
-
-
 async function reviewTask(studentCode, taskId, action){
   try{
     const studentRef = doc(db,"students",studentCode);
@@ -1193,14 +1181,14 @@ assignGroupTaskButton?.addEventListener("click", async ()=>{
     const colRef = collection(db,"students");
     const snap = await getDocs(colRef);
     const batch = writeBatch(db);
-   snap.forEach(d=>{
-     const s = d.data();
-     if (currentTeacherHalaqa && currentTeacherHalaqa !== "ALL"){
-       const h = s.halaqa || "ONSITE";
-       if (h !== currentTeacherHalaqa) return;
-     }
-     batch.update(doc(db,"students",d.id), { tasks: arrayUnion(task) });
-   });
+    snap.forEach(d=>{
+      const s = d.data();
+      if (currentTeacherHalaqa && currentTeacherHalaqa !== "ALL"){
+        const h = s.halaqa || "ONSITE";
+        if (h !== currentTeacherHalaqa) return;
+      }
+      batch.update(doc(db,"students",d.id), { tasks: arrayUnion(task) });
+    });
 
     await batch.commit();
     showMessage(assignTaskMessage,"تم تعيين المهمة لجميع الطلاب.","success");
@@ -1215,7 +1203,9 @@ assignGroupTaskButton?.addEventListener("click", async ()=>{
 // =======================
 function populateHifzSelects(){
   if (!newStudentHifzStart || !newStudentHifzEnd) return;
-  const options = HIFZ_CURRICULUM.map((item, i)=> `<option value="${i}">(${i}) ${item.surah_name_ar} (${item.start_ayah}-${item.end_ayah})</option>`).join("");
+  const options = HIFZ_CURRICULUM.map((item, i)=>
+    `<option value="${i}">(${i}) ${item.surah_name_ar} (${item.start_ayah}-${item.end_ayah})</option>`
+  ).join("");
   newStudentHifzStart.innerHTML = options;
   newStudentHifzEnd.innerHTML   = options;
 }
@@ -1223,8 +1213,13 @@ function populateHifzSelects(){
 function populateMurajaaStartSelect(){
   if (!newStudentMurajaaLevel || !newStudentMurajaaStart) return;
   const arr = getReviewArrayForLevel(newStudentMurajaaLevel.value || "BUILDING");
-  if (!arr?.length){ newStudentMurajaaStart.innerHTML = '<option value="0">لا توجد مهام لهذا المستوى</option>'; return; }
-  newStudentMurajaaStart.innerHTML = arr.map((it,i)=> `<option value="${i}">(${i}) ${it.name}</option>`).join("");
+  if (!arr?.length){
+    newStudentMurajaaStart.innerHTML = '<option value="0">لا توجد مهام لهذا المستوى</option>';
+    return;
+  }
+  newStudentMurajaaStart.innerHTML = arr.map((it,i)=>
+    `<option value="${i}">(${i}) ${it.name}</option>`
+  ).join("");
 }
 
 newStudentMurajaaLevel?.addEventListener("change", populateMurajaaStartSelect);
@@ -1233,7 +1228,10 @@ async function loadStudentsForTeacher(){
   studentList.innerHTML = "<li>جارٍ تحميل الطلاب...</li>";
   try{
     const students = await fetchAllStudentsSortedByPoints(isInCurrentHalaqa);
-    if (!students.length){ studentList.innerHTML = "<li>لا يوجد طلاب مسجلون بعد.</li>"; return; }
+    if (!students.length){
+      studentList.innerHTML = "<li>لا يوجد طلاب مسجلون بعد.</li>";
+      return;
+    }
 
     studentList.innerHTML = "";
     students.forEach((s, i)=>{
@@ -1245,7 +1243,9 @@ async function loadStudentsForTeacher(){
           <div class="student-main">#${i+1} - ${s.name} (${s.code})</div>
           <div class="student-sub">حفظ: ${hifzPercent}% | مراجعة: ${murPercent}% | نقاط: ${s.total_points||0}</div>
           <div class="student-sub">ولي الأمر: ${s.parent_name||"غير مسجل"} (${s.parent_code||"—"})</div>
-          <div class="student-actions"><button class="button primary btn-edit-student" data-code="${s.code}">تعديل</button></div>
+          <div class="student-actions">
+            <button class="button primary btn-edit-student" data-code="${s.code}">تعديل</button>
+          </div>
         </div>
       `;
       studentList.appendChild(li);
@@ -1305,7 +1305,6 @@ registerStudentButton?.addEventListener("click", async ()=>{
   const murajaaLevel   = newStudentMurajaaLevel.value;
   const murajaaStartIndex = parseInt(newStudentMurajaaStart.value,10) || 0;
   const halaqaValue    = newStudentHalaqa?.value || "ONSITE";
-
 
   if (!code || !name || isNaN(hifzStartIndex) || isNaN(hifzEndIndex)){
     showMessage(registerStudentMessage,"الرجاء تعبئة جميع الحقول الأساسية بشكل صحيح.","error"); return;
@@ -1393,7 +1392,6 @@ async function displayParentDashboard(parentCode){
       ranksByHalaqa[h] = buildGroupedRanks(arr);
     });
 
-    
     welcomeParent.textContent = `مرحبًا بك يا ولي الأمر (${parentCode})`;
     parentChildrenList.innerHTML = "";
 
@@ -1470,7 +1468,6 @@ async function displayParentDashboard(parentCode){
   }
 }
 
-
 halaqaOnsiteBtn?.addEventListener("click", () => {
   currentHalaqa = "ONSITE";
   updateHalaqaToggleUI();
@@ -1487,10 +1484,21 @@ halaqaOnlineBtn?.addEventListener("click", () => {
 // جلب طالب حسب رمز الدخول
 // =======================
 async function fetchStudentByCode(code){
-  const studentRef = doc(db, "students", code);
-  const snap = await getDoc(studentRef);
-  if (!snap.exists()) return null;
-  return snap.data();
+  // أولاً: نحاول كوثيقة مباشرة بالـ ID
+  const directRef = doc(db, "students", code);
+  const directSnap = await getDoc(directRef);
+  if (directSnap.exists()) {
+    return directSnap.data();
+  }
+
+  // لو ما وجدناه، نبحث بالحقل code
+  const q = query(collection(db, "students"), where("code", "==", code));
+  const snap = await getDocs(q);
+  let found = null;
+  snap.forEach(docSnap => {
+    if (!found) found = docSnap.data();
+  });
+  return found;
 }
 
 // =======================
@@ -1498,7 +1506,9 @@ async function fetchStudentByCode(code){
 // =======================
 function activateTab(tabId){
   document.querySelectorAll(".tab-content").forEach(el=> el.classList.add("hidden"));
-  document.querySelectorAll(".tab-button").forEach(btn=> btn.classList.toggle("active", btn.dataset.tab===tabId));
+  document.querySelectorAll(".tab-button").forEach(btn=>
+    btn.classList.toggle("active", btn.dataset.tab===tabId)
+  );
   const target = document.getElementById(tabId);
   target?.classList.remove("hidden");
 
@@ -1512,8 +1522,9 @@ function activateTab(tabId){
   }
 }
 
-
-tabButtons.forEach(btn=> btn.addEventListener("click", ()=> activateTab(btn.dataset.tab)));
+tabButtons.forEach(btn=>
+  btn.addEventListener("click", ()=> activateTab(btn.dataset.tab))
+);
 
 // =======================
 // تسجيل الدخول + الخروج
@@ -1536,6 +1547,7 @@ loginButton.addEventListener("click", async ()=>{
 
     // 2) كود المعلم
     if (code === "teacher1"){
+      lastEntryContext = "DIRECT";
       currentUser = { role:"teacher", code };
       hideAllScreens();
       teacherScreen.classList.remove("hidden");
@@ -1546,6 +1558,7 @@ loginButton.addEventListener("click", async ()=>{
 
     // 3) كود ولي الأمر (مثلاً يبدأ بـ P)
     if (code.startsWith("P")){
+      lastEntryContext = "DIRECT";
       currentUser = { role:"parent", code };
       await displayParentDashboard(code);
       return;
@@ -1557,6 +1570,7 @@ loginButton.addEventListener("click", async ()=>{
       showMessage(authMessage, "لم يتم العثور على طالب بهذا الرمز", "error");
       return;
     }
+    lastEntryContext = "DIRECT";
     currentUser = { role:"student", code: student.code };
     await displayStudentDashboard(student);
   }catch(e){
@@ -1565,12 +1579,20 @@ loginButton.addEventListener("click", async ()=>{
   }
 });
 
-
 function logout(){
+  const ctx = lastEntryContext;
   currentUser = null;
-  userCodeInput.value = "";
   hideAllScreens();
-  authScreen.classList.remove("hidden");
+
+  if (ctx === "HALAQA") {
+    // رجوع لشاشة عرض طلاب الحلقة
+    halaqaScreen.classList.remove("hidden");
+  } else {
+    // رجوع لشاشة الدخول
+    authScreen.classList.remove("hidden");
+    userCodeInput.value = "";
+  }
+
   showMessage(authMessage, "تم تسجيل الخروج بنجاح.", "success");
 }
 
@@ -1583,10 +1605,16 @@ refreshStudentButton?.addEventListener("click", refreshStudentView);
 refreshTeacherButton?.addEventListener("click", refreshTeacherView);
 
 async function refreshStudentView(){
-  if (!currentUser?.code){ console.warn("No currentUser/code at refresh:", currentUser); return; }
+  if (!currentUser?.code){
+    console.warn("No currentUser/code at refresh:", currentUser);
+    return;
+  }
   try{
     const snap = await getDoc(doc(db,"students", currentUser.code));
-    if (!snap.exists()){ showMessage(authMessage,"تعذر العثور على بيانات الطالب.","error"); return; }
+    if (!snap.exists()){
+      showMessage(authMessage,"تعذر العثور على بيانات الطالب.","error");
+      return;
+    }
     await displayStudentDashboard({ code: currentUser.code, ...snap.data() });
   }catch(e){
     console.error("Error refreshStudentView:", e);
@@ -1613,4 +1641,3 @@ function refreshTeacherView(){
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
-
