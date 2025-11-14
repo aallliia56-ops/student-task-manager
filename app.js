@@ -153,7 +153,6 @@ function updateHalaqaToggleUI(){
 }
 
 
-function isInCurrentHalaqa(student){
   // لو فلتر المعلم على "كل الحلقات" رجّع كل الطلاب
   if (!currentTeacherHalaqa || currentTeacherHalaqa === "ALL") return true;
 
@@ -1409,6 +1408,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
