@@ -140,20 +140,21 @@
     <h2>لوحة تحكم المعلم</h2>
     <p class="subtitle">إدارة مهام الطلاب وخططهم</p>
 
-    <div class="input-group" style="margin-top:8px; max-width:260px;">
-      <label for="teacher-halaqa-filter">الحلقة الحالية:</label>
-      <select id="teacher-halaqa-filter">
-        <option value="ALL">كل الحلقات</option>
-        <option value="ONSITE">حلقة حضورية</option>
-        <option value="ONLINE">حلقة إلكترونية</option>
-      </select>
+    <!-- اختيار الحلقة: حضوري / إلكتروني -->
+    <div class="halaqa-toggle">
+      <button id="halaqa-onsite-btn" class="halaqa-btn active">حضوري</button>
+      <button id="halaqa-online-btn" class="halaqa-btn">إلكتروني</button>
     </div>
   </div>
+
   <div class="header-actions">
     <button id="refresh-teacher-button" class="button primary">تحديث البيانات 🔄</button>
     <button id="logout-button-teacher" class="button danger">تسجيل الخروج</button>
   </div>
 </header>
+
+
+
 
 
     <!-- تبويبات المعلم -->
@@ -332,5 +333,6 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
 
