@@ -407,26 +407,41 @@ async function displayStudentDashboard(student){
     const endSurah   = endItem   ? endItem.surah_name_ar   : "—";
     const points     = student.total_points || 0;
 
-    // ترتيب
-    
-        // ترتيب داخل المجموعة (البناء لوحده، التطوير+المتقدم معًا)
-    // ترتيب داخل نفس الحلقة
+        // ===== الترتيب =====
+    // الحلقة الحالية (حضوري / إلكتروني) – افتراضيًا حضوري لو ما فيه حقل
     const studentHalaqa = student.halaqa || "ONSITE";
-    const all = await fetchAllStudentsSortedByPoints(s => (s.halaqa || "ONSITE") === studentHalaqa);
-    const idx = all.findIndex(s=> s.code === student.code);
-    const rankOnly = (idx !== -1) ? String(idx+1) : "—";
 
+    // جميع الطلاب مرتّبين بالنقاط
+    const all = await fetchAllStudentsSortedByPoints();
 
+    // نفس الحلقة فقط
+    const sameHalaqa = all.filter(s => (s.halaqa || "ONSITE") === studentHalaqa);
+
+    // مستوى المراجعة: البناء لو ما فيه قيمة
+    const level = student.murajaa_level || "BUILDING";
+    let rankOnly = "—";
 
     if (level === "BUILDING"){
-      if (buildingRankMap[student.code] != null){
-        rankOnly = String(buildingRankMap[student.code]);
-      }
+      // مجموعة البناء فقط
+      const buildingGroup = sameHalaqa.filter(
+        s => (s.murajaa_level || "BUILDING") === "BUILDING"
+      );
+      const idx = buildingGroup.findIndex(s => s.code === student.code);
+      if (idx !== -1) rankOnly = String(idx + 1);
     } else {
-      if (devAdvRankMap[student.code] != null){
-        rankOnly = String(devAdvRankMap[student.code]);
-      }
+      // التطوير + المتقدم معًا
+      const devAdvGroup = sameHalaqa.filter(s => {
+        const lv = s.murajaa_level || "BUILDING";
+        return lv === "DEVELOPMENT" || lv === "ADVANCED";
+      });
+      const idx = devAdvGroup.findIndex(s => s.code === student.code);
+      if (idx !== -1) rankOnly = String(idx + 1);
     }
+
+
+    
+
+
 
     
     updatePlanStrip({ startSurah, endSurah, points, rank: rankOnly });
@@ -1361,6 +1376,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
