@@ -866,33 +866,62 @@ async function loadPendingTasksForReview(){
 }
 
 
-
 async function loadHonorBoard(){
-  if (!honorBoardDiv) return;
-  honorBoardDiv.innerHTML = '<p class="message info">جارٍ تحديث لوحة الشرف...</p>';
   try{
-    const students = await fetchAllStudentsSortedByPoints(isInCurrentHalaqa);
-    if (!students.length){
-      honorBoardDiv.innerHTML = '<p class="message info">لا يوجد طلاب مسجلون بعد في هذه الحلقة.</p>';
+    if (!honorBoardDiv) return;
+
+    honorBoardDiv.innerHTML = '<p class="message info">جارٍ تحميل لوحة الشرف...</p>';
+
+    const snap = await getDocs(collection(db, "students"));
+    const students = [];
+
+    snap.forEach(docSnap => {
+      const s = docSnap.data();
+
+      // نعرض فقط طلاب الحلقة الحالية (حضوري / إلكتروني)
+      if (!isInCurrentHalaqa(s)) return;
+
+      students.push(s);
+    });
+
+    // ترتيب عام بالنقاط من الأعلى إلى الأقل
+    students.sort((a, b) => (b.total_points || 0) - (a.total_points || 0));
+
+    const top = students.slice(0, 10); // مثلاً أفضل 10 طلاب
+
+    if (!top.length){
+      honorBoardDiv.innerHTML = '<p class="message info">لا يوجد طلاب في هذه الحلقة حتى الآن.</p>';
       return;
     }
-    const top = students.slice(0,5);
-    const list = document.createElement("ol");
-    top.forEach(s=>{
+
+    const ul = document.createElement("ul");
+    ul.className = "honor-list";
+
+    top.forEach((s, idx) => {
+      const rank = idx + 1;
       const li = document.createElement("li");
-      li.textContent = `${s.name} (${s.code}) – ${s.total_points||0} نقطة`;
-      list.appendChild(li);
+      const rankClass = (rank <= 3) ? `rank-${rank}` : "rank-other";
+
+      li.className = `honor-item ${rankClass}`;
+      li.innerHTML = `
+        <span>#${rank} - ${s.name || "طالب"} (${s.code})</span>
+        <span>${s.total_points || 0} نقطة</span>
+      `;
+      ul.appendChild(li);
     });
+
     honorBoardDiv.innerHTML = "";
-    const title = document.createElement("p");
-    title.className = "small-text";
-    title.textContent = "أعلى الطلاب نقاطاً في هذه الحلقة:";
-    honorBoardDiv.append(title, list);
-  }catch(e){
+    honorBoardDiv.appendChild(ul);
+  } catch(e){
     console.error("Error loadHonorBoard:", e);
-    honorBoardDiv.innerHTML = `<p class="message error">خطأ في تحميل لوحة الشرف: ${e.message}</p>`;
+    if (honorBoardDiv){
+      honorBoardDiv.innerHTML =
+        `<p class="message error">خطأ في تحميل لوحة الشرف: ${e.message}</p>`;
+    }
   }
 }
+
+
 
 
 async function reviewTask(studentCode, taskId, action){
@@ -1419,6 +1448,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
