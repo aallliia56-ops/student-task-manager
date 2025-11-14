@@ -250,12 +250,14 @@ const showMessage = (el, msg, type="info") => {
 };
 
 
-const hideAllScreens = () => {
-  authScreen.classList.add("hidden");
-  studentScreen.classList.add("hidden");
-  teacherScreen.classList.add("hidden");
-  parentScreen.classList.add("hidden");
-};
+function hideAllScreens(){
+  authScreen?.classList.add("hidden");
+  studentScreen?.classList.add("hidden");
+  teacherScreen?.classList.add("hidden");
+  parentScreen?.classList.add("hidden");
+  halaqaScreen?.classList.add("hidden");
+}
+
 
 const generateUniqueId = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2,8);
@@ -1478,16 +1480,15 @@ halaqaOnlineBtn?.addEventListener("click", () => {
 // جلب طالب حسب رمز الدخول
 // =======================
 async function fetchStudentByCode(code){
-  const snap = await getDocs(collection(db,"students"));
-  let found = null;
-  snap.forEach(docSnap => {
-    const s = docSnap.data();
-    if (s.code === code && !found && s.code === code){
-      found = s;
-    }
-  });
-  return found;
-}
+const snap = await getDocs(collection(db,"students"));
+const allStudents = [];
+snap.forEach(docSnap => {
+  const s = docSnap.data();
+  const h = s.halaqa || "ONSITE";   // الطلاب القدامى = حضوري
+  if (h !== halaqaType) return;     // فلتر حسب نوع الحلقة الذي دخلت به
+  allStudents.push(s);
+});
+
 
 
 
@@ -1613,6 +1614,7 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file.");
 // end of file
+
 
 
 
