@@ -323,4 +323,34 @@ h1 { text-align: center; margin-bottom: 10px; }
 .small-text.muted {
   color: #9aa4b2;
 }
+/* ========== تبويبات الطالب (مهامي / مهام المساعد) ========== */
+.student-tabs{
+  display:flex;
+  gap:6px;
+  margin:10px 0;
+}
+
+.student-tab-button{
+  border:none;
+  border-radius:999px;
+  padding:6px 12px;
+  font-size:.85rem;
+  font-weight:600;
+  background:#ecf5ff;
+  color:#34495e;
+  cursor:pointer;
+  transition:all .15s ease;
+}
+
+.student-tab-button.active{
+  background:#3498db;
+  color:#fff;
+  box-shadow:0 2px 6px rgba(0,0,0,.12);
+}
+.assistant-picker select {
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #d0d7de;
+  font-size: .85rem;
+}
 
