@@ -359,3 +359,7 @@ h1 { text-align: center; margin-bottom: 10px; }
   text-align: center;   /* توسيط النص */
 }
 
+#student-hifz-progress-label,
+#student-murajaa-progress-label {
+  display: none !important;
+}
