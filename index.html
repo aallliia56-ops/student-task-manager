@@ -66,7 +66,7 @@
     <p id="auth-message" class="message hidden"></p>
   </div>
 
-    <!-- شاشة الطالب -->
+  <!-- شاشة الطالب -->
   <div id="student-screen" class="container hidden">
     <header class="dashboard-header">
       <div>
@@ -90,6 +90,17 @@
       <h3>مهامي الحالية</h3>
       <div id="student-tasks" class="tasks-list">
         <p class="message info">لا توجد مهام حالياً. وفقك الله 🤍</p>
+      </div>
+    </section>
+
+    <!-- مهام المساعد (للطلاب المساعدين) -->
+    <section class="tasks-section">
+      <h3>مهام المساعد</h3>
+      <p class="info-text">
+        إذا كنت طالبًا مساعدًا، ستظهر هنا المهام التي وجّهها لك المعلم لمراجعتها.
+      </p>
+      <div id="student-assistant-tasks" class="tasks-list">
+        <!-- يتم ملؤها من app.js -->
       </div>
     </section>
 
@@ -146,31 +157,26 @@
     </section>
   </div>
 
-  
   <!-- شاشة المعلم -->
   <div id="teacher-screen" class="container hidden">
 
     <header class="dashboard-header">
-  <div>
-    <h2>لوحة تحكم المعلم</h2>
-    <p class="subtitle">إدارة مهام الطلاب وخططهم</p>
+      <div>
+        <h2>لوحة تحكم المعلم</h2>
+        <p class="subtitle">إدارة مهام الطلاب وخططهم</p>
 
-    <!-- اختيار الحلقة: حضوري / إلكتروني -->
-    <div class="halaqa-toggle">
-      <button id="halaqa-onsite-btn" class="halaqa-btn active">حضوري</button>
-      <button id="halaqa-online-btn" class="halaqa-btn">إلكتروني</button>
-    </div>
-  </div>
+        <!-- اختيار الحلقة: حضوري / إلكتروني -->
+        <div class="halaqa-toggle">
+          <button id="halaqa-onsite-btn" class="halaqa-btn active">حضوري</button>
+          <button id="halaqa-online-btn" class="halaqa-btn">إلكتروني</button>
+        </div>
+      </div>
 
-  <div class="header-actions">
-    <button id="refresh-teacher-button" class="button primary">تحديث البيانات 🔄</button>
-    <button id="logout-button-teacher" class="button danger">تسجيل الخروج</button>
-  </div>
-</header>
-
-
-
-
+      <div class="header-actions">
+        <button id="refresh-teacher-button" class="button primary">تحديث البيانات 🔄</button>
+        <button id="logout-button-teacher" class="button danger">تسجيل الخروج</button>
+      </div>
+    </header>
 
     <!-- تبويبات المعلم -->
     <nav class="tabs">
@@ -303,24 +309,7 @@
         <ul id="student-list" class="data-list"></ul>
       </div>
 
-      <div class="input-group">
-  <label>أدوار إضافية:</label>
-  <label style="font-size:.85rem; display:block; margin-bottom:4px;">
-    <input type="checkbox" id="student-helper-onsite" />
-    طالب مساعد (للحلقة الحضورية)
-  </label>
-  <label style="font-size:.85rem; display:block;">
-    <input type="checkbox" id="parent-helper-online" />
-    ولي أمر مساعد (للحلقة الإلكترونية)
-  </label>
-  <p class="info-text">
-    الطالب المساعد يراجع مهام بقية طلاب الحلقة الحضورية من خلال لوحة المعلم،
-    وولي الأمر المساعد يراجع مهام طلاب الحلقة الإلكترونية من خلال لوحة المعلم باستخدام رمز ولي الأمر.
-  </p>
-</div>
-
-
-            <!-- عرض المنهج -->
+      <!-- عرض المنهج -->
       <div id="curriculum-tab" class="tab-content hidden">
         <h3>عرض المنهج</h3>
         <div class="curriculum-view">
@@ -361,9 +350,20 @@
         <p class="message info">جارٍ تحميل بيانات الأبناء...</p>
       </div>
     </section>
+
+    <!-- مهام المساعد لولي الأمر -->
+    <section>
+      <h3>مهام المساعد لولي الأمر</h3>
+      <p class="info-text">
+        إذا كنت ولي أمر مساعدًا، ستظهر هنا المهام التي وجّهها المعلم لك لمراجعتها.
+      </p>
+      <div id="parent-assistant-tasks" class="tasks-review-container">
+        <!-- يتم ملؤها من app.js -->
+      </div>
+    </section>
   </div>
 
-        <!-- شاشة كود الحلقة (شبكة الطلاب) -->
+  <!-- شاشة كود الحلقة (شبكة الطلاب) -->
   <div id="halaqa-screen" class="container hidden">
     <header class="dashboard-header">
       <div>
@@ -383,21 +383,7 @@
     </section>
   </div>
 
-
-
-
-
   <!-- منطق التطبيق -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
