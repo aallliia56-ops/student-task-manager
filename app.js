@@ -326,8 +326,10 @@ async function displayHalaqaScreen(loginCode, halaqaType) {
     allStudents.forEach((s) => {
       const tile = document.createElement("div");
       tile.className = "halaqa-tile";
-      tile.dataset.code = s.code;
-      tile.innerHTML = `<div class="halaqa-tile-code">${s.code}</div>`;
+      tile.innerHTML = `
+        <div class="halaqa-tile-code">${student.code}</div>
+        <div class="halaqa-tile-line">${student.name}</div>
+      `;
       halaqaStudentsGrid.appendChild(tile);
     });
   } catch (e) {
@@ -2265,4 +2267,5 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
