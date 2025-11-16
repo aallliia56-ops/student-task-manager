@@ -755,7 +755,7 @@ function renderStudentTasks(student) {
     const card = document.createElement("div");
     card.className = "task-card";
     card.innerHTML =
-      '<div class="task-body">🚫 مهام الحفظ موقوفة مؤقتًا من المعلم، وتظهر لك المهام العامة فقط.</div>';
+      '<div class="task-body">🚫 مهام الحفظ موقوفة مؤقتًا من المعلم.</div>';
     wrap.appendChild(card);
   }
 
@@ -800,7 +800,7 @@ function renderStudentTasks(student) {
     const card = document.createElement("div");
     card.className = "task-card";
     card.innerHTML =
-      '<div class="task-body">🚫 مهام المراجعة موقوفة مؤقتًا من المعلم، وتظهر لك المهام العامة فقط.</div>';
+      '<div class="task-body">🚫 مهام المراجعة موقوفة مؤقتًا من المعلم.</div>';
     wrap.appendChild(card);
   }
 
@@ -2258,3 +2258,4 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
