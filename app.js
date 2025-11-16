@@ -711,6 +711,7 @@ function renderStudentTasks(student) {
   const hifzPaused = !!student.pause_hifz;
   const murajaaPaused = !!student.pause_murajaa;
 
+  // 🔹 مهمة الحفظ (تظهر فقط إذا لم تكن موقوفة)
   const hifzMission = !hifzPaused ? getCurrentHifzMission(student) : null;
   if (hifzMission) {
     const pendingCurriculumTask = tasksArray.find(
@@ -721,7 +722,8 @@ function renderStudentTasks(student) {
     );
 
     const isAssistantPending =
-      pendingCurriculumTask && pendingCurriculumTask.status === "pending_assistant";
+      pendingCurriculumTask &&
+      pendingCurriculumTask.status === "pending_assistant";
 
     wrap.appendChild(
       buildMissionCard({
@@ -751,8 +753,9 @@ function renderStudentTasks(student) {
             : submitCurriculumTask(student.code, hifzMission),
       })
     );
-  } 
+  }
 
+  // 🔹 مهمة المراجعة (تظهر فقط إذا لم تكن موقوفة)
   const murMission = !murajaaPaused ? getCurrentMurajaaMission(student) : null;
   if (murMission) {
     const pendingMurTask = tasksArray.find(
@@ -790,8 +793,9 @@ function renderStudentTasks(student) {
             : submitMurajaaTask(student.code, murMission),
       })
     );
-  } 
+  }
 
+  // 🔹 المهام العامة
   const generalTasks = tasksArray.filter((t) => t.type === "general");
   for (const task of generalTasks) {
     const card = document.createElement("div");
@@ -841,6 +845,8 @@ function renderStudentTasks(student) {
     wrap.appendChild(card);
   }
 
+  // 🔹 رسالة "لا توجد مهام" تظهر فقط إذا:
+  // لا يوجد حفظ، لا يوجد مراجعة، غير موقوفين، وما فيه مهام عامة
   if (
     !hifzMission &&
     !murMission &&
@@ -854,6 +860,7 @@ function renderStudentTasks(student) {
     studentTasksDiv.appendChild(wrap);
   }
 }
+
 
 function buildMissionCard({
   title,
