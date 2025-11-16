@@ -67,95 +67,110 @@
   </div>
 
   <!-- شاشة الطالب -->
-  <div id="student-screen" class="container hidden">
-    <header class="dashboard-header">
-      <div>
-        <h2 id="welcome-student">أهلاً بك يا طالب</h2>
-        <p id="student-plan-strip" class="plan-strip">
-          <span id="strip-plan" class="badge badge-plan">الخطة: —</span>
-          <span class="dot">•</span>
-          <span id="strip-points" class="badge badge-points">النقاط: 0</span>
-          <span class="dot">•</span>
-          <span id="strip-rank" class="badge badge-rank">الترتيب: —</span>
-        </p>
-      </div>
-      <div class="header-actions">
-        <button id="refresh-student-button" class="button primary">تحديث الصفحة 🔄</button>
-        <button id="logout-button-student" class="button danger">تسجيل الخروج</button>
-      </div>
-    </header>
 
-    <!-- مهامي أولاً -->
-    <section class="tasks-section">
-      <h3>مهامي الحالية</h3>
-      <div id="student-tasks" class="tasks-list">
-        <p class="message info">لا توجد مهام حالياً. وفقك الله 🤍</p>
-      </div>
-    </section>
 
-    <!-- مهام المساعد (للطلاب المساعدين) -->
-    <section class="tasks-section">
-      <h3>مهام المساعد</h3>
-      <p class="info-text">
-        إذا كنت طالبًا مساعدًا، ستظهر هنا المهام التي وجّهها لك المعلم لمراجعتها.
+  <!-- شاشة الطالب -->
+<div id="student-screen" class="container hidden">
+  <header class="dashboard-header">
+    <div>
+      <h2 id="welcome-student">أهلاً بك يا طالب</h2>
+      <p id="student-plan-strip" class="plan-strip">
+        <span id="strip-plan" class="badge badge-plan">الخطة: —</span>
+        <span class="dot">•</span>
+        <span id="strip-points" class="badge badge-points">النقاط: 0</span>
+        <span class="dot">•</span>
+        <span id="strip-rank" class="badge badge-rank">الترتيب: —</span>
       </p>
-      <div id="student-assistant-tasks" class="tasks-list">
-        <!-- يتم ملؤها من app.js -->
-      </div>
-    </section>
+    </div>
+    <div class="header-actions">
+      <button id="refresh-student-button" class="button primary">تحديث الصفحة 🔄</button>
+      <button id="logout-button-student" class="button danger">تسجيل الخروج</button>
+    </div>
+  </header>
 
-    <!-- كروت التقدم بعد المهام -->
-    <section class="progress-section">
-      <!-- بطاقة الحفظ -->
-      <div class="progress-card hifz">
-        <h3>تقدم الحفظ</h3>
+  <!-- تبويبات الطالب: مهامي / مهام المساعد -->
+  <nav class="student-tabs">
+    <button class="student-tab-button active" data-tab="student-main-tasks">
+      مهامي الحالية
+    </button>
+    <button class="student-tab-button" data-tab="student-assistant-tab">
+      مهام المساعد
+    </button>
+  </nav>
 
-        <!-- المهمة الحالية (يربطها app.js بـ studentHifzProgressLabel) -->
-        <p id="student-hifz-progress-label" class="small-text">
-          المهمة الحالية: —
-        </p>
+  <!-- تبويب: مهامي الحالية -->
+  <section id="student-main-tasks" class="tasks-section">
+    <h3>مهامي الحالية</h3>
+    <div id="student-tasks" class="tasks-list">
+      <p class="message info">لا توجد مهام حالياً. وفقك الله 🤍</p>
+    </div>
+  </section>
 
-        <!-- صف الشريط + النسبة -->
-        <div class="progress-inline">
-          <div class="progress-bar">
-            <div id="student-hifz-progress-bar" class="progress-fill"></div>
-          </div>
-          <p class="progress-percent">
-            <span id="student-hifz-progress-percent">0</span>%
-          </p>
+  <!-- تبويب: مهام المساعد (يظهر فقط عند اختيار التبويب) -->
+  <section id="student-assistant-tab" class="tasks-section hidden">
+    <h3>مهام المساعد</h3>
+    <p class="info-text">
+      إذا كنت طالبًا مساعدًا، ستظهر هنا المهام التي وجّهها لك المعلم لمراجعتها.
+    </p>
+    <div id="student-assistant-tasks" class="tasks-list">
+      <!-- يتم ملؤها من app.js -->
+    </div>
+  </section>
+
+  <!-- كروت التقدم بعد التبويبات -->
+  <section class="progress-section">
+    <!-- بطاقة الحفظ -->
+    <div class="progress-card hifz">
+      <h3>تقدم الحفظ</h3>
+
+      <!-- المهمة الحالية (يربطها app.js بـ studentHifzProgressLabel) -->
+      <p id="student-hifz-progress-label" class="small-text">
+        المهمة الحالية: —
+      </p>
+
+      <!-- صف الشريط + النسبة -->
+      <div class="progress-inline">
+        <div class="progress-bar">
+          <div id="student-hifz-progress-bar" class="progress-fill"></div>
         </div>
-
-        <!-- المهمة القادمة -->
-        <p id="student-hifz-next-label" class="small-text muted" style="margin:.4rem 0 0;">
-          المهمة القادمة: —
+        <p class="progress-percent">
+          <span id="student-hifz-progress-percent">0</span>%
         </p>
       </div>
 
-      <!-- بطاقة المراجعة -->
-      <div class="progress-card murajaa">
-        <h3>تقدم المراجعة</h3>
+      <!-- المهمة القادمة -->
+      <p id="student-hifz-next-label" class="small-text muted" style="margin:.4rem 0 0;">
+        المهمة القادمة: —
+      </p>
+    </div>
 
-        <!-- المهمة الحالية -->
-        <p id="student-murajaa-progress-label" class="small-text">
-          المهمة الحالية: —
-        </p>
+    <!-- بطاقة المراجعة -->
+    <div class="progress-card murajaa">
+      <h3>تقدم المراجعة</h3>
 
-        <div class="progress-inline">
-          <div class="progress-bar">
-            <div id="student-murajaa-progress-bar" class="progress-fill"></div>
-          </div>
-          <p class="progress-percent">
-            <span id="student-murajaa-progress-percent">0</span>%
-          </p>
+      <!-- المهمة الحالية -->
+      <p id="student-murajaa-progress-label" class="small-text">
+        المهمة الحالية: —
+      </p>
+
+      <div class="progress-inline">
+        <div class="progress-bar">
+          <div id="student-murajaa-progress-bar" class="progress-fill"></div>
         </div>
-
-        <!-- المهمة القادمة -->
-        <p id="student-murajaa-next-label" class="small-text muted" style="margin:.4rem 0 0;">
-          المهمة القادمة: —
+        <p class="progress-percent">
+          <span id="student-murajaa-progress-percent">0</span>%
         </p>
       </div>
-    </section>
-  </div>
+
+      <!-- المهمة القادمة -->
+      <p id="student-murajaa-next-label" class="small-text muted" style="margin:.4rem 0 0;">
+        المهمة القادمة: —
+      </p>
+    </div>
+  </section>
+</div>
+
+
 
   <!-- شاشة المعلم -->
   <div id="teacher-screen" class="container hidden">
@@ -387,3 +402,4 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
+
