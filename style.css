@@ -287,7 +287,7 @@ h1 { text-align: center; margin-bottom: 10px; }
 
 .halaqa-tile-line{
   margin:2px 0;
-  font-size:.9rem;
+  font-size:.8rem;
   color:#546e7a;
 }
 
@@ -318,7 +318,7 @@ h1 { text-align: center; margin-bottom: 10px; }
   font-size: 1.4rem; /* ← تكبير الرمز */
 }
 .halaqa-tile-line{
-  font-size:.9rem;
+  font-size:.8rem;
   color:#555;
 }
 /* نص خافت للملاحظات الصغيرة */
