@@ -76,6 +76,7 @@ const studentTabButtons = document.querySelectorAll(".student-tab-button");
 function activateStudentTab(tabId) {
   if (!studentMainTasksSection || !studentAssistantTabSection) return;
 
+  // إظهار / إخفاء أقسام المهام
   studentMainTasksSection.classList.toggle(
     "hidden",
     tabId !== "student-main-tasks"
@@ -85,15 +86,26 @@ function activateStudentTab(tabId) {
     tabId !== "student-assistant-tab"
   );
 
+  // تفعيل زر التبويب
   studentTabButtons.forEach((btn) =>
     btn.classList.toggle("active", btn.dataset.tab === tabId)
   );
+
+  // إظهار / إخفاء كروت التقدم (الحفظ / المراجعة)
+  const progressSection = document.querySelector(".progress-section");
+  if (progressSection) {
+    progressSection.classList.toggle(
+      "hidden",
+      tabId === "student-assistant-tab"
+    );
+  }
 
   // عند فتح تبويب مهام المساعد، نحدّث القائمة
   if (tabId === "student-assistant-tab") {
     loadAssistantTasksForCurrentUser();
   }
 }
+
 
 // ربط أزرار تبويبات الطالب
 studentTabButtons.forEach((btn) => {
@@ -2253,3 +2265,4 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
