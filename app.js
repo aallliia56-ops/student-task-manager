@@ -322,16 +322,17 @@ async function displayHalaqaScreen(loginCode, halaqaType) {
       return String(aCode).localeCompare(String(bCode), "ar");
     });
 
-    halaqaStudentsGrid.innerHTML = "";
-    allStudents.forEach((s) => {
-      const tile = document.createElement("div");
-      tile.className = "halaqa-tile";
-      tile.innerHTML = `
-        <div class="halaqa-tile-code">${student.code}</div>
-        <div class="halaqa-tile-line">${student.name}</div>
-      `;
-      halaqaStudentsGrid.appendChild(tile);
-    });
+halaqaStudentsGrid.innerHTML = "";
+allStudents.forEach((s) => {
+  const tile = document.createElement("div");
+  tile.className = "halaqa-tile";
+  tile.innerHTML = `
+    <div class="halaqa-tile-code">${s.code}</div>
+    <div class="halaqa-tile-line">${s.name}</div>
+  `;
+  halaqaStudentsGrid.appendChild(tile);
+});
+
   } catch (e) {
     console.error("displayHalaqaScreen error:", e);
     halaqaStudentsGrid.innerHTML =
@@ -2267,5 +2268,6 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
