@@ -1205,18 +1205,23 @@ async function forwardTaskToAssistant(studentCode, taskId) {
 
     snapAll.forEach((d) => {
       const s = d.data();
+      const h = s.halaqa || "ONSITE"; // ✅ تأكيد الهلاقي الافتراضي
+
+      // مساعد طالب
       if (
         s.is_student_assistant &&
         s.code === assistantCode &&
-        s.halaqa === currentHalaqa
+        h === currentHalaqa
       ) {
         assistantType = "student";
         assistantId = s.code;
       }
+
+      // مساعد ولي أمر
       if (
         s.is_parent_assistant &&
         String(s.parent_code || "") === String(assistantCode) &&
-        s.halaqa === currentHalaqa
+        h === currentHalaqa
       ) {
         assistantType = "parent";
         assistantId = String(s.parent_code);
@@ -1229,6 +1234,9 @@ async function forwardTaskToAssistant(studentCode, taskId) {
       );
       return;
     }
+
+    // ... الباقي نفس ما هو عندك بدون تغيير
+
 
     const studentRef = doc(db, "students", studentCode);
     const snap = await getDoc(studentRef);
@@ -2150,3 +2158,4 @@ function refreshTeacherView() {
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file with assistants & pause flags.");
+
