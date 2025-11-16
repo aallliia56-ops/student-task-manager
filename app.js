@@ -68,6 +68,41 @@ const logoutButtonStudent = $("#logout-button-student");
 const studentAssistantTasksList = $("#student-assistant-tasks");
 const parentAssistantTasksList = $("#parent-assistant-tasks");
 
+// تبويبات الطالب (مهامي / مهام المساعد)
+const studentMainTasksSection = $("#student-main-tasks");
+const studentAssistantTabSection = $("#student-assistant-tab");
+const studentTabButtons = document.querySelectorAll(".student-tab-button");
+
+function activateStudentTab(tabId) {
+  if (!studentMainTasksSection || !studentAssistantTabSection) return;
+
+  studentMainTasksSection.classList.toggle(
+    "hidden",
+    tabId !== "student-main-tasks"
+  );
+  studentAssistantTabSection.classList.toggle(
+    "hidden",
+    tabId !== "student-assistant-tab"
+  );
+
+  studentTabButtons.forEach((btn) =>
+    btn.classList.toggle("active", btn.dataset.tab === tabId)
+  );
+
+  // عند فتح تبويب مهام المساعد، نحدّث القائمة
+  if (tabId === "student-assistant-tab") {
+    loadAssistantTasksForCurrentUser();
+  }
+}
+
+// ربط الأزرار
+studentTabButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    activateStudentTab(btn.dataset.tab);
+  });
+});
+
+
 const teacherScreen = $("#teacher-screen");
 const logoutButtonTeacher = $("#logout-button-teacher");
 
@@ -1076,6 +1111,96 @@ async function cancelGeneralTask(studentCode, taskId) {
   }
 }
 
+/** إظهار قائمة منسدلة بالمساعدين داخل كرت المهمة */
+async function showAssistantSelector(studentCode, taskId, containerEl) {
+  try {
+    // لو القائمة مفتوحة مسبقًا في نفس الكرت، نقفلها
+    const existing = containerEl.querySelector(".assistant-picker");
+    if (existing) {
+      existing.remove();
+      return;
+    }
+
+    // جلب كل الطلاب للبحث عن المساعدين في نفس الحلقة الحالية
+    const snapAll = await getDocs(collection(db, "students"));
+    const assistants = [];
+
+    snapAll.forEach((d) => {
+      const s = d.data();
+      const h = s.halaqa || "ONSITE";
+      if (h !== currentHalaqa) return;
+
+      // طالب مساعد
+      if (s.is_student_assistant) {
+        assistants.push({
+          type: "student",
+          id: s.code,
+          label: `طالب: ${s.name || s.code} (${s.code})`,
+        });
+      }
+
+      // ولي أمر مساعد
+      if (s.is_parent_assistant && s.parent_code) {
+        assistants.push({
+          type: "parent",
+          id: String(s.parent_code),
+          label: `ولي: ${s.parent_name || s.parent_code} (${s.parent_code})`,
+        });
+      }
+    });
+
+    if (!assistants.length) {
+      alert("لا يوجد مساعدين مفعّلين في هذه الحلقة.");
+      return;
+    }
+
+    // بناء واجهة الاختيار
+    const wrapper = document.createElement("div");
+    wrapper.className = "assistant-picker";
+    wrapper.style.marginTop = "6px";
+    wrapper.style.display = "flex";
+    wrapper.style.flexWrap = "wrap";
+    wrapper.style.gap = "6px";
+
+    const select = document.createElement("select");
+    select.style.flex = "1";
+    assistants.forEach((a, idx) => {
+      const opt = document.createElement("option");
+      opt.value = `${a.type}|${a.id}`;
+      opt.textContent = a.label;
+      if (idx === 0) opt.selected = true;
+      select.appendChild(opt);
+    });
+
+    const sendBtn = document.createElement("button");
+    sendBtn.className = "button success";
+    sendBtn.textContent = "تأكيد التوجيه ✅";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "button";
+    cancelBtn.textContent = "إلغاء";
+
+    sendBtn.addEventListener("click", async () => {
+      const [assistantType, assistantId] = select.value.split("|");
+      await forwardTaskToAssistant(studentCode, taskId, assistantType, assistantId);
+      wrapper.remove();
+    });
+
+    cancelBtn.addEventListener("click", () => wrapper.remove());
+
+    wrapper.append(select, sendBtn, cancelBtn);
+    containerEl.appendChild(wrapper);
+  } catch (e) {
+    console.error("Error showAssistantSelector:", e);
+    showMessage(
+      authMessage,
+      `خطأ في تحميل قائمة المساعدين: ${e.message}`,
+      "error"
+    );
+  }
+}
+
+
 async function loadPendingTasksForReview() {
   pendingTasksList.innerHTML =
     '<p class="message info">جارٍ تحميل المهام...</p>';
@@ -1149,24 +1274,26 @@ async function loadPendingTasksForReview() {
 
         const ok = document.createElement("button");
         ok.className = "button success";
-        ok.textContent = "قبول ✅";
+        ok.textContent = "✅";
         ok.addEventListener("click", () =>
           reviewTask(student.code, task.id, "approve")
         );
 
         const no = document.createElement("button");
         no.className = "button danger";
-        no.textContent = "رفض ❌";
+        no.textContent = "❌";
         no.addEventListener("click", () =>
           reviewTask(student.code, task.id, "reject")
         );
-
         const forward = document.createElement("button");
         forward.className = "button";
-        forward.textContent = "توجيه للمساعد ▶️";
+        forward.textContent = "▶️";
         forward.addEventListener("click", () =>
-          forwardTaskToAssistant(student.code, task.id)
+          showAssistantSelector(student.code, task.id, block)
         );
+
+
+
 
         footer.append(ok, no, forward);
         item.appendChild(footer);
@@ -1192,50 +1319,58 @@ async function loadPendingTasksForReview() {
 }
 
 /** توجيه مهمة لمساعد (طالب / ولي أمر) */
-async function forwardTaskToAssistant(studentCode, taskId) {
+/** توجيه مهمة لمساعد (طالب / ولي أمر) بعد اختيار منسدل */
+async function forwardTaskToAssistant(studentCode, taskId, assistantType, assistantId) {
   try {
-    const assistantCode = prompt(
-      "أدخل رمز المساعد (رمز الطالب المساعد أو رمز ولي الأمر المساعد):"
-    );
-    if (!assistantCode) return;
-
-    const snapAll = await getDocs(collection(db, "students"));
-    let assistantType = null;
-    let assistantId = null;
-
-    snapAll.forEach((d) => {
-      const s = d.data();
-      const h = s.halaqa || "ONSITE"; // ✅ تأكيد الهلاقي الافتراضي
-
-      // مساعد طالب
-      if (
-        s.is_student_assistant &&
-        s.code === assistantCode &&
-        h === currentHalaqa
-      ) {
-        assistantType = "student";
-        assistantId = s.code;
-      }
-
-      // مساعد ولي أمر
-      if (
-        s.is_parent_assistant &&
-        String(s.parent_code || "") === String(assistantCode) &&
-        h === currentHalaqa
-      ) {
-        assistantType = "parent";
-        assistantId = String(s.parent_code);
-      }
-    });
-
     if (!assistantType || !assistantId) {
-      alert(
-        "لم يتم العثور على مساعد بهذا الرمز داخل هذه الحلقة أو أنه غير مفعّل كمساعد."
+      showMessage(authMessage, "الرجاء اختيار مساعد صحيح.", "error");
+      return;
+    }
+
+    const studentRef = doc(db, "students", studentCode);
+    const snap = await getDoc(studentRef);
+    if (!snap.exists()) return;
+
+    const student = snap.data();
+    const tasks = Array.isArray(student.tasks) ? student.tasks : [];
+    const idx = tasks.findIndex((t) => t.id === taskId);
+    if (idx === -1) {
+      showMessage(authMessage, "المهمة غير موجودة.", "error");
+      return;
+    }
+
+    const task = tasks[idx];
+    if (task.status !== "pending") {
+      showMessage(
+        authMessage,
+        "لا يمكن توجيه مهمة ليست بانتظار المراجعة لدى المعلم.",
+        "error"
       );
       return;
     }
 
-    // ... الباقي نفس ما هو عندك بدون تغيير
+    tasks[idx] = {
+      ...task,
+      status: "pending_assistant",
+      assistant_type: assistantType,
+      assistant_code: assistantId,
+    };
+
+    await updateDoc(studentRef, { tasks });
+
+    await loadPendingTasksForReview();
+    showMessage(authMessage, "تم توجيه المهمة للمساعد.", "success");
+  } catch (e) {
+    console.error("Error forwardTaskToAssistant:", e);
+    showMessage(
+      authMessage,
+      `خطأ في توجيه المهمة: ${e.message}`,
+      "error"
+    );
+  }
+}
+
+
 
 
     const studentRef = doc(db, "students", studentCode);
@@ -2158,4 +2293,5 @@ function refreshTeacherView() {
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file with assistants & pause flags.");
+
 
