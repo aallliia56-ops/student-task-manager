@@ -751,7 +751,7 @@ function renderStudentTasks(student) {
             : submitCurriculumTask(student.code, hifzMission),
       })
     );
-
+  } 
 
   const murMission = !murajaaPaused ? getCurrentMurajaaMission(student) : null;
   if (murMission) {
@@ -790,7 +790,7 @@ function renderStudentTasks(student) {
             : submitMurajaaTask(student.code, murMission),
       })
     );
-
+  } 
 
   const generalTasks = tasksArray.filter((t) => t.type === "general");
   for (const task of generalTasks) {
@@ -2246,5 +2246,3 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
-
-
