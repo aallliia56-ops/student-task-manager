@@ -751,13 +751,7 @@ function renderStudentTasks(student) {
             : submitCurriculumTask(student.code, hifzMission),
       })
     );
-  } else if (hifzPaused) {
-    const card = document.createElement("div");
-    card.className = "task-card";
-    card.innerHTML =
-      '<div class="task-body">🚫 مهام الحفظ موقوفة مؤقتًا من المعلم.</div>';
-    wrap.appendChild(card);
-  }
+
 
   const murMission = !murajaaPaused ? getCurrentMurajaaMission(student) : null;
   if (murMission) {
@@ -796,13 +790,7 @@ function renderStudentTasks(student) {
             : submitMurajaaTask(student.code, murMission),
       })
     );
-  } else if (murajaaPaused) {
-    const card = document.createElement("div");
-    card.className = "task-card";
-    card.innerHTML =
-      '<div class="task-body">🚫 مهام المراجعة موقوفة مؤقتًا من المعلم.</div>';
-    wrap.appendChild(card);
-  }
+
 
   const generalTasks = tasksArray.filter((t) => t.type === "general");
   for (const task of generalTasks) {
@@ -2258,4 +2246,5 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
