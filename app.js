@@ -1319,59 +1319,43 @@ async function loadPendingTasksForReview() {
 }
 
 /** توجيه مهمة لمساعد (طالب / ولي أمر) */
-/** توجيه مهمة لمساعد (طالب / ولي أمر) بعد اختيار منسدل */
-async function forwardTaskToAssistant(studentCode, taskId, assistantType, assistantId) {
+async function forwardTaskToAssistant(studentCode, taskId) {
   try {
+    const assistantCode = prompt(
+      "أدخل رمز المساعد (رمز الطالب المساعد أو رمز ولي الأمر المساعد):"
+    );
+    if (!assistantCode) return;
+
+    const snapAll = await getDocs(collection(db, "students"));
+    let assistantType = null;
+    let assistantId = null;
+
+    snapAll.forEach((d) => {
+      const s = d.data();
+      if (
+        s.is_student_assistant &&
+        s.code === assistantCode &&
+        (s.halaqa || "ONSITE") === currentHalaqa
+      ) {
+        assistantType = "student";
+        assistantId = s.code;
+      }
+      if (
+        s.is_parent_assistant &&
+        String(s.parent_code || "") === String(assistantCode) &&
+        (s.halaqa || "ONSITE") === currentHalaqa
+      ) {
+        assistantType = "parent";
+        assistantId = String(s.parent_code);
+      }
+    });
+
     if (!assistantType || !assistantId) {
-      showMessage(authMessage, "الرجاء اختيار مساعد صحيح.", "error");
-      return;
-    }
-
-    const studentRef = doc(db, "students", studentCode);
-    const snap = await getDoc(studentRef);
-    if (!snap.exists()) return;
-
-    const student = snap.data();
-    const tasks = Array.isArray(student.tasks) ? student.tasks : [];
-    const idx = tasks.findIndex((t) => t.id === taskId);
-    if (idx === -1) {
-      showMessage(authMessage, "المهمة غير موجودة.", "error");
-      return;
-    }
-
-    const task = tasks[idx];
-    if (task.status !== "pending") {
-      showMessage(
-        authMessage,
-        "لا يمكن توجيه مهمة ليست بانتظار المراجعة لدى المعلم.",
-        "error"
+      alert(
+        "لم يتم العثور على مساعد بهذا الرمز داخل هذه الحلقة أو أنه غير مفعّل كمساعد."
       );
       return;
     }
-
-    tasks[idx] = {
-      ...task,
-      status: "pending_assistant",
-      assistant_type: assistantType,
-      assistant_code: assistantId,
-    };
-
-    await updateDoc(studentRef, { tasks });
-
-    await loadPendingTasksForReview();
-    showMessage(authMessage, "تم توجيه المهمة للمساعد.", "success");
-  } catch (e) {
-    console.error("Error forwardTaskToAssistant:", e);
-    showMessage(
-      authMessage,
-      `خطأ في توجيه المهمة: ${e.message}`,
-      "error"
-    );
-  }
-}
-
-
-
 
     const studentRef = doc(db, "students", studentCode);
     const snap = await getDoc(studentRef);
@@ -1403,9 +1387,16 @@ async function forwardTaskToAssistant(studentCode, taskId, assistantType, assist
     showMessage(authMessage, "تم توجيه المهمة للمساعد.", "success");
   } catch (e) {
     console.error("Error forwardTaskToAssistant:", e);
-    showMessage(authMessage, `خطأ في توجيه المهمة: ${e.message}`, "error");
+    showMessage(
+      authMessage,
+      `خطأ في توجيه المهمة: ${e.message}`,
+      "error"
+    );
   }
 }
+
+
+
 
 async function loadHonorBoard() {
   if (!honorBoardDiv) return;
@@ -2293,5 +2284,6 @@ function refreshTeacherView() {
 populateHifzSelects();
 populateMurajaaStartSelect();
 console.log("App ready. Curriculum loaded from external file with assistants & pause flags.");
+
 
 
