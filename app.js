@@ -95,13 +95,12 @@ function activateStudentTab(tabId) {
   }
 }
 
-// ربط الأزرار
+// ربط أزرار تبويبات الطالب
 studentTabButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     activateStudentTab(btn.dataset.tab);
   });
 });
-
 
 const teacherScreen = $("#teacher-screen");
 const logoutButtonTeacher = $("#logout-button-teacher");
@@ -1182,7 +1181,12 @@ async function showAssistantSelector(studentCode, taskId, containerEl) {
 
     sendBtn.addEventListener("click", async () => {
       const [assistantType, assistantId] = select.value.split("|");
-      await forwardTaskToAssistant(studentCode, taskId, assistantType, assistantId);
+      await forwardTaskToAssistant(
+        studentCode,
+        taskId,
+        assistantType,
+        assistantId
+      );
       wrapper.remove();
     });
 
@@ -1199,7 +1203,6 @@ async function showAssistantSelector(studentCode, taskId, containerEl) {
     );
   }
 }
-
 
 async function loadPendingTasksForReview() {
   pendingTasksList.innerHTML =
@@ -1292,9 +1295,6 @@ async function loadPendingTasksForReview() {
           showAssistantSelector(student.code, task.id, block)
         );
 
-
-
-
         footer.append(ok, no, forward);
         item.appendChild(footer);
         block.appendChild(item);
@@ -1318,48 +1318,23 @@ async function loadPendingTasksForReview() {
   }
 }
 
-/** توجيه مهمة لمساعد (طالب / ولي أمر) */
-async function forwardTaskToAssistant(studentCode, taskId) {
+/** توجيه مهمة لمساعد (طالب / ولي أمر) – بدون إدخال رمز يدوي */
+async function forwardTaskToAssistant(
+  studentCode,
+  taskId,
+  assistantType,
+  assistantId
+) {
   try {
-    const assistantCode = prompt(
-      "أدخل رمز المساعد (رمز الطالب المساعد أو رمز ولي الأمر المساعد):"
-    );
-    if (!assistantCode) return;
-
-    const snapAll = await getDocs(collection(db, "students"));
-    let assistantType = null;
-    let assistantId = null;
-
-    snapAll.forEach((d) => {
-      const s = d.data();
-      if (
-        s.is_student_assistant &&
-        s.code === assistantCode &&
-        (s.halaqa || "ONSITE") === currentHalaqa
-      ) {
-        assistantType = "student";
-        assistantId = s.code;
-      }
-      if (
-        s.is_parent_assistant &&
-        String(s.parent_code || "") === String(assistantCode) &&
-        (s.halaqa || "ONSITE") === currentHalaqa
-      ) {
-        assistantType = "parent";
-        assistantId = String(s.parent_code);
-      }
-    });
-
     if (!assistantType || !assistantId) {
-      alert(
-        "لم يتم العثور على مساعد بهذا الرمز داخل هذه الحلقة أو أنه غير مفعّل كمساعد."
-      );
+      alert("الرجاء اختيار مساعد صحيح.");
       return;
     }
 
     const studentRef = doc(db, "students", studentCode);
     const snap = await getDoc(studentRef);
     if (!snap.exists()) return;
+
     const student = snap.data();
     const tasks = Array.isArray(student.tasks) ? student.tasks : [];
     const idx = tasks.findIndex((t) => t.id === taskId);
@@ -1378,8 +1353,8 @@ async function forwardTaskToAssistant(studentCode, taskId) {
     tasks[idx] = {
       ...task,
       status: "pending_assistant",
-      assistant_type: assistantType,
-      assistant_code: assistantId,
+      assistant_type: assistantType, // "student" أو "parent"
+      assistant_code: assistantId,   // رمز الطالب أو ولي الأمر
     };
 
     await updateDoc(studentRef, { tasks });
@@ -1394,9 +1369,6 @@ async function forwardTaskToAssistant(studentCode, taskId) {
     );
   }
 }
-
-
-
 
 async function loadHonorBoard() {
   if (!honorBoardDiv) return;
@@ -2283,7 +2255,6 @@ function refreshTeacherView() {
 
 populateHifzSelects();
 populateMurajaaStartSelect();
-console.log("App ready. Curriculum loaded from external file with assistants & pause flags.");
-
-
-
+console.log(
+  "App ready. Curriculum loaded from external file with assistants & pause flags."
+);
