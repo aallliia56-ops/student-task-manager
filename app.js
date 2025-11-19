@@ -1463,6 +1463,55 @@ async function loadHonorBoard() {
   }
 }
 
+function recalcMurajaaStartIndexFromHifz(student, level) {
+  const reviewArr = getReviewArrayForLevel(level);
+  if (!reviewArr?.length) return 0;
+
+  const allHifz = HIFZ_CURRICULUM || [];
+  if (!allHifz.length) return 0;
+
+  // نحدد آخر مقطع مُنجز في الحفظ (progress يشير للمقطع القادم)
+  const progressIndex =
+    student.hifz_progress ??
+    student.hifz_start_id ??
+    0;
+
+  const lastDoneIndex = Math.max(
+    0,
+    Math.min(progressIndex - 1, allHifz.length - 1)
+  );
+  const lastSeg = allHifz[lastDoneIndex];
+  if (!lastSeg) return 0;
+
+  const targetSurahNumber = lastSeg.surah_number;
+  if (targetSurahNumber == null) return 0;
+
+  // نحاول نربط آخر سورة محفوظة بمهمة في منهج المراجعة
+  let bestIndex = 0;
+
+  for (let i = 0; i < reviewArr.length; i++) {
+    const item = reviewArr[i];
+
+    // ⚠️ مهم:
+    // من الأفضل أن تضيف/تضبط في REVIEW_CURRICULUM
+    // حقول مثل: item.surah_number أو item.from_surah_number
+    const fromSurah =
+      item.from_surah_number ??
+      item.surah_number ??
+      null;
+
+    if (fromSurah == null) continue;
+
+    if (fromSurah === targetSurahNumber) {
+      bestIndex = i;
+      break;
+    }
+  }
+
+  return bestIndex;
+}
+
+
 async function reviewTask(studentCode, taskId, action) {
   try {
     const studentRef = doc(db, "students", studentCode);
@@ -1494,28 +1543,57 @@ async function reviewTask(studentCode, taskId, action) {
         const last = task.mission_last ?? task.mission_start ?? 0;
         student.hifz_progress = last + 1;
       } else if (task.type === "murajaa") {
-        const level =
-          student.murajaa_level || task.murajaa_level || "BUILDING";
-        const arr = getReviewArrayForLevel(level);
-        const len = arr.length;
+  const level =
+    student.murajaa_level || task.murajaa_level || "BUILDING";
+  const arr = getReviewArrayForLevel(level);
+  const len = arr.length;
 
-        let start =
-          student.murajaa_start_index ?? task.murajaa_index ?? 0;
-        start = len ? ((start % len) + len) % len : 0;
+  // لو ما فيه منهج مراجعة لهذا المستوى
+  if (!len) {
+    student.murajaa_level = level;
+    student.murajaa_start_index =
+      student.murajaa_start_index ?? 0;
+    student.murajaa_progress_index =
+      student.murajaa_progress_index ?? 0;
+    student.murajaa_cycles = student.murajaa_cycles || 0;
+  } else {
+    let start =
+      student.murajaa_start_index ?? task.murajaa_index ?? 0;
+    start = ((start % len) + len) % len;
 
-        let cur =
-          student.murajaa_progress_index ?? task.murajaa_index ?? start;
-        cur = len ? ((cur % len) + len) % len : start;
+    let cur =
+      student.murajaa_progress_index ?? task.murajaa_index ?? start;
+    cur = ((cur % len) + len) % len;
 
-        const next = len ? (cur + 1) % len : start;
-        let cycles = student.murajaa_cycles || 0;
-        if (len && next === start) cycles += 1;
+    let cycles = student.murajaa_cycles || 0;
+    let next = (cur + 1) % len;
 
-        student.murajaa_level = level;
-        student.murajaa_start_index = start;
-        student.murajaa_progress_index = next;
-        student.murajaa_cycles = cycles;
-      }
+    // ✅ هنا الفكرة الجديدة:
+    // إذا انتهت دورة كاملة (رجعنا لنقطة البداية)،
+    // نعيد حساب نقطة البداية اعتمادًا على آخر سورة منجزة في الحفظ.
+    if (next === start) {
+      cycles += 1;
+
+      const newStartRaw = recalcMurajaaStartIndexFromHifz(
+        student,
+        level
+      );
+      const newStart =
+        ((newStartRaw % len) + len) % len;
+
+      student.murajaa_start_index = newStart;
+      student.murajaa_progress_index = newStart;
+    } else {
+      // ما زلنا في نفس الدورة، نكمل تسلسليًا
+      student.murajaa_start_index = start;
+      student.murajaa_progress_index = next;
+    }
+
+    student.murajaa_level = level;
+    student.murajaa_cycles = cycles;
+  }
+}
+
 
       tasks[i].status = "completed";
       delete tasks[i].assistant_type;
@@ -2271,6 +2349,7 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
