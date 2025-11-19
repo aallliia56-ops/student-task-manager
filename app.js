@@ -810,8 +810,10 @@ function renderStudentTasks(student) {
     );
   }
 
-  // 🔹 المهام العامة
-  const generalTasks = tasksArray.filter((t) => t.type === "general");
+  // 🔹 المهام العامة (عرض غير المكتملة فقط)
+  const generalTasks = tasksArray.filter(
+    (t) => t.type === "general" && t.status !== "completed"
+  );
   for (const task of generalTasks) {
     const card = document.createElement("div");
     card.className = "task-card";
@@ -861,7 +863,7 @@ function renderStudentTasks(student) {
   }
 
   // 🔹 رسالة "لا توجد مهام" تظهر فقط إذا:
-  // لا يوجد حفظ، لا يوجد مراجعة، غير موقوفين، وما فيه مهام عامة
+  // لا يوجد حفظ، لا يوجد مراجعة، غير موقوفين، وما فيه مهام عامة (غير مكتملة)
   if (
     !hifzMission &&
     !murMission &&
@@ -875,6 +877,7 @@ function renderStudentTasks(student) {
     studentTasksDiv.appendChild(wrap);
   }
 }
+
 
 
 function buildMissionCard({
@@ -2268,6 +2271,7 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
