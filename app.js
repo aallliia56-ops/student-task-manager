@@ -443,7 +443,6 @@ function getCurrentMurajaaMission(student) {
   const level = student.murajaa_level || "BUILDING";
   const arr = getReviewArrayForLevel(level);
   if (!arr?.length) return null;
-
   const len = arr.length;
   const start = ((student.murajaa_start_index ?? 0) % len + len) % len;
   let index = student.murajaa_progress_index;
@@ -2271,3 +2270,4 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
