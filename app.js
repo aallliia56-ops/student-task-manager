@@ -376,31 +376,79 @@ function getCurrentHifzMission(student) {
   const startIndex = student.hifz_progress ?? student.hifz_start_id ?? 0;
   if (startIndex >= all.length) return null;
 
-  const level = +student.hifz_level || 1;
-  const maxSegments = Math.max(1, Math.min(3, level));
+  const planStart = student.hifz_start_id ?? 0;
+  const planEnd = student.hifz_end_id ?? (all.length - 1);
 
   const first = all[startIndex];
-  const segs = [first];
+  if (!first) return null;
 
-  for (
-    let i = startIndex + 1;
-    i < all.length && segs.length < maxSegments;
-    i++
-  ) {
+  const surahNo = first.surah_number;
+
+  // نحدد أول وآخر مقطع لهذه السورة داخل خطة الطالب
+  let surahFirstIndex = -1;
+  let surahLastIndex = -1;
+  for (let i = planStart; i <= planEnd; i++) {
     const seg = all[i];
-    if (seg.surah_number !== first.surah_number) break;
-    segs.push(seg);
+    if (!seg) continue;
+    if (seg.surah_number === surahNo) {
+      if (surahFirstIndex === -1) surahFirstIndex = i;
+      surahLastIndex = i;
+    } else if (surahLastIndex !== -1) {
+      // خرجنا من السورة بعد ما مررنا عليها
+      break;
+    }
+  }
+
+  const hasMultipleSegments =
+    surahFirstIndex !== -1 &&
+    surahLastIndex !== -1 &&
+    surahLastIndex > surahFirstIndex;
+
+  let segs = [];
+  let lastIndex = startIndex;
+  let isFullSurah = false;
+
+  if (hasMultipleSegments && startIndex === surahFirstIndex) {
+    // ✅ حالة "السورة كاملة" (إذا كانت السورة أكثر من مقطع و الطالب عند أول مقطع)
+    segs = all.slice(surahFirstIndex, surahLastIndex + 1);
+    lastIndex = surahLastIndex;
+    isFullSurah = true;
+  } else {
+    // 🔁 السلوك القديم (مقاطع متدرجة حسب المستوى)
+    const level = +student.hifz_level || 1;
+    const maxSegments = Math.max(1, Math.min(3, level));
+
+    segs.push(first);
+    for (
+      let i = startIndex + 1;
+      i < all.length && i <= planEnd && segs.length < maxSegments;
+      i++
+    ) {
+      const seg = all[i];
+      if (seg.surah_number !== first.surah_number) break;
+      segs.push(seg);
+    }
+    lastIndex = startIndex + segs.length - 1;
   }
 
   const last = segs[segs.length - 1];
+  if (!last) return null;
+
+  const desc = isFullSurah
+    ? `سورة ${first.surah_name_ar} كاملة (${first.start_ayah}-${last.end_ayah})`
+    : `${first.surah_name_ar} (${first.start_ayah}-${last.end_ayah})`;
+
   return {
     type: "hifz",
     startIndex,
-    lastIndex: startIndex + segs.length - 1,
-    description: `${first.surah_name_ar} (${first.start_ayah}-${last.end_ayah})`,
+    lastIndex,
+    description: desc,
     points: first.points || 5,
+    // معلومة إضافية لو احتجتها مستقبلاً في الواجهة
+    is_full_surah: isFullSurah,
   };
 }
+
 
 function getNextHifzMission(student) {
   const all = HIFZ_CURRICULUM;
@@ -2349,6 +2397,7 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
