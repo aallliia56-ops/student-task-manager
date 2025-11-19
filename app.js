@@ -376,79 +376,31 @@ function getCurrentHifzMission(student) {
   const startIndex = student.hifz_progress ?? student.hifz_start_id ?? 0;
   if (startIndex >= all.length) return null;
 
-  const planStart = student.hifz_start_id ?? 0;
-  const planEnd = student.hifz_end_id ?? (all.length - 1);
+  const level = +student.hifz_level || 1;
+  const maxSegments = Math.max(1, Math.min(3, level));
 
   const first = all[startIndex];
-  if (!first) return null;
+  const segs = [first];
 
-  const surahNo = first.surah_number;
-
-  // نحدد أول وآخر مقطع لهذه السورة داخل خطة الطالب
-  let surahFirstIndex = -1;
-  let surahLastIndex = -1;
-  for (let i = planStart; i <= planEnd; i++) {
+  for (
+    let i = startIndex + 1;
+    i < all.length && segs.length < maxSegments;
+    i++
+  ) {
     const seg = all[i];
-    if (!seg) continue;
-    if (seg.surah_number === surahNo) {
-      if (surahFirstIndex === -1) surahFirstIndex = i;
-      surahLastIndex = i;
-    } else if (surahLastIndex !== -1) {
-      // خرجنا من السورة بعد ما مررنا عليها
-      break;
-    }
-  }
-
-  const hasMultipleSegments =
-    surahFirstIndex !== -1 &&
-    surahLastIndex !== -1 &&
-    surahLastIndex > surahFirstIndex;
-
-  let segs = [];
-  let lastIndex = startIndex;
-  let isFullSurah = false;
-
-  if (hasMultipleSegments && startIndex === surahFirstIndex) {
-    // ✅ حالة "السورة كاملة" (إذا كانت السورة أكثر من مقطع و الطالب عند أول مقطع)
-    segs = all.slice(surahFirstIndex, surahLastIndex + 1);
-    lastIndex = surahLastIndex;
-    isFullSurah = true;
-  } else {
-    // 🔁 السلوك القديم (مقاطع متدرجة حسب المستوى)
-    const level = +student.hifz_level || 1;
-    const maxSegments = Math.max(1, Math.min(3, level));
-
-    segs.push(first);
-    for (
-      let i = startIndex + 1;
-      i < all.length && i <= planEnd && segs.length < maxSegments;
-      i++
-    ) {
-      const seg = all[i];
-      if (seg.surah_number !== first.surah_number) break;
-      segs.push(seg);
-    }
-    lastIndex = startIndex + segs.length - 1;
+    if (seg.surah_number !== first.surah_number) break;
+    segs.push(seg);
   }
 
   const last = segs[segs.length - 1];
-  if (!last) return null;
-
-  const desc = isFullSurah
-    ? `سورة ${first.surah_name_ar} كاملة (${first.start_ayah}-${last.end_ayah})`
-    : `${first.surah_name_ar} (${first.start_ayah}-${last.end_ayah})`;
-
   return {
     type: "hifz",
     startIndex,
-    lastIndex,
-    description: desc,
+    lastIndex: startIndex + segs.length - 1,
+    description: `${first.surah_name_ar} (${first.start_ayah}-${last.end_ayah})`,
     points: first.points || 5,
-    // معلومة إضافية لو احتجتها مستقبلاً في الواجهة
-    is_full_surah: isFullSurah,
   };
 }
-
 
 function getNextHifzMission(student) {
   const all = HIFZ_CURRICULUM;
@@ -1511,55 +1463,6 @@ async function loadHonorBoard() {
   }
 }
 
-function recalcMurajaaStartIndexFromHifz(student, level) {
-  const reviewArr = getReviewArrayForLevel(level);
-  if (!reviewArr?.length) return 0;
-
-  const allHifz = HIFZ_CURRICULUM || [];
-  if (!allHifz.length) return 0;
-
-  // نحدد آخر مقطع مُنجز في الحفظ (progress يشير للمقطع القادم)
-  const progressIndex =
-    student.hifz_progress ??
-    student.hifz_start_id ??
-    0;
-
-  const lastDoneIndex = Math.max(
-    0,
-    Math.min(progressIndex - 1, allHifz.length - 1)
-  );
-  const lastSeg = allHifz[lastDoneIndex];
-  if (!lastSeg) return 0;
-
-  const targetSurahNumber = lastSeg.surah_number;
-  if (targetSurahNumber == null) return 0;
-
-  // نحاول نربط آخر سورة محفوظة بمهمة في منهج المراجعة
-  let bestIndex = 0;
-
-  for (let i = 0; i < reviewArr.length; i++) {
-    const item = reviewArr[i];
-
-    // ⚠️ مهم:
-    // من الأفضل أن تضيف/تضبط في REVIEW_CURRICULUM
-    // حقول مثل: item.surah_number أو item.from_surah_number
-    const fromSurah =
-      item.from_surah_number ??
-      item.surah_number ??
-      null;
-
-    if (fromSurah == null) continue;
-
-    if (fromSurah === targetSurahNumber) {
-      bestIndex = i;
-      break;
-    }
-  }
-
-  return bestIndex;
-}
-
-
 async function reviewTask(studentCode, taskId, action) {
   try {
     const studentRef = doc(db, "students", studentCode);
@@ -1591,57 +1494,28 @@ async function reviewTask(studentCode, taskId, action) {
         const last = task.mission_last ?? task.mission_start ?? 0;
         student.hifz_progress = last + 1;
       } else if (task.type === "murajaa") {
-  const level =
-    student.murajaa_level || task.murajaa_level || "BUILDING";
-  const arr = getReviewArrayForLevel(level);
-  const len = arr.length;
+        const level =
+          student.murajaa_level || task.murajaa_level || "BUILDING";
+        const arr = getReviewArrayForLevel(level);
+        const len = arr.length;
 
-  // لو ما فيه منهج مراجعة لهذا المستوى
-  if (!len) {
-    student.murajaa_level = level;
-    student.murajaa_start_index =
-      student.murajaa_start_index ?? 0;
-    student.murajaa_progress_index =
-      student.murajaa_progress_index ?? 0;
-    student.murajaa_cycles = student.murajaa_cycles || 0;
-  } else {
-    let start =
-      student.murajaa_start_index ?? task.murajaa_index ?? 0;
-    start = ((start % len) + len) % len;
+        let start =
+          student.murajaa_start_index ?? task.murajaa_index ?? 0;
+        start = len ? ((start % len) + len) % len : 0;
 
-    let cur =
-      student.murajaa_progress_index ?? task.murajaa_index ?? start;
-    cur = ((cur % len) + len) % len;
+        let cur =
+          student.murajaa_progress_index ?? task.murajaa_index ?? start;
+        cur = len ? ((cur % len) + len) % len : start;
 
-    let cycles = student.murajaa_cycles || 0;
-    let next = (cur + 1) % len;
+        const next = len ? (cur + 1) % len : start;
+        let cycles = student.murajaa_cycles || 0;
+        if (len && next === start) cycles += 1;
 
-    // ✅ هنا الفكرة الجديدة:
-    // إذا انتهت دورة كاملة (رجعنا لنقطة البداية)،
-    // نعيد حساب نقطة البداية اعتمادًا على آخر سورة منجزة في الحفظ.
-    if (next === start) {
-      cycles += 1;
-
-      const newStartRaw = recalcMurajaaStartIndexFromHifz(
-        student,
-        level
-      );
-      const newStart =
-        ((newStartRaw % len) + len) % len;
-
-      student.murajaa_start_index = newStart;
-      student.murajaa_progress_index = newStart;
-    } else {
-      // ما زلنا في نفس الدورة، نكمل تسلسليًا
-      student.murajaa_start_index = start;
-      student.murajaa_progress_index = next;
-    }
-
-    student.murajaa_level = level;
-    student.murajaa_cycles = cycles;
-  }
-}
-
+        student.murajaa_level = level;
+        student.murajaa_start_index = start;
+        student.murajaa_progress_index = next;
+        student.murajaa_cycles = cycles;
+      }
 
       tasks[i].status = "completed";
       delete tasks[i].assistant_type;
@@ -2397,12 +2271,3 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
-
-
-
-
-
-
-
-
-
