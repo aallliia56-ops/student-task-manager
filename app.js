@@ -1526,6 +1526,91 @@ async function loadHonorBoard() {
   }
 }
 
+function getLastFullSurahNumber(student) {
+  const all = HIFZ_CURRICULUM;
+  if (!all?.length) return null;
+
+  const planStart = student.hifz_start_id ?? 0;
+  const planEnd = student.hifz_end_id ?? all.length - 1;
+  const progress = student.hifz_progress ?? planStart;
+
+  // لو لسه ما تجاوز بداية الخطة، ما فيه سورة مكتملة
+  if (progress <= planStart) return null;
+
+  // نبدأ من آخر مقطع أنجزه الطالب ضمن الخطة
+  let i = Math.min(progress - 1, planEnd);
+
+  while (i >= planStart) {
+    const sNum = all[i].surah_number;
+
+    // أول مقطع في السورة داخل خطة الطالب
+    let first = i;
+    while (
+      first - 1 >= planStart &&
+      all[first - 1].surah_number === sNum
+    ) {
+      first--;
+    }
+
+    // آخر مقطع في السورة داخل خطة الطالب
+    let last = i;
+    while (
+      last + 1 <= planEnd &&
+      all[last + 1].surah_number === sNum
+    ) {
+      last++;
+    }
+
+    // لو آخر مقطع في السورة أقل من progress → السورة مكتملة
+    if (last < progress) {
+      return sNum; // رقم السورة (مثلاً 69 للحاقة)
+    }
+
+    // غير مكتملة → نرجع للسورة اللي قبلها
+    i = first - 1;
+  }
+
+  return null;
+}
+function chooseMurajaaStartIndexFromLastSurah(
+  level,
+  lastSurahNumber,
+  fallbackStart
+) {
+  const arr = getReviewArrayForLevel(level);
+  const len = arr.length;
+  if (!len) return 0;
+
+  // لو ما عرفنا آخر سورة مكتملة → نحافظ على البداية القديمة
+  if (!lastSurahNumber) {
+    return ((fallbackStart % len) + len) % len;
+  }
+
+  // نجيب اسم السورة من منهج الحفظ
+  const surahSeg = HIFZ_CURRICULUM.find(
+    (seg) => seg.surah_number === lastSurahNumber
+  );
+  const surahName = surahSeg?.surah_name_ar;
+  if (!surahName) {
+    return ((fallbackStart % len) + len) % len;
+  }
+
+  // نبحث في منهج المراجعة عن أول مهمة تحتوي اسم هذه السورة في العنوان
+  let idx = arr.findIndex(
+    (it) =>
+      typeof it.name === "string" &&
+      it.name.includes(surahName)
+  );
+
+  // لو ما لقينا، نرجع للبداية القديمة
+  if (idx === -1) {
+    idx = ((fallbackStart % len) + len) % len;
+  }
+
+  return idx;
+}
+
+
 async function reviewTask(studentCode, taskId, action) {
   try {
     const studentRef = doc(db, "students", studentCode);
@@ -1570,15 +1655,34 @@ async function reviewTask(studentCode, taskId, action) {
           student.murajaa_progress_index ?? task.murajaa_index ?? start;
         cur = len ? ((cur % len) + len) % len : start;
 
-        const next = len ? (cur + 1) % len : start;
+        let next = len ? (cur + 1) % len : start;
         let cycles = student.murajaa_cycles || 0;
-        if (len && next === start) cycles += 1;
+
+        // 👈 هنا المنطق الجديد:
+        // لو الطالب أنهى دورة مراجعة كاملة (وصل لنقطة البداية القديمة)
+        if (len && next === start) {
+          cycles += 1;
+
+          // 1) حدد آخر سورة مكتملة في الحفظ من منهج الحفظ
+          const lastFullSurahNumber = getLastFullSurahNumber(student);
+
+          // 2) اختر نقطة انطلاق جديدة في منهج المراجعة بناءً على هذه السورة
+          const dynamicStart = chooseMurajaaStartIndexFromLastSurah(
+            level,
+            lastFullSurahNumber,
+            start
+          );
+
+          start = dynamicStart;
+          next = dynamicStart; // يبدأ الدورة الجديدة من هنا
+        }
 
         student.murajaa_level = level;
         student.murajaa_start_index = start;
         student.murajaa_progress_index = next;
         student.murajaa_cycles = cycles;
       }
+
 
       tasks[i].status = "completed";
       delete tasks[i].assistant_type;
@@ -2334,5 +2438,6 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
