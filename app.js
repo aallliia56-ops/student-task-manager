@@ -1581,12 +1581,12 @@ function chooseMurajaaStartIndexFromLastSurah(
   const len = arr.length;
   if (!len) return 0;
 
-  // لو ما عرفنا آخر سورة مكتملة → نحافظ على البداية القديمة
+  // لو ما عرفنا آخر سورة مكتملة → نرجع للبداية القديمة
   if (!lastSurahNumber) {
     return ((fallbackStart % len) + len) % len;
   }
 
-  // نجيب اسم السورة من منهج الحفظ
+  // جلب اسم السورة من منهج الحفظ
   const surahSeg = HIFZ_CURRICULUM.find(
     (seg) => seg.surah_number === lastSurahNumber
   );
@@ -1595,14 +1595,12 @@ function chooseMurajaaStartIndexFromLastSurah(
     return ((fallbackStart % len) + len) % len;
   }
 
-  // نبحث في منهج المراجعة عن أول مهمة تحتوي اسم هذه السورة في العنوان
-  let idx = arr.findIndex(
-    (it) =>
-      typeof it.name === "string" &&
-      it.name.includes(surahName)
-  );
+  // دعم الحالتين: عنصر نص مباشر أو كائن فيه name
+  let idx = arr.findIndex((it) => {
+    const name = typeof it === "string" ? it : it?.name;
+    return typeof name === "string" && name.includes(surahName);
+  });
 
-  // لو ما لقينا، نرجع للبداية القديمة
   if (idx === -1) {
     idx = ((fallbackStart % len) + len) % len;
   }
@@ -2438,6 +2436,7 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
