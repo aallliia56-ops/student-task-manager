@@ -373,18 +373,80 @@ function getCurrentHifzMission(student) {
   const all = HIFZ_CURRICULUM;
   if (!all?.length) return null;
 
-  const startIndex = student.hifz_progress ?? student.hifz_start_id ?? 0;
-  if (startIndex >= all.length) return null;
+  // حدود خطة الحفظ
+  const planStart = student.hifz_start_id ?? 0;
+  const planEnd = student.hifz_end_id ?? all.length - 1;
 
+  // المؤشر الحالي = المقطع التالي الذي سيحفظه الطالب
+  let nextIndex = student.hifz_progress ?? planStart;
+  if (nextIndex < planStart) nextIndex = planStart;
+  if (nextIndex > planEnd) return null;
+
+  const tasks = Array.isArray(student.tasks) ? student.tasks : [];
+
+  // 1) أولاً: هل نحتاج "مهمة سورة كاملة" بعد آخر مقطع؟
+  const prevIndex = nextIndex - 1;
+
+  if (prevIndex >= planStart && prevIndex <= planEnd) {
+    const prevSeg = all[prevIndex];
+
+    // نحدد أول وآخر مقطع لنفس السورة داخل خطة الطالب
+    let first = prevIndex;
+    while (
+      first - 1 >= planStart &&
+      all[first - 1].surah_number === prevSeg.surah_number
+    ) {
+      first--;
+    }
+
+    let last = prevIndex;
+    while (
+      last + 1 <= planEnd &&
+      all[last + 1].surah_number === prevSeg.surah_number
+    ) {
+      last++;
+    }
+
+    const segmentsCount = last - first + 1;
+
+    // شرط: السورة أكثر من مقطع، والطالب أنهى آخر مقطع منها
+    if (segmentsCount > 1 && prevIndex === last) {
+      // نتأكد أننا ما عرضنا من قبل "سورة كاملة" واكتملت لنفس السورة
+      const alreadyCompletedFull = tasks.some(
+        (t) =>
+          t.type === "hifz" &&
+          t.mission_start === first &&
+          t.mission_last === last &&
+          t.status === "completed"
+      );
+
+      if (!alreadyCompletedFull) {
+        const firstSeg = all[first];
+        const lastSeg = all[last];
+
+        // 🔹 هنا تظهر "مهمة سورة كاملة" بعد انتهاء آخر مقطع
+        return {
+          type: "hifz",
+          startIndex: first,
+          lastIndex: last,
+          isFullSurah: true, // معلومة إضافية لو حبيت تستخدمها لاحقاً
+          description: `${firstSeg.surah_name_ar} كاملة (${firstSeg.start_ayah}-${lastSeg.end_ayah})`,
+          points: firstSeg.points || 5,
+        };
+      }
+    }
+  }
+
+  // 2) لو ما فيه سورة كاملة مطلوبة، نرجع للسلوك العادي (مقاطع حسب المستوى)
   const level = +student.hifz_level || 1;
   const maxSegments = Math.max(1, Math.min(3, level));
 
-  const first = all[startIndex];
+  const first = all[nextIndex];
   const segs = [first];
 
   for (
-    let i = startIndex + 1;
-    i < all.length && segs.length < maxSegments;
+    let i = nextIndex + 1;
+    i <= planEnd && segs.length < maxSegments;
     i++
   ) {
     const seg = all[i];
@@ -393,14 +455,16 @@ function getCurrentHifzMission(student) {
   }
 
   const last = segs[segs.length - 1];
+
   return {
     type: "hifz",
-    startIndex,
-    lastIndex: startIndex + segs.length - 1,
+    startIndex: nextIndex,
+    lastIndex: nextIndex + segs.length - 1,
     description: `${first.surah_name_ar} (${first.start_ayah}-${last.end_ayah})`,
     points: first.points || 5,
   };
 }
+
 
 function getNextHifzMission(student) {
   const all = HIFZ_CURRICULUM;
@@ -2270,4 +2334,5 @@ populateMurajaaStartSelect();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
