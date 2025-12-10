@@ -76,6 +76,7 @@ const studentTasksDiv = $("#student-tasks");
 const logoutButtonStudent = $("#logout-button-student");
 
 const refreshStudentButton = $("#refresh-student-button");
+const studentWeekStrip = $("#student-week-strip");
 
 // تبويبات الطالب (مهامي / مهام المساعد)
 const studentMainTasksSection = $("#student-main-tasks");
@@ -180,6 +181,66 @@ const showMessage = (el, msg, type = "info") => {
   el.classList.add(type);
   setTimeout(() => el.classList.add("hidden"), 5000);
 };
+
+// بداية الأسبوع (الأحد) حسب التاريخ الحالي
+function getWeekStart(date = new Date()) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay(); // 0 أحد, 1 اثنين, ... 6 سبت في بعض المتصفحات (أغلب البيئات: 0 أحد)
+  // نرجّع لأقرب أحد
+  const diff = day; // من الأحد
+  d.setDate(d.getDate() - diff);
+  return d;
+}
+
+// رسم شريط التزام الأسبوع (أحد-خميس)
+function renderStudentWeekStrip(student) {
+  if (!studentWeekStrip) return;
+
+  const tasks = Array.isArray(student.tasks) ? student.tasks : [];
+  const now = new Date();
+  const weekStart = getWeekStart(now); // بداية الأسبوع (أحد)
+
+  const daysMeta = [
+    { offset: 0, label: "أحد" },
+    { offset: 1, label: "اثنين" },
+    { offset: 2, label: "ثلاثاء" },
+    { offset: 3, label: "أربعاء" },
+    { offset: 4, label: "خميس" },
+  ];
+
+  const html = daysMeta
+    .map(({ offset, label }) => {
+      const dayStart = new Date(weekStart);
+      dayStart.setDate(weekStart.getDate() + offset);
+      dayStart.setHours(0, 0, 0, 0);
+
+      const dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const hasCompleted = tasks.some((t) => {
+        if (t.status !== "completed" || !t.completed_at) return false;
+        const ts = t.completed_at;
+        return ts >= dayStart.getTime() && ts <= dayEnd.getTime();
+      });
+
+      const cls = hasCompleted
+        ? "week-day done"
+        : "week-day";
+      const icon = hasCompleted ? "✔" : "•";
+
+      return `
+        <div class="${cls}">
+          <span class="week-day-label">${label}</span>
+          <span class="week-day-icon">${icon}</span>
+        </div>
+      `;
+    })
+    .join("");
+
+  studentWeekStrip.innerHTML = html;
+}
+
 
 function hideAllScreens() {
   authScreen?.classList.add("hidden");
@@ -1079,6 +1140,9 @@ async function displayStudentDashboard(student) {
     safeSetText(els.rankText, rankOnly);
 
     renderStudentTasks(student);
+    
+    renderStudentWeekStrip(student);
+
 
     hideAllScreens();
     studentScreen.classList.remove("hidden");
@@ -1635,8 +1699,10 @@ async function reviewTask(studentCode, taskId, action) {
       }
 
       tasks[i].status = "completed";
+      tasks[i].completed_at = Date.now(); // وقت إنجاز المهمة (مطلوب للأسبوع)
       delete tasks[i].assistant_type;
       delete tasks[i].assistant_code;
+
 
       await updateDoc(studentRef, {
         tasks,
@@ -2484,6 +2550,7 @@ updateHalaqaToggleUI();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
