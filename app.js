@@ -193,6 +193,47 @@ function getWeekStart(date = new Date()) {
   return d;
 }
 
+function buildWeekStripHtml(tasks) {
+  const now = new Date();
+  const weekStart = getWeekStart(now); // بداية الأسبوع (أحد)
+
+  const daysMeta = [
+    { offset: 0, label: "أحد" },
+    { offset: 1, label: "اثنين" },
+    { offset: 2, label: "ثلاثاء" },
+    { offset: 3, label: "أربعاء" },
+    { offset: 4, label: "خميس" },
+  ];
+
+  return daysMeta
+    .map(({ offset, label }) => {
+      const dayStart = new Date(weekStart);
+      dayStart.setDate(weekStart.getDate() + offset);
+      dayStart.setHours(0, 0, 0, 0);
+
+      const dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const hasCompleted = (Array.isArray(tasks) ? tasks : []).some((t) => {
+        if (t.status !== "completed" || !t.completed_at) return false;
+        const ts = t.completed_at;
+        return ts >= dayStart.getTime() && ts <= dayEnd.getTime();
+      });
+
+      const cls = hasCompleted ? "week-day done" : "week-day";
+      const icon = hasCompleted ? "✔" : "•";
+
+      return `
+        <div class="${cls}">
+          <span class="week-day-label">${label}</span>
+          <span class="week-day-icon">${icon}</span>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+
 // رسم شريط التزام الأسبوع (أحد-خميس)
 function renderStudentWeekStrip(student) {
   if (!studentWeekStrip) return;
@@ -238,7 +279,7 @@ function renderStudentWeekStrip(student) {
     })
     .join("");
 
-  studentWeekStrip.innerHTML = html;
+  studentWeekStrip.innerHTML = buildWeekStripHtml(tasks);
 }
 
 
@@ -1246,21 +1287,24 @@ async function displayParentDashboard(parentCode) {
         const el = document.createElement("div");
         el.className = "child-card";
         el.innerHTML = `
-          <div class="child-name">${s.name} (${s.code})</div>
-          <div class="child-line"><strong>${halaqaLabel}</strong></div>
-          <div class="child-line">خطة الحفظ: من سورة <strong>${startSurah}</strong> إلى سورة <strong>${endSurah}</strong></div>
-          <div class="child-line">إنجاز الحفظ: <strong>${hifzPercent}%</strong></div>
-          <div class="progress-bar"><div class="progress-fill" style="width:${hifzPercent}%"></div></div>
-          <div class="child-line">${motivation}</div>
-          <div class="child-line">مجموع النقاط: <strong>${s.total_points || 0}</strong></div>
-          <div class="child-line">الترتيب داخل ${groupTitle}: <strong>${childRank}</strong></div>
-          <div class="child-line">مهمة الحفظ الحالية: <span>${
-            hifzMission ? hifzMission.description : "لا توجد"
-          }</span></div>
-          <div class="child-line">مهمة المراجعة الحالية: <span>${
-            murMission ? murMission.description : "لا توجد"
-          }</span></div>
-        `;
+        <div class="child-name">${s.name} (${s.code})</div>
+        <div class="child-line"><strong>${halaqaLabel}</strong></div>
+        <div class="child-line">خطة الحفظ: من سورة <strong>${startSurah}</strong> إلى سورة <strong>${endSurah}</strong></div>
+        <div class="child-line">إنجاز الحفظ: <strong>${hifzPercent}%</strong></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${hifzPercent}%"></div></div>
+        <div class="child-line">${motivation}</div>
+        <div class="child-line">مجموع النقاط: <strong>${s.total_points || 0}</strong></div>
+        <div class="child-line">الترتيب داخل ${groupTitle}: <strong>${childRank}</strong></div>
+        <div class="child-line">مهمة الحفظ الحالية: <span>${
+          hifzMission ? hifzMission.description : "لا توجد"
+        }</span></div>
+        <div class="child-line">مهمة المراجعة الحالية: <span>${
+          murMission ? murMission.description : "لا توجد"
+        }</span></div>
+        <div class="week-strip"></div>
+       `;
+        const weekDiv = el.querySelector(".week-strip");
+        weekDiv.innerHTML = buildWeekStripHtml(Array.isArray(s.tasks) ? s.tasks : []);
         parentChildrenList.appendChild(el);
       });
     }
@@ -1894,6 +1938,7 @@ async function loadStudentsForTeacher() {
       li.innerHTML = `
         <div class="student-line">
           <div class="student-main">#${i + 1} - ${s.name} (${s.code})</div>
+          <div class="week-strip"></div>
           <div class="student-sub">
             حفظ: ${hifzPercent}% ${
         hifzPaused ? " (موقوف)" : ""
@@ -1930,6 +1975,9 @@ async function loadStudentsForTeacher() {
           </div>
         </div>
       `;
+      const weekDiv = li.querySelector(".week-strip");
+      weekDiv.innerHTML = buildWeekStripHtml(Array.isArray(s.tasks) ? s.tasks : []);
+      
       studentList.appendChild(li);
     });
 
@@ -2550,6 +2598,7 @@ updateHalaqaToggleUI();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
