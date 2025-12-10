@@ -363,3 +363,37 @@ h1 { text-align: center; margin-bottom: 10px; }
 #student-murajaa-progress-label {
   display: none !important;
 }
+.week-strip {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.week-day {
+  min-width: 50px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  border: 1px solid #ccc;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  background-color: #f9fafb;
+}
+
+.week-day.done {
+  border-color: #16a34a;
+  background-color: #e0fce5;
+  font-weight: 600;
+}
+
+.week-day-label {
+  direction: rtl;
+}
+
+.week-day-icon {
+  font-size: 14px;
+}
