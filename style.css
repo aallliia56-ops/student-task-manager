@@ -492,6 +492,141 @@ h1 { text-align: center; margin-bottom: 10px; }
   border:2px solid #cbd5e1;
   background:#fff;
 }
+.student-card{
+  background:#fff;
+  border:1px solid #e0e6ed;
+  border-radius:14px;
+  padding:10px 12px;
+  margin-bottom:10px;
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+}
+
+/* الاسم + السهم */
+.student-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.student-name{
+  font-weight:900;
+  font-size:1rem;
+  color:#2c3e50;
+}
+.student-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:.75rem;
+  font-weight:900;
+  color:#64748b;
+  border:1px solid #e2e8f0;
+  background:#f8fafc;
+  margin-inline-start:6px;
+}
+
+.details-toggle{
+  border:1px solid #e2e8f0;
+  background:#fff;
+  border-radius:10px;
+  width:34px;
+  height:30px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+/* الأيام */
+.week-row{
+  margin-top:8px;
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.day-dot{
+  width:20px;
+  height:20px;
+  border-radius:999px;
+  border:2px solid #cbd5e1;
+  background:#fff;
+  display:inline-block;
+}
+.day-dot.done{
+  background:#22c55e;   /* حضر */
+  border-color:#16a34a;
+}
+
+/* الأزرار */
+.actions-row{
+  margin-top:8px;
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.icon-btn{
+  width:34px;
+  height:30px;
+  border-radius:10px;
+  border:1px solid #e2e8f0;
+  background:#fff;
+  cursor:pointer;
+  font-size:.9rem;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.toggle-btn[data-state="on"]{
+  border-color:#16a34a;
+  color:#16a34a;
+}
+.toggle-btn[data-state="off"]{
+  border-color:#cbd5e1;
+  color:#94a3b8;
+}
+.edit-btn{
+  border-color:#93c5fd;
+  color:#2563eb;
+}
+
+/* التفاصيل */
+.details-panel{
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px dashed #e2e8f0;
+}
+.details-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+}
+.detail-label{
+  font-size:.75rem;
+  color:#64748b;
+  font-weight:800;
+}
+.detail-value{
+  font-size:.9rem;
+  font-weight:800;
+  color:#2c3e50;
+  margin-top:2px;
+}
+
+.mini-bar{
+  height:8px;
+  border-radius:999px;
+  background:#eef2f7;
+  overflow:hidden;
+  margin-top:6px;
+}
+.mini-fill{
+  height:100%;
+}
+
+/* للشاشات الكبيرة */
+@media(min-width:768px){
+  .details-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+}
 
 
 
