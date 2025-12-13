@@ -45,6 +45,24 @@
     /* تنحيف بطاقات المهام */
     .task-card { padding:12px 14px; }
     .task-card .task-body.mission-text { margin:.25rem 0 .5rem; }
+
+    /* مربع بحث قائمة الطلاب */
+    .student-search-row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin:10px 0 12px;
+      flex-wrap:wrap;
+    }
+    .student-search-row input{
+      flex:1;
+      min-width:220px;
+    }
+    .student-search-row .hint{
+      font-size:.85rem;
+      color:#6b7280;
+      font-weight:700;
+    }
   </style>
 </head>
 <body>
@@ -52,26 +70,25 @@
   <!-- شاشة الدخول -->
   <div id="auth-screen" class="container">
     <h2 style="
-  text-align:center;
-  margin:0;
-  font-size:1.3rem;
-  font-weight:700;
-  color:#2c3e50;
-">
-  حلقة عبدالرحمن بن عوف رضي الله عنه
-</h2>
+      text-align:center;
+      margin:0;
+      font-size:1.3rem;
+      font-weight:700;
+      color:#2c3e50;
+    ">
+      حلقة عبدالرحمن بن عوف رضي الله عنه
+    </h2>
 
-<p style="
-  text-align:center;
-  margin:4px 0 18px;
-  font-size:.95rem;
-  color:#7f8c8d;
-  font-weight:600;
-">
-  جامع اخلال
-</p>
+    <p style="
+      text-align:center;
+      margin:4px 0 18px;
+      font-size:.95rem;
+      color:#7f8c8d;
+      font-weight:600;
+    ">
+      جامع اخلال
+    </p>
 
-    <h1></h1> </h1>
     <h2>تسجيل الدخول</h2>
 
     <div class="input-group">
@@ -87,120 +104,107 @@
   </div>
 
   <!-- شاشة الطالب -->
+  <div id="student-screen" class="container hidden">
+    <header class="dashboard-header">
+      <div>
+        <h2 id="welcome-student">أهلاً بك يا طالب</h2>
+        <p id="student-plan-strip" class="plan-strip">
+          <span id="strip-plan" class="badge badge-plan">الخطة: —</span>
+          <span class="dot">•</span>
+          <span id="strip-points" class="badge badge-points">النقاط: 0</span>
+          <span class="dot">•</span>
+          <span id="strip-rank" class="badge badge-rank">الترتيب: —</span>
+        </p>
 
+        <!-- شريط أيام الأسبوع تحت الخطة مباشرة -->
+        <div id="student-week-strip" class="week-strip"></div>
+      </div>
 
-  <!-- شاشة الطالب -->
-<div id="student-screen" class="container hidden">
-  <header class="dashboard-header">
-    <div>
-      <h2 id="welcome-student">أهلاً بك يا طالب</h2>
-      <p id="student-plan-strip" class="plan-strip">
-        <span id="strip-plan" class="badge badge-plan">الخطة: —</span>
-        <span class="dot">•</span>
-        <span id="strip-points" class="badge badge-points">النقاط: 0</span>
-        <span class="dot">•</span>
-        <span id="strip-rank" class="badge badge-rank">الترتيب: —</span>
+      <div class="header-actions">
+        <button id="refresh-student-button" class="button primary">تحديث الصفحة 🔄</button>
+        <button id="logout-button-student" class="button danger">تسجيل الخروج</button>
+      </div>
+    </header>
+
+    <!-- تبويبات الطالب: مهامي / مهام المساعد -->
+    <nav class="student-tabs">
+      <button class="student-tab-button active" data-tab="student-main-tasks">
+        مهامي الحالية
+      </button>
+      <button class="student-tab-button" data-tab="student-assistant-tab">
+        مهام المساعد
+      </button>
+    </nav>
+
+    <!-- تبويب: مهامي الحالية -->
+    <section id="student-main-tasks" class="tasks-section">
+      <h3>مهامي الحالية</h3>
+      <div id="student-tasks" class="tasks-list">
+        <p class="message info">لا توجد مهام حالياً. وفقك الله 🤍</p>
+      </div>
+    </section>
+
+    <!-- تبويب: مهام المساعد (يظهر فقط عند اختيار التبويب) -->
+    <section id="student-assistant-tab" class="tasks-section hidden">
+      <h3>مهام المساعد</h3>
+      <p class="info-text">
+        إذا كنت طالبًا مساعدًا، ستظهر هنا المهام التي وجّهها لك المعلم لمراجعتها.
       </p>
+      <div id="student-assistant-tasks" class="tasks-list">
+        <!-- يتم ملؤها من app.js -->
+      </div>
+    </section>
 
-      <!-- شريط أيام الأسبوع تحت الخطة مباشرة -->
-      <div id="student-week-strip" class="week-strip"></div>
-    </div>
+    <!-- كروت التقدم بعد التبويبات -->
+    <section class="progress-section">
+      <!-- بطاقة الحفظ -->
+      <div class="progress-card hifz">
+        <h3>تقدم الحفظ</h3>
 
-    <div class="header-actions">
-      <button id="refresh-student-button" class="button primary">تحديث الصفحة 🔄</button>
-      <button id="logout-button-student" class="button danger">تسجيل الخروج</button>
-    </div>
-  </header>
-  <!-- يكمل الكود كالمعتاد -->
+        <p id="student-hifz-progress-label" class="small-text">
+          المهمة الحالية: —
+        </p>
 
-
-  <!-- تبويبات الطالب: مهامي / مهام المساعد -->
-  <nav class="student-tabs">
-    <button class="student-tab-button active" data-tab="student-main-tasks">
-      مهامي الحالية
-    </button>
-    <button class="student-tab-button" data-tab="student-assistant-tab">
-      مهام المساعد
-    </button>
-  </nav>
-
-  <!-- تبويب: مهامي الحالية -->
-  <section id="student-main-tasks" class="tasks-section">
-    <h3>مهامي الحالية</h3>
-    <div id="student-tasks" class="tasks-list">
-      <p class="message info">لا توجد مهام حالياً. وفقك الله 🤍</p>
-    </div>
-  </section>
-
-  <!-- تبويب: مهام المساعد (يظهر فقط عند اختيار التبويب) -->
-  <section id="student-assistant-tab" class="tasks-section hidden">
-    <h3>مهام المساعد</h3>
-    <p class="info-text">
-      إذا كنت طالبًا مساعدًا، ستظهر هنا المهام التي وجّهها لك المعلم لمراجعتها.
-    </p>
-    <div id="student-assistant-tasks" class="tasks-list">
-      <!-- يتم ملؤها من app.js -->
-    </div>
-  </section>
-
-  <!-- كروت التقدم بعد التبويبات -->
-  <section class="progress-section">
-    <!-- بطاقة الحفظ -->
-    <div class="progress-card hifz">
-      <h3>تقدم الحفظ</h3>
-
-      <!-- المهمة الحالية (يربطها app.js بـ studentHifzProgressLabel) -->
-      <p id="student-hifz-progress-label" class="small-text">
-        المهمة الحالية: —
-      </p>
-
-      <!-- صف الشريط + النسبة -->
-      <div class="progress-inline">
-        <div class="progress-bar">
-          <div id="student-hifz-progress-bar" class="progress-fill"></div>
+        <div class="progress-inline">
+          <div class="progress-bar">
+            <div id="student-hifz-progress-bar" class="progress-fill"></div>
+          </div>
+          <p class="progress-percent">
+            <span id="student-hifz-progress-percent">0</span>%
+          </p>
         </div>
-        <p class="progress-percent">
-          <span id="student-hifz-progress-percent">0</span>%
+
+        <p id="student-hifz-next-label" class="small-text muted" style="margin:.4rem 0 0;">
+          المهمة القادمة: —
         </p>
       </div>
 
-      <!-- المهمة القادمة -->
-      <p id="student-hifz-next-label" class="small-text muted" style="margin:.4rem 0 0;">
-        المهمة القادمة: —
-      </p>
-    </div>
+      <!-- بطاقة المراجعة -->
+      <div class="progress-card murajaa">
+        <h3>تقدم المراجعة</h3>
 
-    <!-- بطاقة المراجعة -->
-    <div class="progress-card murajaa">
-      <h3>تقدم المراجعة</h3>
+        <p id="student-murajaa-progress-label" class="small-text">
+          المهمة الحالية: —
+        </p>
 
-      <!-- المهمة الحالية -->
-      <p id="student-murajaa-progress-label" class="small-text">
-        المهمة الحالية: —
-      </p>
-
-      <div class="progress-inline">
-        <div class="progress-bar">
-          <div id="student-murajaa-progress-bar" class="progress-fill"></div>
+        <div class="progress-inline">
+          <div class="progress-bar">
+            <div id="student-murajaa-progress-bar" class="progress-fill"></div>
+          </div>
+          <p class="progress-percent">
+            <span id="student-murajaa-progress-percent">0</span>%
+          </p>
         </div>
-        <p class="progress-percent">
-          <span id="student-murajaa-progress-percent">0</span>%
+
+        <p id="student-murajaa-next-label" class="small-text muted" style="margin:.4rem 0 0;">
+          المهمة القادمة: —
         </p>
       </div>
-
-      <!-- المهمة القادمة -->
-      <p id="student-murajaa-next-label" class="small-text muted" style="margin:.4rem 0 0;">
-        المهمة القادمة: —
-      </p>
-    </div>
-  </section>
-</div>
-
-
+    </section>
+  </div>
 
   <!-- شاشة المعلم -->
   <div id="teacher-screen" class="container hidden">
-
     <header class="dashboard-header">
       <div>
         <h2>لوحة تحكم المعلم</h2>
@@ -331,7 +335,7 @@
             <select id="new-student-murajaa-start"></select>
             <p class="info-text">هذه أول مهمة مراجعة يبدأ منها الطالب في دورته الحالية.</p>
           </div>
-          
+
           <div class="input-group">
             <label for="new-student-halaqa">نوع الحلقة:</label>
             <select id="new-student-halaqa">
@@ -347,6 +351,13 @@
         <hr />
 
         <h3>قائمة الطلاب</h3>
+
+        <!-- بحث الطلاب -->
+        <div class="student-search-row">
+          <input id="student-search" type="text" placeholder="ابحث بالاسم أو الرمز أو ولي الأمر..." />
+          <span class="hint">🔎 اكتب للفلترة</span>
+        </div>
+
         <ul id="student-list" class="data-list"></ul>
       </div>
 
@@ -365,25 +376,17 @@
         </div>
 
         <hr />
-        <div class="test-audio-box">
-  <h3>تجربة تشغيل المقطع الصوتي</h3>
-  <audio controls>
-    <source src="https://raw.githubusercontent.com/aallliia56-ops/student-task-manager/main/114.mp3" type="audio/mpeg">
-    متصفحك لا يدعم تشغيل الصوت.
-  </audio>
-</div>
-        
+
         <h3>لوحة الشرف حسب المستوى</h3>
         <div id="honor-board" class="tasks-review-container">
           <p class="message info">جارٍ تحميل لوحة الشرف...</p>
         </div>
-      </div> <!-- end curriculum-tab -->
-    </section> <!-- end tab-content-container -->
-  </div> <!-- end teacher-screen -->
+      </div>
+    </section>
+  </div>
 
   <!-- شاشة ولي الأمر -->
   <div id="parent-screen" class="container hidden">
-   
     <header class="dashboard-header">
       <div>
         <h2 id="welcome-parent">مرحبًا بك يا ولي الأمر</h2>
@@ -435,10 +438,3 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
