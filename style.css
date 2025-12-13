@@ -470,13 +470,17 @@ h1 { text-align: center; margin-bottom: 10px; }
 .review-task-footer .button:not(.success):not(.danger):hover{
   background:#2563eb;
   color:#fff;
-}
-.review-task-footer{
+}.review-task-footer{
   display:flex;
   align-items:center;
   justify-content:space-between; /* هذا اللي يسحب النقاط أقصى اليمين */
   gap:8px;
   margin-top:6px;
+}
+
+.review-actions{
+  display:flex;
+  gap:6px; /* تلاصق الأزرار */
 }
 
 .review-points-badge{
@@ -492,4 +496,5 @@ h1 { text-align: center; margin-bottom: 10px; }
   border:2px solid #cbd5e1;
   background:#fff;
 }
+
 
