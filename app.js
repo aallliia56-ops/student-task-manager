@@ -707,7 +707,7 @@ function renderAssistantTasksList(list, container, roleLabel) {
     block.appendChild(title);
 
     const item = document.createElement("div");
-    item.className = `review-task-item ${task.type}`; // مهم لتلوين الطرف
+    item.className = `review-task-item ${task.type}`;
     item.innerHTML = `
       <div class="review-task-body" style="
         font-size:1.05rem;
@@ -719,21 +719,21 @@ function renderAssistantTasksList(list, container, roleLabel) {
       </div>
 
       <div class="review-task-header" style="
-        margin-top:6px;
-        font-size:.85rem;
+        margin-top:4px;
+        font-size:.8rem;
         font-weight:700;
         color:#6b7280;
-        display:flex;
-        justify-content:space-between;
-        gap:8px;
       ">
-        <span>النقاط: ${task.points || 0}</span>
-        <span style="font-weight:700;">مسندة لمساعد ${roleLabel}</span>
+        مسندة لمساعد ${roleLabel}
       </div>
     `;
 
     const footer = document.createElement("div");
     footer.className = "review-task-footer";
+
+    const pts = document.createElement("span");
+    pts.className = "review-points-badge";
+    pts.textContent = `${task.points || 0}`;
 
     const ok = document.createElement("button");
     ok.className = "button success";
@@ -753,7 +753,7 @@ function renderAssistantTasksList(list, container, roleLabel) {
       await loadAssistantTasksForCurrentUser();
     });
 
-    footer.append(ok, no);
+    footer.append(pts, ok, no);
     item.appendChild(footer);
     block.appendChild(item);
 
@@ -1867,7 +1867,7 @@ async function loadPendingTasksForReview() {
     block.appendChild(title);
 
     const item = document.createElement("div");
-    item.className = `review-task-item ${task.type}`; // مهم لتلوين الطرف
+    item.className = `review-task-item ${task.type}`;
     item.innerHTML = `
       <div class="review-task-body" style="
         font-size:1.05rem;
@@ -1877,22 +1877,14 @@ async function loadPendingTasksForReview() {
       ">
         ${task.description || ""}
       </div>
-
-      <div class="review-task-header" style="
-        margin-top:6px;
-        font-size:.85rem;
-        font-weight:700;
-        color:#6b7280;
-        display:flex;
-        justify-content:space-between;
-        gap:8px;
-      ">
-        <span>النقاط: ${task.points || 0}</span>
-      </div>
     `;
 
     const footer = document.createElement("div");
     footer.className = "review-task-footer";
+
+    const pts = document.createElement("span");
+    pts.className = "review-points-badge";
+    pts.textContent = `${task.points || 0}`;
 
     const ok = document.createElement("button");
     ok.className = "button success";
@@ -1918,14 +1910,13 @@ async function loadPendingTasksForReview() {
       showAssistantSelector(student.code, task.id, block)
     );
 
-    footer.append(ok, no, forward);
+    footer.append(pts, ok, no, forward);
     item.appendChild(footer);
     block.appendChild(item);
 
     pendingTasksList.appendChild(block);
   });
 }
-
     renderGroup(pendingHifz, "مهام الحفظ بانتظار المراجعة");
     renderGroup(pendingMurajaa, "مهام المراجعة بانتظار المراجعة");
     renderGroup(pendingGeneral, "مهام عامة بانتظار المراجعة");
@@ -2623,6 +2614,7 @@ updateHalaqaToggleUI();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
