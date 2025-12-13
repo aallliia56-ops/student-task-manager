@@ -703,23 +703,33 @@ function renderAssistantTasksList(list, container, roleLabel) {
 
     const title = document.createElement("div");
     title.className = "review-student-title";
-    title.textContent = `طالب: ${student.name} (${student.code})`;
+    title.textContent = `الطالب: ${student.name} (${student.code})`;
     block.appendChild(title);
 
     const item = document.createElement("div");
-    item.className = "review-task-item";
+    item.className = `review-task-item ${task.type}`; // مهم لتلوين الطرف
     item.innerHTML = `
-      <div class="review-task-header">
-        <span>${
-          task.type === "hifz"
-            ? "مهمة حفظ"
-            : task.type === "murajaa"
-            ? "مهمة مراجعة"
-            : "مهمة عامة"
-        } (مسندة لمساعد ${roleLabel})</span>
-        <span>النقاط: ${task.points || 0}</span>
+      <div class="review-task-body" style="
+        font-size:1.05rem;
+        font-weight:800;
+        line-height:1.8;
+        color:#2c3e50;
+      ">
+        ${task.description || ""}
       </div>
-      <div class="review-task-body">${task.description || ""}</div>
+
+      <div class="review-task-header" style="
+        margin-top:6px;
+        font-size:.85rem;
+        font-weight:700;
+        color:#6b7280;
+        display:flex;
+        justify-content:space-between;
+        gap:8px;
+      ">
+        <span>النقاط: ${task.points || 0}</span>
+        <span style="font-weight:700;">مسندة لمساعد ${roleLabel}</span>
+      </div>
     `;
 
     const footer = document.createElement("div");
@@ -727,7 +737,8 @@ function renderAssistantTasksList(list, container, roleLabel) {
 
     const ok = document.createElement("button");
     ok.className = "button success";
-    ok.textContent = "قبول (كمساعد) ✅";
+    ok.textContent = "☑";
+    ok.title = "قبول";
     ok.addEventListener("click", async () => {
       await reviewTask(student.code, task.id, "approve");
       await loadAssistantTasksForCurrentUser();
@@ -735,7 +746,8 @@ function renderAssistantTasksList(list, container, roleLabel) {
 
     const no = document.createElement("button");
     no.className = "button danger";
-    no.textContent = "رفض (كمساعد) ❌";
+    no.textContent = "✕";
+    no.title = "رفض";
     no.addEventListener("click", async () => {
       await reviewTask(student.code, task.id, "reject");
       await loadAssistantTasksForCurrentUser();
@@ -748,6 +760,7 @@ function renderAssistantTasksList(list, container, roleLabel) {
     container.appendChild(block);
   });
 }
+
 
 /** توجيه مهمة لمساعد (طالب / ولي أمر) */
 async function forwardTaskToAssistant(
@@ -1836,70 +1849,82 @@ async function loadPendingTasksForReview() {
     let any = false;
 
     function renderGroup(list, titleText) {
-      if (!list.length) return;
-      any = true;
+  if (!list.length) return;
+  any = true;
 
-      const groupTitle = document.createElement("h4");
-      groupTitle.textContent = titleText;
-      groupTitle.className = "review-group-title";
-      pendingTasksList.appendChild(groupTitle);
+  const groupTitle = document.createElement("h4");
+  groupTitle.textContent = titleText;
+  groupTitle.className = "review-group-title";
+  pendingTasksList.appendChild(groupTitle);
 
-      list.forEach(({ student, task }) => {
-        const block = document.createElement("div");
-        block.className = "review-student-block";
+  list.forEach(({ student, task }) => {
+    const block = document.createElement("div");
+    block.className = "review-student-block";
 
-        const title = document.createElement("div");
-        title.className = "review-student-title";
-        title.textContent = `الطالب: ${student.name} (${student.code})`;
-        block.appendChild(title);
+    const title = document.createElement("div");
+    title.className = "review-student-title";
+    title.textContent = `الطالب: ${student.name} (${student.code})`;
+    block.appendChild(title);
 
-        const item = document.createElement("div");
-        item.className = "review-task-item";
-        item.innerHTML = `
-          <div class="review-task-header">
-            <span>${
-              task.type === "hifz"
-                ? "مهمة حفظ"
-                : task.type === "murajaa"
-                ? "مهمة مراجعة"
-                : "مهمة عامة"
-            }</span>
-            <span>النقاط: ${task.points || 0}</span>
-          </div>
-          <div class="review-task-body">${task.description || ""}</div>
-        `;
+    const item = document.createElement("div");
+    item.className = `review-task-item ${task.type}`; // مهم لتلوين الطرف
+    item.innerHTML = `
+      <div class="review-task-body" style="
+        font-size:1.05rem;
+        font-weight:800;
+        line-height:1.8;
+        color:#2c3e50;
+      ">
+        ${task.description || ""}
+      </div>
 
-        const footer = document.createElement("div");
-        footer.className = "review-task-footer";
+      <div class="review-task-header" style="
+        margin-top:6px;
+        font-size:.85rem;
+        font-weight:700;
+        color:#6b7280;
+        display:flex;
+        justify-content:space-between;
+        gap:8px;
+      ">
+        <span>النقاط: ${task.points || 0}</span>
+      </div>
+    `;
 
-        const ok = document.createElement("button");
-        ok.className = "button success";
-        ok.textContent = "☑";
-        ok.addEventListener("click", () =>
-          reviewTask(student.code, task.id, "approve")
-        );
+    const footer = document.createElement("div");
+    footer.className = "review-task-footer";
 
-        const no = document.createElement("button");
-        no.className = "button danger";
-        no.textContent = "✕";
-        no.addEventListener("click", () =>
-          reviewTask(student.code, task.id, "reject")
-        );
+    const ok = document.createElement("button");
+    ok.className = "button success";
+    ok.textContent = "☑";
+    ok.title = "قبول";
+    ok.addEventListener("click", () =>
+      reviewTask(student.code, task.id, "approve")
+    );
 
-        const forward = document.createElement("button");
-        forward.className = "button";
-        forward.textContent = "➜";
-        forward.addEventListener("click", () =>
-          showAssistantSelector(student.code, task.id, block)
-        );
+    const no = document.createElement("button");
+    no.className = "button danger";
+    no.textContent = "✕";
+    no.title = "رفض";
+    no.addEventListener("click", () =>
+      reviewTask(student.code, task.id, "reject")
+    );
 
-        footer.append(ok, no, forward);
-        item.appendChild(footer);
-        block.appendChild(item);
+    const forward = document.createElement("button");
+    forward.className = "button";
+    forward.textContent = "➜";
+    forward.title = "تحويل للمساعد";
+    forward.addEventListener("click", () =>
+      showAssistantSelector(student.code, task.id, block)
+    );
 
-        pendingTasksList.appendChild(block);
-      });
-    }
+    footer.append(ok, no, forward);
+    item.appendChild(footer);
+    block.appendChild(item);
+
+    pendingTasksList.appendChild(block);
+  });
+}
 
     renderGroup(pendingHifz, "مهام الحفظ بانتظار المراجعة");
     renderGroup(pendingMurajaa, "مهام المراجعة بانتظار المراجعة");
@@ -2598,6 +2623,7 @@ updateHalaqaToggleUI();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
