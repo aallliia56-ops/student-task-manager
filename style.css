@@ -474,7 +474,7 @@ h1 { text-align: center; margin-bottom: 10px; }
 .review-task-footer{
   display:flex;
   align-items:center;
-  justify-content:flex-end;
+  justify-content:space-between; /* هذا اللي يسحب النقاط أقصى اليمين */
   gap:8px;
   margin-top:6px;
 }
