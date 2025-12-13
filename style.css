@@ -471,3 +471,25 @@ h1 { text-align: center; margin-bottom: 10px; }
   background:#2563eb;
   color:#fff;
 }
+.review-task-footer{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:6px;
+}
+
+.review-points-badge{
+  min-width:34px;
+  height:34px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  font-size:.85rem;
+  font-weight:900;
+  color:#64748b;
+  border:2px solid #cbd5e1;
+  background:#fff;
+}
+
