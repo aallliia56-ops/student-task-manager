@@ -1993,9 +1993,22 @@ async function loadStudentsForTeacher() {
       `;
       const weekDiv = li.querySelector(".week-strip");
       weekDiv.innerHTML = buildWeekStripHtml(Array.isArray(s.tasks) ? s.tasks : []);
-      
+      li.dataset.search = `${s.code || ""} ${s.name || ""} ${s.parent_name || ""} ${s.parent_code || ""}`.toLowerCase();
       studentList.appendChild(li);
     });
+    studentList.addEventListener("click", (e) => {
+  const toggle = e.target.closest(".details-toggle");
+  if (!toggle) return;
+
+  const card = toggle.closest(".student-card");
+  const panel = card.querySelector(".details-panel");
+  const open = !panel.classList.contains("hidden");
+
+  panel.classList.toggle("hidden", open);
+  toggle.textContent = open ? "▾" : "▴";
+  toggle.setAttribute("aria-expanded", String(!open));
+});
+
 
     document.querySelectorAll(".btn-edit-student").forEach((btn) => {
       btn.addEventListener("click", (e) =>
@@ -2611,9 +2624,42 @@ populateHifzSelects();
 populateMurajaaStartSelect();
 updateHalaqaToggleUI();
 
+let teacherSearchBound = false;
+
+function bindTeacherStudentSearch() {
+  const input = document.getElementById("student-search");
+  if (!input || teacherSearchBound) return;
+
+  const applyFilter = () => {
+    const q = (input.value || "").trim().toLowerCase();
+    document.querySelectorAll("#student-list li").forEach((li) => {
+      const hay = li.dataset.search || li.textContent.toLowerCase();
+      li.style.display = !q || hay.includes(q) ? "" : "none";
+    });
+  };
+
+  input.addEventListener("input", applyFilter);
+  input.addEventListener("keyup", (e) => {
+    if (e.key === "Escape") {
+      input.value = "";
+      applyFilter();
+    }
+  });
+
+  teacherSearchBound = true;
+}
+
+// استدعها بعد كل تحميل للطلاب
+const _oldLoadStudentsForTeacher = loadStudentsForTeacher;
+loadStudentsForTeacher = async function () {
+  await _oldLoadStudentsForTeacher();
+  bindTeacherStudentSearch();
+};
+
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
