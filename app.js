@@ -1917,9 +1917,9 @@ async function loadPendingTasksForReview() {
     pendingTasksList.appendChild(block);
   });
 }
-    renderGroup(pendingHifz, "مهام الحفظ بانتظار المراجعة");
-    renderGroup(pendingMurajaa, "مهام المراجعة بانتظار المراجعة");
-    renderGroup(pendingGeneral, "مهام عامة بانتظار المراجعة");
+    renderGroup(pendingHifz, "مهام الحفظ");
+    renderGroup(pendingMurajaa, "مهام المراجعة");
+    renderGroup(pendingGeneral, "مهام عامة ");
 
     if (!any) {
       pendingTasksList.innerHTML =
@@ -2614,6 +2614,7 @@ updateHalaqaToggleUI();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
