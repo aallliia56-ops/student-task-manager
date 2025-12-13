@@ -180,14 +180,33 @@ h1 { text-align: center; margin-bottom: 10px; }
   background:#fff; border-radius:10px; border:1px solid #e0e6ed; padding:8px; margin-bottom:8px;
 }
 .review-student-title{ font-weight:700; margin-bottom:6px; font-size:.9rem; }
+/* ===== بطاقة المراجعة حسب نوع المهمة ===== */
+
+/* افتراضي */
 .review-task-item{
   background:#fff;
-  border:1px solid #e0e6ed;
-  border-right:4px solid #3498db;
   border-radius:12px;
-  padding:10px;
+  border:1px solid #e0e6ed;
+  padding:12px;
   margin-bottom:8px;
+  box-shadow:0 1px 6px rgba(0,0,0,.04);
 }
+
+/* حفظ – أخضر */
+.review-task-item.hifz{
+  border-right:5px solid #16a34a;
+}
+
+/* مراجعة – أزرق */
+.review-task-item.murajaa{
+  border-right:5px solid #2563eb;
+}
+
+/* مهمة عامة – أصفر */
+.review-task-item.general{
+  border-right:5px solid #facc15;
+}
+
 
 .review-task-header{
   display:flex; justify-content:space-between; gap:8px; font-size:.8rem; font-weight:600;
