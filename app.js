@@ -1874,21 +1874,21 @@ async function loadPendingTasksForReview() {
 
         const ok = document.createElement("button");
         ok.className = "button success";
-        ok.textContent = "✅";
+        ok.textContent = "☑";
         ok.addEventListener("click", () =>
           reviewTask(student.code, task.id, "approve")
         );
 
         const no = document.createElement("button");
         no.className = "button danger";
-        no.textContent = "❌";
+        no.textContent = "✕";
         no.addEventListener("click", () =>
           reviewTask(student.code, task.id, "reject")
         );
 
         const forward = document.createElement("button");
         forward.className = "button";
-        forward.textContent = "▶️";
+        forward.textContent = "➜";
         forward.addEventListener("click", () =>
           showAssistantSelector(student.code, task.id, block)
         );
@@ -2598,6 +2598,7 @@ updateHalaqaToggleUI();
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
