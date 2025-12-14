@@ -1985,12 +1985,10 @@ async function loadStudentsForTeacher() {
     </div>
 
     <!-- السهم في أسفل البطاقة -->
-    <button type="button"
-      class="toggle-details"
-      aria-expanded="false"
-      title="تفاصيل">
-      ▾
-    </button>
+   <div class="card-notch toggle-details" aria-expanded="false">
+  <span class="chev">▾</span>
+</div>
+
 
     <!-- التفاصيل -->
     <div class="student-details hidden">
@@ -2669,17 +2667,18 @@ loadStudentsForTeacher = async function () {
 
 // 1) فتح/إغلاق التفاصيل
 document.addEventListener("click", (e) => {
-  const btn = e.target.closest(".toggle-details");
-  if (!btn) return;
+  const notch = e.target.closest(".toggle-details");
+  if (!notch) return;
 
-  const card = btn.closest(".student-card");
+  const card = notch.closest(".student-card");
   const details = card.querySelector(".student-details");
   const open = !details.classList.contains("hidden");
 
-  details.classList.toggle("hidden");
-  btn.textContent = open ? "▾" : "▴";
-  btn.setAttribute("aria-expanded", String(!open));
+  details.classList.toggle("hidden", open);
+  card.classList.toggle("details-open", !open);
+  notch.setAttribute("aria-expanded", String(!open));
 });
+
 
 // 2) تبديل حالة الأزرار (بصري فقط)
 document.addEventListener("click", (e) => {
@@ -2708,6 +2707,7 @@ function markStudentWeek(cardEl, doneDays = []) {
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
