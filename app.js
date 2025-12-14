@@ -198,11 +198,11 @@ function buildWeekStripHtml(tasks) {
   const weekStart = getWeekStart(now); // بداية الأسبوع (أحد)
 
   const daysMeta = [
-    { offset: 0, label: "أحد" },
-    { offset: 1, label: "اثنين" },
-    { offset: 2, label: "ثلاثاء" },
-    { offset: 3, label: "أربعاء" },
-    { offset: 4, label: "خميس" },
+    { offset: 0, label: "ح" },
+    { offset: 1, label: "ن" },
+    { offset: 2, label: "ث" },
+    { offset: 3, label: "ر" },
+    { offset: 4, label: "خ" },
   ];
 
   return daysMeta
@@ -2731,6 +2731,7 @@ function markStudentWeek(cardEl, doneDays = []) {
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
