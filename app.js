@@ -2655,10 +2655,49 @@ loadStudentsForTeacher = async function () {
   await _oldLoadStudentsForTeacher();
   bindTeacherStudentSearch();
 };
+/* ===== بطاقة الطالب: تفاعل بسيط ===== */
+
+// 1) فتح/إغلاق التفاصيل
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".toggle-details");
+  if (!btn) return;
+
+  const card = btn.closest(".student-card");
+  const details = card.querySelector(".student-details");
+  const open = !details.classList.contains("hidden");
+
+  details.classList.toggle("hidden");
+  btn.textContent = open ? "▾" : "▴";
+});
+
+// 2) تبديل حالة الأزرار (بصري فقط)
+document.addEventListener("click", (e) => {
+  const toggleBtn = e.target.closest(
+    ".toggle-hifz, .toggle-murajaa, .toggle-assistant"
+  );
+  if (!toggleBtn) return;
+
+  toggleBtn.classList.toggle("active");
+});
+
+// 3) تعليم أيام الأسبوع (مثال استخدام)
+function markStudentWeek(cardEl, doneDays = []) {
+  // doneDays مثال: ["sun","mon","thu"]
+  cardEl.querySelectorAll(".student-week .day").forEach((d) => {
+    const key = d.dataset.day;
+    d.classList.toggle("done", doneDays.includes(key));
+  });
+}
+
+/*
+  مثال استدعاء بعد إنشاء البطاقة:
+  markStudentWeek(li, ["sun","tue","thu"]);
+*/
 
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
