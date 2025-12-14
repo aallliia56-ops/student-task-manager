@@ -65,6 +65,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <!-- شاشة الدخول -->
@@ -144,18 +145,16 @@
       </div>
     </section>
 
-    <!-- تبويب: مهام المساعد (يظهر فقط عند اختيار التبويب) -->
+    <!-- تبويب: مهام المساعد -->
     <section id="student-assistant-tab" class="tasks-section hidden">
       <h3>مهام المساعد</h3>
       <p class="info-text">
         إذا كنت طالبًا مساعدًا، ستظهر هنا المهام التي وجّهها لك المعلم لمراجعتها.
       </p>
-      <div id="student-assistant-tasks" class="tasks-list">
-        <!-- يتم ملؤها من app.js -->
-      </div>
+      <div id="student-assistant-tasks" class="tasks-list"></div>
     </section>
 
-    <!-- كروت التقدم بعد التبويبات -->
+    <!-- كروت التقدم -->
     <section class="progress-section">
       <!-- بطاقة الحفظ -->
       <div class="progress-card hifz">
@@ -210,7 +209,6 @@
         <h2>لوحة تحكم المعلم</h2>
         <p class="subtitle">إدارة مهام الطلاب وخططهم</p>
 
-        <!-- اختيار الحلقة: حضوري / إلكتروني -->
         <div class="halaqa-toggle">
           <button id="halaqa-onsite-btn" class="halaqa-btn active">حضوري</button>
           <button id="halaqa-online-btn" class="halaqa-btn">إلكتروني</button>
@@ -223,7 +221,6 @@
       </div>
     </header>
 
-    <!-- تبويبات المعلم -->
     <nav class="tabs">
       <button class="tab-button active" data-tab="review-tasks-tab">مهام بانتظار المراجعة 📝</button>
       <button class="tab-button" data-tab="assign-tasks-tab">تعيين مهام</button>
@@ -232,16 +229,15 @@
     </nav>
 
     <section class="tab-content-container">
-      <!-- مراجعة المهام -->
+
       <div id="review-tasks-tab" class="tab-content">
         <h3>مهام بانتظار مراجعتك</h3>
-        <p class="info-text"> </p>
+        <p class="info-text"></p>
         <div id="pending-tasks-list" class="tasks-review-container">
           <p class="message info">جارٍ تحميل المهام...</p>
         </div>
       </div>
 
-      <!-- تعيين المهام -->
       <div id="assign-tasks-tab" class="tab-content hidden">
         <h3>تعيين مهام جديدة</h3>
 
@@ -277,7 +273,6 @@
         <p id="assign-task-message" class="message hidden"></p>
       </div>
 
-      <!-- إدارة الطلاب -->
       <div id="manage-students-tab" class="tab-content hidden">
         <h3 id="student-form-title">إضافة / تعديل طالب</h3>
 
@@ -352,7 +347,6 @@
 
         <h3>قائمة الطلاب</h3>
 
-        <!-- بحث الطلاب -->
         <div class="student-search-row">
           <input id="student-search" type="text" placeholder="ابحث بالاسم أو الرمز أو ولي الأمر..." />
           <span class="hint">🔎 اكتب للفلترة</span>
@@ -361,7 +355,6 @@
         <ul id="student-list" class="data-list"></ul>
       </div>
 
-      <!-- عرض المنهج -->
       <div id="curriculum-tab" class="tab-content hidden">
         <h3>عرض المنهج</h3>
         <div class="curriculum-view">
@@ -382,30 +375,9 @@
           <p class="message info">جارٍ تحميل لوحة الشرف...</p>
         </div>
       </div>
+
     </section>
   </div>
-  <div class="student-card">
-  <div class="student-top">
-    <div class="student-name">محمد (101)</div>
-
-    <!-- السهم -->
-    <button type="button" class="toggle-details" title="تفاصيل">▾</button>
-  </div>
-
-  <div class="student-week">
-    <!-- الأيام -->
-  </div>
-
-  <div class="student-actions">
-    <!-- الأزرار -->
-  </div>
-
-  <!-- التفاصيل (مقفلة افتراضياً) -->
-  <div class="student-details hidden">
-    <!-- بيانات الحفظ/المراجعة/ولي الأمر... -->
-  </div>
-</div>
-
 
   <!-- شاشة ولي الأمر -->
   <div id="parent-screen" class="container hidden">
@@ -424,19 +396,16 @@
       </div>
     </section>
 
-    <!-- مهام المساعد لولي الأمر -->
     <section>
       <h3>مهام المساعد لولي الأمر</h3>
       <p class="info-text">
         إذا كنت ولي أمر مساعدًا، ستظهر هنا المهام التي وجّهها المعلم لك لمراجعتها.
       </p>
-      <div id="parent-assistant-tasks" class="tasks-review-container">
-        <!-- يتم ملؤها من app.js -->
-      </div>
+      <div id="parent-assistant-tasks" class="tasks-review-container"></div>
     </section>
   </div>
 
-  <!-- شاشة كود الحلقة (شبكة الطلاب) -->
+  <!-- شاشة كود الحلقة -->
   <div id="halaqa-screen" class="container hidden">
     <header class="dashboard-header">
       <div>
@@ -450,9 +419,7 @@
 
     <section>
       <h3>طلاب هذه الحلقة</h3>
-      <div id="halaqa-students-grid" class="halaqa-grid">
-        <!-- يتم ملؤها من app.js -->
-      </div>
+      <div id="halaqa-students-grid" class="halaqa-grid"></div>
     </section>
   </div>
 
@@ -460,4 +427,3 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
-
