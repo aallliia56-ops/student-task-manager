@@ -1952,63 +1952,62 @@ async function loadStudentsForTeacher() {
       const isParentAssistant = !!s.is_parent_assistant && !!s.parent_code;
 
       li.innerHTML = `
-        <div class="student-line">
-          <div class="student-main">#${i + 1} - ${s.name} (${s.code})</div>
-          <div class="week-strip"></div>
-          <div class="student-sub">
-            حفظ: ${hifzPercent}% ${
-        hifzPaused ? " (موقوف)" : ""
-      } | مراجعة: ${murPercent}% ${murPaused ? " (موقوف)" : ""} | نقاط: ${
-        s.total_points || 0
-      }
-          </div>
-          <div class="student-sub">ولي الأمر: ${
-            s.parent_name || "غير مسجل"
-          } (${s.parent_code || "—"})</div>
-          <div class="student-sub">
-            مساعد طالب: ${
-              isStudentAssistant ? "✅ مفعّل" : "❌ غير مفعّل"
-            } | مساعد ولي أمر: ${
-        isParentAssistant ? "✅ مفعّل" : "❌ غير مفعّل"
-      }
-          </div>
-          <div class="student-actions">
-            <button class="button primary btn-edit-student" data-code="${
-              s.code
-            }">تعديل</button>
-            <button class="button btn-toggle-hifz" data-code="${
-              s.code
-            }">${hifzPaused ? "تشغيل الحفظ" : "إيقاف الحفظ"}</button>
-            <button class="button btn-toggle-murajaa" data-code="${
-              s.code
-            }">${murPaused ? "تشغيل المراجعة" : "إيقاف المراجعة"}</button>
-            <button class="button btn-toggle-student-assistant" data-code="${
-              s.code
-            }">${isStudentAssistant ? "إلغاء مساعد (طالب)" : "تفعيل مساعد (طالب)"}</button>
-            <button class="button btn-toggle-parent-assistant" data-code="${
-              s.code
-            }">${isParentAssistant ? "إلغاء مساعد (ولي)" : "تفعيل مساعد (ولي)"}</button>
-          </div>
-        </div>
-      `;
+  <div class="student-card">
+    <div class="student-top">
+      <div class="student-name">#${i + 1} - ${s.name} (${s.code})</div>
+
+      <button type="button"
+        class="toggle-details"
+        aria-expanded="false"
+        title="تفاصيل">▾</button>
+    </div>
+
+    <div class="student-week week-strip"></div>
+
+    <div class="student-actions">
+      <button class="button primary btn-edit-student" data-code="${s.code}">تعديل</button>
+
+      <button class="button btn-toggle-hifz" data-code="${s.code}">
+        ${hifzPaused ? "تشغيل الحفظ" : "إيقاف الحفظ"}
+      </button>
+
+      <button class="button btn-toggle-murajaa" data-code="${s.code}">
+        ${murPaused ? "تشغيل المراجعة" : "إيقاف المراجعة"}
+      </button>
+
+      <button class="button btn-toggle-student-assistant" data-code="${s.code}">
+        ${isStudentAssistant ? "إلغاء مساعد (طالب)" : "تفعيل مساعد (طالب)"}
+      </button>
+
+      <button class="button btn-toggle-parent-assistant" data-code="${s.code}">
+        ${isParentAssistant ? "إلغاء مساعد (ولي)" : "تفعيل مساعد (ولي)"}
+      </button>
+    </div>
+
+    <!-- التفاصيل (مقفلة افتراضياً) -->
+    <div class="student-details hidden">
+      <div class="student-sub">
+        حفظ: ${hifzPercent}% ${hifzPaused ? " (موقوف)" : ""} |
+        مراجعة: ${murPercent}% ${murPaused ? " (موقوف)" : ""} |
+        نقاط: ${s.total_points || 0}
+      </div>
+
+      <div class="student-sub">
+        ولي الأمر: ${s.parent_name || "غير مسجل"} (${s.parent_code || "—"})
+      </div>
+
+      <div class="student-sub">
+        مساعد طالب: ${isStudentAssistant ? "✅ مفعّل" : "❌ غير مفعّل"} |
+        مساعد ولي أمر: ${isParentAssistant ? "✅ مفعّل" : "❌ غير مفعّل"}
+      </div>
+    </div>
+  </div>
+`;
       const weekDiv = li.querySelector(".week-strip");
       weekDiv.innerHTML = buildWeekStripHtml(Array.isArray(s.tasks) ? s.tasks : []);
       li.dataset.search = `${s.code || ""} ${s.name || ""} ${s.parent_name || ""} ${s.parent_code || ""}`.toLowerCase();
       studentList.appendChild(li);
     });
-    studentList.addEventListener("click", (e) => {
-  const toggle = e.target.closest(".details-toggle");
-  if (!toggle) return;
-
-  const card = toggle.closest(".student-card");
-  const panel = card.querySelector(".details-panel");
-  const open = !panel.classList.contains("hidden");
-
-  panel.classList.toggle("hidden", open);
-  toggle.textContent = open ? "▾" : "▴";
-  toggle.setAttribute("aria-expanded", String(!open));
-});
-
 
     document.querySelectorAll(".btn-edit-student").forEach((btn) => {
       btn.addEventListener("click", (e) =>
@@ -2668,6 +2667,7 @@ document.addEventListener("click", (e) => {
 
   details.classList.toggle("hidden");
   btn.textContent = open ? "▾" : "▴";
+  btn.setAttribute("aria-expanded", String(!open));
 });
 
 // 2) تبديل حالة الأزرار (بصري فقط)
@@ -2697,6 +2697,7 @@ function markStudentWeek(cardEl, doneDays = []) {
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
