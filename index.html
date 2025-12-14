@@ -15,54 +15,27 @@
 
   <!-- تحسينات بسيطة وسريعة دون لمس style.css -->
   <style>
-    /* ملصقات شريط الخطة */
-    .plan-strip {
-      display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
-      margin:.25rem 0 0;
-    }
+    .plan-strip { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin:.25rem 0 0; }
     .plan-strip .dot { opacity:.4; margin:0 .25rem; }
-    .badge {
-      display:inline-flex; align-items:center; justify-content:center;
-      padding:.25rem .6rem; border-radius:999px; font-size:.9rem; line-height:1;
-      background:#f4f6f8; border:1px solid #e5e7eb;
-    }
+    .badge { display:inline-flex; align-items:center; justify-content:center; padding:.25rem .6rem; border-radius:999px; font-size:.9rem; line-height:1; background:#f4f6f8; border:1px solid #e5e7eb; }
     .badge-plan   { background:#eef7ff; border-color:#d5e9ff; }
     .badge-points { background:#f6ffed; border-color:#e2f7d3; }
     .badge-rank   { background:#fff3e6; border-color:#ffe0bf; }
 
-    /* صف النسبة + الشريط */
-    .progress-card .progress-inline {
-      display:flex; align-items:center; gap:.75rem; margin-top:.25rem;
-    }
+    .progress-card .progress-inline { display:flex; align-items:center; gap:.75rem; margin-top:.25rem; }
     .progress-card .progress-bar { flex:1; height:10px; border-radius:8px; background:#eef2f7; overflow:hidden; }
     .progress-card .progress-fill { height:100%; }
     .progress-card .progress-percent { margin:0; font-weight:700; white-space:nowrap; }
 
-    /* تنحيف كروت التقدّم */
     .progress-card { padding:12px 14px; }
     .progress-card h3 { margin:0 0 .25rem 0; font-size:1.05rem; }
 
-    /* تنحيف بطاقات المهام */
     .task-card { padding:12px 14px; }
     .task-card .task-body.mission-text { margin:.25rem 0 .5rem; }
 
-    /* مربع بحث قائمة الطلاب */
-    .student-search-row{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      margin:10px 0 12px;
-      flex-wrap:wrap;
-    }
-    .student-search-row input{
-      flex:1;
-      min-width:220px;
-    }
-    .student-search-row .hint{
-      font-size:.85rem;
-      color:#6b7280;
-      font-weight:700;
-    }
+    .student-search-row{ display:flex; align-items:center; gap:10px; margin:10px 0 12px; flex-wrap:wrap; }
+    .student-search-row input{ flex:1; min-width:220px; }
+    .student-search-row .hint{ font-size:.85rem; color:#6b7280; font-weight:700; }
   </style>
 </head>
 
@@ -70,23 +43,11 @@
 
   <!-- شاشة الدخول -->
   <div id="auth-screen" class="container">
-    <h2 style="
-      text-align:center;
-      margin:0;
-      font-size:1.3rem;
-      font-weight:700;
-      color:#2c3e50;
-    ">
+    <h2 style="text-align:center;margin:0;font-size:1.3rem;font-weight:700;color:#2c3e50;">
       حلقة عبدالرحمن بن عوف رضي الله عنه
     </h2>
 
-    <p style="
-      text-align:center;
-      margin:4px 0 18px;
-      font-size:.95rem;
-      color:#7f8c8d;
-      font-weight:600;
-    ">
+    <p style="text-align:center;margin:4px 0 18px;font-size:.95rem;color:#7f8c8d;font-weight:600;">
       جامع اخلال
     </p>
 
@@ -109,6 +70,7 @@
     <header class="dashboard-header">
       <div>
         <h2 id="welcome-student">أهلاً بك يا طالب</h2>
+
         <p id="student-plan-strip" class="plan-strip">
           <span id="strip-plan" class="badge badge-plan">الخطة: —</span>
           <span class="dot">•</span>
@@ -117,7 +79,6 @@
           <span id="strip-rank" class="badge badge-rank">الترتيب: —</span>
         </p>
 
-        <!-- شريط أيام الأسبوع تحت الخطة مباشرة -->
         <div id="student-week-strip" class="week-strip"></div>
       </div>
 
@@ -127,17 +88,11 @@
       </div>
     </header>
 
-    <!-- تبويبات الطالب: مهامي / مهام المساعد -->
     <nav class="student-tabs">
-      <button class="student-tab-button active" data-tab="student-main-tasks">
-        مهامي الحالية
-      </button>
-      <button class="student-tab-button" data-tab="student-assistant-tab">
-        مهام المساعد
-      </button>
+      <button class="student-tab-button active" data-tab="student-main-tasks">مهامي الحالية</button>
+      <button class="student-tab-button" data-tab="student-assistant-tab">مهام المساعد</button>
     </nav>
 
-    <!-- تبويب: مهامي الحالية -->
     <section id="student-main-tasks" class="tasks-section">
       <h3>مهامي الحالية</h3>
       <div id="student-tasks" class="tasks-list">
@@ -145,7 +100,6 @@
       </div>
     </section>
 
-    <!-- تبويب: مهام المساعد -->
     <section id="student-assistant-tab" class="tasks-section hidden">
       <h3>مهام المساعد</h3>
       <p class="info-text">
@@ -154,50 +108,25 @@
       <div id="student-assistant-tasks" class="tasks-list"></div>
     </section>
 
-    <!-- كروت التقدم -->
     <section class="progress-section">
-      <!-- بطاقة الحفظ -->
       <div class="progress-card hifz">
         <h3>تقدم الحفظ</h3>
-
-        <p id="student-hifz-progress-label" class="small-text">
-          المهمة الحالية: —
-        </p>
-
+        <p id="student-hifz-progress-label" class="small-text">المهمة الحالية: —</p>
         <div class="progress-inline">
-          <div class="progress-bar">
-            <div id="student-hifz-progress-bar" class="progress-fill"></div>
-          </div>
-          <p class="progress-percent">
-            <span id="student-hifz-progress-percent">0</span>%
-          </p>
+          <div class="progress-bar"><div id="student-hifz-progress-bar" class="progress-fill"></div></div>
+          <p class="progress-percent"><span id="student-hifz-progress-percent">0</span>%</p>
         </div>
-
-        <p id="student-hifz-next-label" class="small-text muted" style="margin:.4rem 0 0;">
-          المهمة القادمة: —
-        </p>
+        <p id="student-hifz-next-label" class="small-text muted" style="margin:.4rem 0 0;">المهمة القادمة: —</p>
       </div>
 
-      <!-- بطاقة المراجعة -->
       <div class="progress-card murajaa">
         <h3>تقدم المراجعة</h3>
-
-        <p id="student-murajaa-progress-label" class="small-text">
-          المهمة الحالية: —
-        </p>
-
+        <p id="student-murajaa-progress-label" class="small-text">المهمة الحالية: —</p>
         <div class="progress-inline">
-          <div class="progress-bar">
-            <div id="student-murajaa-progress-bar" class="progress-fill"></div>
-          </div>
-          <p class="progress-percent">
-            <span id="student-murajaa-progress-percent">0</span>%
-          </p>
+          <div class="progress-bar"><div id="student-murajaa-progress-bar" class="progress-fill"></div></div>
+          <p class="progress-percent"><span id="student-murajaa-progress-percent">0</span>%</p>
         </div>
-
-        <p id="student-murajaa-next-label" class="small-text muted" style="margin:.4rem 0 0;">
-          المهمة القادمة: —
-        </p>
+        <p id="student-murajaa-next-label" class="small-text muted" style="margin:.4rem 0 0;">المهمة القادمة: —</p>
       </div>
     </section>
   </div>
@@ -229,10 +158,8 @@
     </nav>
 
     <section class="tab-content-container">
-
       <div id="review-tasks-tab" class="tab-content">
         <h3>مهام بانتظار مراجعتك</h3>
-        <p class="info-text"></p>
         <div id="pending-tasks-list" class="tasks-review-container">
           <p class="message info">جارٍ تحميل المهام...</p>
         </div>
@@ -375,7 +302,6 @@
           <p class="message info">جارٍ تحميل لوحة الشرف...</p>
         </div>
       </div>
-
     </section>
   </div>
 
