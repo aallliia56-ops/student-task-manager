@@ -746,5 +746,8 @@ h1 { text-align: center; margin-bottom: 10px; }
 }
 
 
+.student-details.hidden{ display:none; }
+.toggle-details{ cursor:pointer; }
+.toggle-details.open{ transform: rotate(180deg); }
 
 
