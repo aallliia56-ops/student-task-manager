@@ -1968,19 +1968,19 @@ async function loadStudentsForTeacher() {
       </button>
 
       <button class="button btn-toggle-hifz" data-code="${s.code}">
-        ${hifzPaused ? "تشغيل الحفظ" : "إيقاف الحفظ"}
+        ${hifzPaused ? "تشغيل حفظ" : "إيقاف حفظ"}
       </button>
 
       <button class="button btn-toggle-murajaa" data-code="${s.code}">
-        ${murPaused ? "تشغيل المراجعة" : "إيقاف المراجعة"}
+        ${murPaused ? "تشغيل مراجعة" : "إيقاف مراجعة"}
       </button>
 
       <button class="button btn-toggle-student-assistant" data-code="${s.code}">
-        ${isStudentAssistant ? "إلغاء مساعد (طالب)" : "تفعيل مساعد (طالب)"}
+        ${isStudentAssistant ? "الغ طالب مساعد" : "تفعيل طالب مساعد"}
       </button>
 
       <button class="button btn-toggle-parent-assistant" data-code="${s.code}">
-        ${isParentAssistant ? "إلغاء مساعد (ولي)" : "تفعيل مساعد (ولي)"}
+        ${isParentAssistant ? "الغ ولي مساعد" : "تفعيل ولي مساعد"}
       </button>
     </div>
 
@@ -2707,6 +2707,7 @@ function markStudentWeek(cardEl, doneDays = []) {
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
