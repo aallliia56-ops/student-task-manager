@@ -1970,7 +1970,7 @@ async function loadStudentsForTeacher() {
     data-code="${s.code}"
     aria-pressed="${hifzPaused ? "false" : "true"}"
     title="${hifzPaused ? "الحفظ: موقوف" : "الحفظ: شغال"}">
-    <span class="ico">📗</span>
+    <span class="ico">حفظ</span>
   </button>
 
   <!-- مراجعة -->
@@ -1978,7 +1978,7 @@ async function loadStudentsForTeacher() {
     data-code="${s.code}"
     aria-pressed="${murPaused ? "false" : "true"}"
     title="${murPaused ? "المراجعة: موقوفة" : "المراجعة: شغالة"}">
-    <span class="ico">📘</span>
+    <span class="ico">مراجعة</span>
   </button>
 
   <!-- مساعد طالب -->
@@ -1986,7 +1986,7 @@ async function loadStudentsForTeacher() {
     data-code="${s.code}"
     aria-pressed="${isStudentAssistant ? "true" : "false"}"
     title="${isStudentAssistant ? "مساعد طالب: مفعّل" : "مساعد طالب: غير مفعّل"}">
-    <span class="ico">🧑‍🏫</span>
+    <span class="ico">طالب</span>
   </button>
 
   <!-- مساعد ولي -->
@@ -1994,7 +1994,7 @@ async function loadStudentsForTeacher() {
     data-code="${s.code}"
     aria-pressed="${isParentAssistant ? "true" : "false"}"
     title="${isParentAssistant ? "مساعد ولي: مفعّل" : "مساعد ولي: غير مفعّل"}">
-    <span class="ico">👨‍👩‍👧</span>
+    <span class="ico">ولي</span>
   </button>
 </div>
 
@@ -2731,6 +2731,7 @@ function markStudentWeek(cardEl, doneDays = []) {
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
