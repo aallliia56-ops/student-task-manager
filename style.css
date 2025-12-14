@@ -1,361 +1,197 @@
-/* ========== أساسيات ========== */
+/* =====================================================
+   0) أساسيات
+===================================================== */
 *,
 *::before,
 *::after { box-sizing: border-box; }
 
-body {
-  font-family: "Cairo", sans-serif;
-  margin: 0;
-  padding: 20px;
-  background-color: #f0f4f8;
-  color: #34495e;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: 100vh;
+body{
+  font-family:"Cairo", sans-serif;
+  margin:0;
+  padding:20px;
+  background-color:#f0f4f8;
+  color:#34495e;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  min-height:100vh;
 }
 
-.container {
-  background-color: #fff;
-  width: 100%;
-  max-width: 1100px;
-  padding: 25px 20px;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0,0,0,.07);
+.container{
+  background-color:#fff;
+  width:100%;
+  max-width:1100px;
+  padding:25px 20px;
+  border-radius:16px;
+  box-shadow:0 10px 25px rgba(0,0,0,.07);
 }
 
-h1, h2, h3, h4 { margin: 0 0 15px; color: #2c3e50; }
-h1 { text-align: center; margin-bottom: 10px; }
+h1,h2,h3,h4{ margin:0 0 15px; color:#2c3e50; }
+h1{ text-align:center; margin-bottom:10px; }
+.subtitle{ margin:0; font-size:.9rem; color:#7f8c8d; }
+.hidden{ display:none !important; }
 
-.subtitle { margin: 0; font-size: .9rem; color: #7f8c8d; }
-.hidden { display: none !important; }
-
-/* ========== شريط الخطة (ملصقات) ========== */
-.plan-strip{
-  margin-top:-6px; margin-bottom:10px;
-  font-size:.9rem; color:#586a7a;
-  display:flex; gap:8px; align-items:center; flex-wrap:wrap;
-}
-.plan-strip .dot{opacity:.5;}
-.badge{
-  display:inline-flex; align-items:center; justify-content:center;
-  padding:.25rem .6rem; border-radius:999px; font-size:.9rem; line-height:1;
-  background:#f4f6f8; border:1px solid #e5e7eb;
-}
-.badge-plan{ background:#eef7ff; border-color:#d5e9ff; }
-.badge-points{ background:#f6ffed; border-color:#e2f7d3; }
-.badge-rank{ background:#fff3e6; border-color:#ffe0bf; }
-
-/* ========== رسائل ========== */
+/* =====================================================
+   1) رسائل
+===================================================== */
 .message{
-  margin-top:15px; padding:10px 12px; border-radius:8px;
-  font-size:.9rem; font-weight:600; text-align:center;
+  margin-top:15px;
+  padding:10px 12px;
+  border-radius:8px;
+  font-size:.9rem;
+  font-weight:600;
+  text-align:center;
 }
 .message.error{ background:#ffebee; color:#c62828; border:1px solid #ef5350; }
 .message.success{ background:#e8f5e9; color:#2e7d32; border:1px solid #66bb6a; }
 .message.info{ background:#e3f2fd; color:#1565c0; border:1px solid #64b5f6; }
 
-/* ========== أزرار ========== */
+/* =====================================================
+   2) أزرار عامة
+===================================================== */
 .button{
-  border:none; border-radius:10px; padding:10px 18px;
-  font-size:.95rem; font-weight:600; cursor:pointer;
-  display:inline-block; transition:all .2s ease;
+  border:none;
+  border-radius:10px;
+  padding:10px 18px;
+  font-size:.95rem;
+  font-weight:600;
+  cursor:pointer;
+  display:inline-block;
+  transition:all .2s ease;
 }
 .button.primary{ background:#3498db; color:#fff; }
 .button.success{ background:#2ecc71; color:#fff; }
 .button.danger{ background:#e74c3c; color:#fff; }
+.button.secondary{ background:#95a5a6; color:#fff; }
 .button:hover{ transform:translateY(-1px); box-shadow:0 4px 10px rgba(0,0,0,.15); }
 .button:disabled{ background:#b0bec5; cursor:not-allowed; box-shadow:none; }
 
-.button.secondary{
-  background:#95a5a6;
-  color:#fff;
-}
-.delegated-info{
-  font-size:.8rem;
-  color:#8e44ad;
-  margin-top:3px;
-}
+.delegated-info{ font-size:.8rem; color:#8e44ad; margin-top:3px; }
 
-
-/* ========== إدخال ========== */
+/* =====================================================
+   3) إدخال
+===================================================== */
 .input-group{ margin-bottom:15px; }
 .input-group label{ display:block; margin-bottom:5px; font-size:.9rem; font-weight:600; }
 .input-group input, .input-group select{
-  width:100%; padding:9px 10px; border-radius:8px; border:1px solid #d0d7de; font-size:.9rem;
+  width:100%;
+  padding:9px 10px;
+  border-radius:8px;
+  border:1px solid #d0d7de;
+  font-size:.9rem;
 }
 .input-group input:focus, .input-group select:focus{
-  outline:none; border-color:#3498db; box-shadow:0 0 0 2px rgba(52,152,219,.25);
+  outline:none;
+  border-color:#3498db;
+  box-shadow:0 0 0 2px rgba(52,152,219,.25);
 }
 .info-text{ font-size:.85rem; color:#7f8c8d; margin-top:5px; }
 
-/* ========== رأس اللوحة ========== */
+/* =====================================================
+   4) رأس اللوحات + تبويبات
+===================================================== */
 .dashboard-header{
-  display:flex; flex-direction:column; gap:10px;
-  margin-bottom:20px; border-bottom:1px solid #ecf0f1; padding-bottom:12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-bottom:20px;
+  border-bottom:1px solid #ecf0f1;
+  padding-bottom:12px;
 }
 .header-actions{ display:flex; flex-wrap:wrap; gap:8px; }
 
-/* ========== التقدم (بطاقتان فقط) ========== */
+.tabs{ display:flex; flex-direction:column; gap:6px; margin-bottom:15px; }
+.tab-button{
+  border:none;
+  border-radius:10px;
+  padding:8px 10px;
+  font-size:.9rem;
+  font-weight:600;
+  background:#ecf5ff;
+  color:#34495e;
+  cursor:pointer;
+  text-align:center;
+}
+.tab-button.active{ background:#3498db; color:#fff; }
+.tab-content-container{ margin-top:5px; }
+.tab-content.hidden{ display:none; }
+
+/* =====================================================
+   5) تقدم الطالب + بطاقات المهام
+===================================================== */
 .progress-section{
-  display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:12px;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  margin-bottom:12px;
 }
 .progress-card{
-  background:#f9fbff; padding:10px 12px; border-radius:12px;
+  background:#f9fbff;
+  padding:10px 12px;
+  border-radius:12px;
   box-shadow:0 1px 4px rgba(0,0,0,.04);
 }
 .progress-card.hifz{ border-right:4px solid #2ecc71; }
 .progress-card.murajaa{ border-right:4px solid #ffb74d; }
 
-/* صف واحد: الشريط + النسبة */
 .progress-inline{ display:flex; align-items:center; gap:.75rem; margin-top:.25rem; }
 .progress-bar{
-  flex:1; height:8px; background:#e0e6ed; border-radius:999px; overflow:hidden;
+  flex:1;
+  height:8px;
+  background:#e0e6ed;
+  border-radius:999px;
+  overflow:hidden;
 }
 .progress-fill{
-  height:100%; width:0; background:linear-gradient(90deg,#3498db,#2ecc71);
+  height:100%;
+  width:0;
+  background:linear-gradient(90deg,#3498db,#2ecc71);
   transition:width .4s ease;
 }
 .progress-percent{ margin:0; font-size:.85rem; font-weight:700; min-width:3ch; }
 
-/* النص تحت الشريط */
 .small-text{ font-size:.8rem; color:#7f8c8d; }
-.next-mission{ margin:.4rem 0 0; font-size:.85rem; color:#2c3e50; font-weight:700; }
+.small-text.muted{ color:#9aa4b2; }
 
-/* ========== مهامي (طالب) ========== */
 .tasks-section h3{ margin-bottom:10px; }
 .tasks-list{ margin-top:10px; }
 
 .task-card{
-  background:#fff; border-radius:12px; border:1px solid #e0e6ed;
-  padding:8px 10px; margin-bottom:8px; box-shadow:0 1px 6px rgba(0,0,0,.04);
+  background:#fff;
+  border-radius:12px;
+  border:1px solid #e0e6ed;
+  padding:8px 10px;
+  margin-bottom:8px;
+  box-shadow:0 1px 6px rgba(0,0,0,.04);
 }
 .task-header{ display:flex; justify-content:space-between; align-items:center; gap:6px; }
 .task-title{ font-weight:700; font-size:.85rem; }
 
 .task-type-tag{
-  font-size:.8rem; padding:3px 8px; border-radius:999px; background:#ecf0f1;
+  font-size:.8rem;
+  padding:3px 8px;
+  border-radius:999px;
+  background:#ecf0f1;
 }
 .task-type-tag.hifz{ background:#e8f5e9; color:#2e7d32; }
 .task-type-tag.murajaa{ background:#fff3e0; color:#ef6c00; }
 .task-type-tag.general{ background:#e3f2fd; color:#1565c0; }
 
 .task-body{ margin-top:6px; font-size:.9rem; }
-.task-body.mission-text{
-  font-size:1.2rem; font-weight:700; line-height:1.8; color:#2c3e50;
-}
+.task-body.mission-text{ font-size:1.2rem; font-weight:700; line-height:1.8; color:#2c3e50; }
 
-.task-footer{
-  margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;
-}
-.task-points-tag{
-  font-size:.8rem; padding:3px 8px; border-radius:999px; background:#f0f4f8;
-}
+.task-footer{ margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.task-points-tag{ font-size:.8rem; padding:3px 8px; border-radius:999px; background:#f0f4f8; }
 .task-status-text{ font-size:.8rem; font-weight:600; }
 
-/* ========== تبويبات المعلم ========== */
-.tabs{ display:flex; flex-direction:column; gap:6px; margin-bottom:15px; }
-.tab-button{
-  border:none; border-radius:10px; padding:8px 10px; font-size:.9rem; font-weight:600;
-  background:#ecf5ff; color:#34495e; cursor:pointer; text-align:center;
-}
-.tab-button.active{ background:#3498db; color:#fff; }
-.tab-content-container{ margin-top:5px; }
-.tab-content.hidden{ display:none; }
+/* إخفاء سطر "المهمة الحالية" كما كان عندك */
+#student-hifz-progress-label,
+#student-murajaa-progress-label{ display:none !important; }
 
-/* قائمة الطلاب */
-.data-list{ list-style:none; padding:0; margin:0; }
-.data-list li{
-  background:#f9fbff; border-radius:10px; border-right:4px solid #3498db;
-  padding:10px; margin-bottom:10px;
-}
-.student-line{ display:flex; flex-direction:column; gap:6px; }
-.student-main{ font-size:.95rem; font-weight:700; }
-.student-sub{ font-size:.8rem; color:#7f8c8d; }
-.student-actions{ margin-top:8px; display:flex; flex-wrap:wrap; gap:8px; }
-
-/* مراجعة المهام */
-.tasks-review-container{ margin-top:10px; }
-.review-student-block{
-  background:#fff; border-radius:10px; border:1px solid #e0e6ed; padding:8px; margin-bottom:8px;
-}
-.review-student-title{ font-weight:700; margin-bottom:6px; font-size:.9rem; }
-/* ===== بطاقة المراجعة حسب نوع المهمة ===== */
-
-/* افتراضي */
-.review-task-item{
-  background:#fff;
-  border-radius:12px;
-  border:1px solid #e0e6ed;
-  padding:12px;
-  margin-bottom:8px;
-  box-shadow:0 1px 6px rgba(0,0,0,.04);
-}
-
-/* حفظ – أخضر */
-.review-task-item.hifz{
-  border-right:5px solid #16a34a;
-}
-
-/* مراجعة – أزرق */
-.review-task-item.murajaa{
-  border-right:5px solid #2563eb;
-}
-
-/* مهمة عامة – أصفر */
-.review-task-item.general{
-  border-right:5px solid #facc15;
-}
-
-
-.review-task-header{
-  display:flex; justify-content:space-between; gap:8px; font-size:.8rem; font-weight:600;
-}
-.review-task-body{ font-size:.8rem; margin-top:3px; }
-.review-task-footer{ margin-top:4px; display:flex; flex-wrap:wrap; gap:6px; }
-
-/* لوحة الشرف */
-.honor-list{ list-style:none; margin:8px 0 0; padding:0; }
-.honor-item{
-  display:flex; justify-content:space-between; align-items:center;
-  padding:6px 10px; margin-bottom:6px; border-radius:10px;
-  background:#f9fbff; border-right:4px solid #95a5a6; font-size:.85rem;
-}
-.honor-item.rank-1{ border-right-color:#f1c40f; background:#fff9e0; }
-.honor-item.rank-2{ border-right-color:#bdc3c7; background:#f7f9fb; }
-.honor-item.rank-3{ border-right-color:#e67e22; background:#fff3e6; }
-
-/* ========== عرض المنهج ========== */
-.curriculum-view{ display:grid; grid-template-columns:1fr; gap:10px; }
-.curriculum-list{
-  max-height:350px; overflow-y:auto; border-radius:10px;
-  border:1px solid #ecf0f1; padding:8px; font-size:.85rem;
-}
-.curriculum-item{ padding:4px 0; border-bottom:1px dashed #e0e6ed; }
-.curriculum-item:last-child{ border-bottom:none; }
-
-/* ========== ولي الأمر ========== */
-.children-list{ margin-top:10px; }
-.child-card{
-  background:#fff; border-radius:12px; border:1px solid #e0e6ed;
-  padding:12px; margin-bottom:10px;
-}
-.child-name{ font-weight:700; margin-bottom:5px; }
-.child-line{ font-size:.85rem; margin:2px 0; }
-.child-card .progress-bar{ margin:6px 0 4px; }
-
-/* ========== شاشات كبيرة ========== */
-@media (min-width: 768px){
-  .container{ padding:30px; }
-  .dashboard-header{ flex-direction:row; justify-content:space-between; align-items:center; }
-  .tabs{ flex-direction:row; }
-  .tab-button{ flex:1; }
-  .progress-section{ grid-template-columns: repeat(3, minmax(0,1fr)); }
-  .curriculum-view{ grid-template-columns: repeat(2, minmax(0,1fr)); }
-}
-
-/* اختيار الحلقة (حضوري / إلكتروني) */
-.halaqa-toggle{
-  margin-top:8px;
-  display:flex;
-  gap:6px;
-}
-
-.halaqa-btn{
-  border:none;
-  border-radius:999px;
-  padding:5px 12px;
-  font-size:.8rem;
-  font-weight:600;
-  background:#ecf5ff;
-  color:#34495e;
-  cursor:pointer;
-  transition:all .2s ease;
-}
-
-.halaqa-btn.active{
-  background:#3498db;
-  color:#fff;
-  box-shadow:0 2px 6px rgba(0,0,0,.12);
-}
-
-/* ========== شبكة طلاب الحلقة ========== */
-.halaqa-grid{
-  margin-top:10px;
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap:10px;
-}
-
-.halaqa-tile{
-  background:#f9fbff;
-  border-radius:12px;
-  border:1px solid #e0e6ed;
-  padding:8px 10px;
-  cursor:pointer;
-  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-  font-size:.85rem;
-}
-
-.halaqa-tile:hover{
-  transform:translateY(-2px);
-  box-shadow:0 3px 8px rgba(0,0,0,.08);
-  border-color:#3498db;
-}
-
-.halaqa-tile-code{
-  font-weight:700;
-  margin-bottom:4px;
-  font-size: 1.4rem; /* ← تكبير الرمز */
-}
-
-.halaqa-tile-line{
-  margin:2px 0;
-  font-size:.8rem;
-  color:#546e7a;
-}
-
-.halaqa-grid{
-  display:grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap:10px;
-  margin-top:10px;
-}
-
-.halaqa-tile{
-  background:#fff;
-  border-radius:12px;
-  border:1px solid #e0e6ed;
-  padding:10px;
-  box-shadow:0 1px 4px rgba(0,0,0,.04);
-  cursor:pointer;
-  transition:transform .15s ease, box-shadow .15s ease;
-  font-size:.9rem;
-}
-.halaqa-tile:hover{
-  transform:translateY(-2px);
-  box-shadow:0 3px 10px rgba(0,0,0,.08);
-}
-.halaqa-tile-code{
-  font-weight:700;
-  margin-bottom:4px;
-  font-size: 1.4rem; /* ← تكبير الرمز */
-}
-.halaqa-tile-line{
-  font-size:.8rem;
-  color:#555;
-}
-/* نص خافت للملاحظات الصغيرة */
-.small-text.muted {
-  color: #9aa4b2;
-}
-/* ========== تبويبات الطالب (مهامي / مهام المساعد) ========== */
-.student-tabs{
-  display:flex;
-  gap:6px;
-  margin:10px 0;
-}
-
+/* =====================================================
+   6) تبويبات الطالب (مهامي / مهام المساعد)
+===================================================== */
+.student-tabs{ display:flex; gap:6px; margin:10px 0; }
 .student-tab-button{
   border:none;
   border-radius:999px;
@@ -367,64 +203,78 @@ h1 { text-align: center; margin-bottom: 10px; }
   cursor:pointer;
   transition:all .15s ease;
 }
-
 .student-tab-button.active{
   background:#3498db;
   color:#fff;
   box-shadow:0 2px 6px rgba(0,0,0,.12);
 }
-.assistant-picker select {
-  padding: 6px 8px;
-  border-radius: 8px;
-  border: 1px solid #d0d7de;
-  font-size: .85rem;
-}
-.halaqa-tile {
-  text-align: center;   /* توسيط النص */
+
+/* =====================================================
+   7) شريط أيام الأسبوع (الطالب + ولي الأمر + بطاقات المعلم)
+===================================================== */
+.week-strip{
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+  justify-content:center;
+  flex-wrap:wrap;
 }
 
-#student-hifz-progress-label,
-#student-murajaa-progress-label {
-  display: none !important;
+.week-day{
+  min-width:50px;
+  padding:4px 6px;
+  border-radius:999px;
+  border:1px solid #ccc;
+  font-size:12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:4px;
+  background-color:#f9fafb;
 }
-.week-strip {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-  justify-content: center;
-  flex-wrap: wrap;
+.week-day.done{
+  border-color:#16a34a;
+  background-color:#e0fce5;
+  font-weight:600;
 }
+.week-day-label{ direction:rtl; }
+.week-day-icon{ font-size:14px; }
 
-.week-day {
-  min-width: 50px;
-  padding: 4px 6px;
-  border-radius: 999px;
-  border: 1px solid #ccc;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  background-color: #f9fafb;
-}
+/* =====================================================
+   8) مهام المراجعة (Teacher Review)
+===================================================== */
+.tasks-review-container{ margin-top:10px; }
 
-.week-day.done {
-  border-color: #16a34a;
-  background-color: #e0fce5;
-  font-weight: 600;
+.review-student-block{
+  background:#fff;
+  border-radius:10px;
+  border:1px solid #e0e6ed;
+  padding:8px;
+  margin-bottom:8px;
 }
+.review-student-title{ font-weight:700; margin-bottom:6px; font-size:.9rem; }
 
-.week-day-label {
-  direction: rtl;
+.review-task-item{
+  background:#fff;
+  border-radius:12px;
+  border:1px solid #e0e6ed;
+  padding:12px;
+  margin-bottom:8px;
+  box-shadow:0 1px 6px rgba(0,0,0,.04);
 }
+.review-task-item.hifz{ border-right:5px solid #16a34a; }
+.review-task-item.murajaa{ border-right:5px solid #2563eb; }
+.review-task-item.general{ border-right:5px solid #facc15; }
 
-.week-day-icon {
-  font-size: 14px;
-}
-/* ===== أزرار المراجعة (Outline Icons) ===== */
+.review-task-body{ font-size:.8rem; margin-top:3px; }
+
+/* Footer + أيقونات قبول/رفض/تحويل */
 .review-task-footer{
+  display:flex;
+  align-items:center;
   justify-content:flex-end;
-  gap:10px;
+  gap:8px;
+  margin-top:6px;
 }
 
 .review-task-footer .button{
@@ -442,42 +292,23 @@ h1 { text-align: center; margin-bottom: 10px; }
   transition:all .15s ease;
 }
 
-/* قبول – أخضر */
 .review-task-footer .button.success{
   color:#16a34a;
   border:2px solid #16a34a;
 }
-.review-task-footer .button.success:hover{
-  background:#16a34a;
-  color:#fff;
-}
+.review-task-footer .button.success:hover{ background:#16a34a; color:#fff; }
 
-/* رفض – أحمر */
 .review-task-footer .button.danger{
   color:#dc2626;
   border:2px solid #dc2626;
 }
-.review-task-footer .button.danger:hover{
-  background:#dc2626;
-  color:#fff;
-}
+.review-task-footer .button.danger:hover{ background:#dc2626; color:#fff; }
 
-/* تحويل – أزرق */
 .review-task-footer .button:not(.success):not(.danger){
   color:#2563eb;
   border:2px solid #2563eb;
 }
-.review-task-footer .button:not(.success):not(.danger):hover{
-  background:#2563eb;
-  color:#fff;
-}
-.review-task-footer{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:8px;
-  margin-top:6px;
-}
+.review-task-footer .button:not(.success):not(.danger):hover{ background:#2563eb; color:#fff; }
 
 .review-points-badge{
   min-width:22px;
@@ -492,16 +323,40 @@ h1 { text-align: center; margin-bottom: 10px; }
   border:2px solid #cbd5e1;
   background:#fff;
 }
-.student-card{
-  background:#fff;
-  border:1px solid #e0e6ed;
-  border-radius:14px;
-  padding:10px 12px;
-  margin-bottom:10px;
-  box-shadow:0 1px 4px rgba(0,0,0,.04);
+
+/* مساعد: select */
+.assistant-picker select{
+  padding:6px 8px;
+  border-radius:8px;
+  border:1px solid #d0d7de;
+  font-size:.85rem;
 }
 
-/* الاسم + السهم */
+/* =====================================================
+   9) قائمة الطلاب (Teacher Student Cards) — النسخة النهائية
+===================================================== */
+.data-list{ list-style:none; padding:0; margin:0; }
+
+/* li نفسه لا يفرض تصميم البطاقة — البطاقة داخلها */
+.data-list li{
+  background:transparent;
+  border:none;
+  padding:0;
+  margin:0 0 10px;
+}
+
+/* البطاقة النهائية */
+.student-card{
+  position:relative;
+  overflow:hidden;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:10px 12px;
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+  margin-bottom:8px;
+}
+
 .student-top{
   display:flex;
   align-items:center;
@@ -513,256 +368,67 @@ h1 { text-align: center; margin-bottom: 10px; }
   font-size:1rem;
   color:#2c3e50;
 }
-.student-badge{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  padding:2px 8px;
-  border-radius:999px;
-  font-size:.75rem;
-  font-weight:900;
-  color:#64748b;
-  border:1px solid #e2e8f0;
-  background:#f8fafc;
-  margin-inline-start:6px;
-}
 
-.details-toggle{
-  border:1px solid #e2e8f0;
-  background:#fff;
-  border-radius:10px;
-  width:34px;
-  height:30px;
-  font-weight:900;
-  cursor:pointer;
-}
-
-/* الأيام */
-.week-row{
-  margin-top:8px;
-  display:flex;
-  gap:6px;
-  flex-wrap:wrap;
-}
-.day-dot{
-  width:20px;
-  height:20px;
-  border-radius:999px;
-  border:2px solid #cbd5e1;
-  background:#fff;
-  display:inline-block;
-}
-.day-dot.done{
-  background:#22c55e;   /* حضر */
-  border-color:#16a34a;
-}
-
-/* الأزرار */
-.actions-row{
-  margin-top:8px;
-  display:flex;
-  gap:6px;
-  flex-wrap:wrap;
-}
-.icon-btn{
-  width:34px;
-  height:30px;
-  border-radius:10px;
-  border:1px solid #e2e8f0;
-  background:#fff;
-  cursor:pointer;
-  font-size:.9rem;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-.toggle-btn[data-state="on"]{
-  border-color:#16a34a;
-  color:#16a34a;
-}
-.toggle-btn[data-state="off"]{
-  border-color:#cbd5e1;
-  color:#94a3b8;
-}
-.edit-btn{
-  border-color:#93c5fd;
-  color:#2563eb;
-}
-
-/* التفاصيل */
-.details-panel{
-  margin-top:10px;
-  padding-top:10px;
-  border-top:1px dashed #e2e8f0;
-}
-.details-grid{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:10px;
-}
-.detail-label{
-  font-size:.75rem;
-  color:#64748b;
-  font-weight:800;
-}
-.detail-value{
-  font-size:.9rem;
-  font-weight:800;
-  color:#2c3e50;
-  margin-top:2px;
-}
-
-.mini-bar{
-  height:8px;
-  border-radius:999px;
-  background:#eef2f7;
-  overflow:hidden;
-  margin-top:6px;
-}
-.mini-fill{
-  height:100%;
-}
-
-/* للشاشات الكبيرة */
-@media(min-width:768px){
-  .details-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
-}
-/* ===== بطاقة الطالب (قائمة المعلم) ===== */
-.student-card{
-  list-style:none;
-  background:#fff;
-  border:1px solid #e5e7eb;
-  border-radius:12px;
-  padding:10px 12px;
-  margin-bottom:8px;
-}
-
-/* 1) الاسم + الرمز */
-.student-header{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.student-name{
-  font-weight:800;
-  font-size:.95rem;
-  color:#1f2937;
-}
-.student-code{
-  font-size:.75rem;
-  font-weight:700;
-  color:#64748b;
-  background:#f1f5f9;
-  padding:2px 6px;
-  border-radius:6px;
-}
-
-/* 2) أيام الأسبوع */
-.student-week{
-  display:flex;
-  gap:6px;
-  margin:6px 0;
-}
-.student-week .day{
-  width:22px;
-  height:22px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:.65rem;
-  font-weight:900;
-  border-radius:6px;
-  border:2px solid #cbd5e1;
-  color:#64748b;
-  background:#fff;
-}
-/* يوم منجز */
-.student-week .day.done{
-  background:#22c55e;
-  border-color:#22c55e;
-  color:#fff;
-}
-
-/* 3) الأزرار + السهم */
 .student-actions{
   display:flex;
   align-items:center;
-  gap:6px;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:8px;
 }
-.student-actions button{
-  border:1px solid #d1d5db;
+
+/* زر التعديل يبقى طبيعي لكن أصغر شوي */
+.student-actions .btn-edit-student{
+  padding:6px 10px;
+  font-size:.85rem;
+  line-height:1;
+}
+
+/* chip-toggle — هذه النسخة النهائية (pill) */
+button.chip-toggle{
+  appearance:none;
+  border:1.8px solid #cbd5e1;
   background:#fff;
-  font-size:.7rem;
-  font-weight:800;
-  padding:4px 6px;
-  border-radius:6px;
-  cursor:pointer;
-  color:#374151;
-}
-.student-actions button:hover{
-  background:#f1f5f9;
-}
-
-/* حالات التفعيل */
-.toggle-hifz.active{
-  border-color:#22c55e;
-  color:#16a34a;
-}
-.toggle-murajaa.active{
-  border-color:#3b82f6;
-  color:#2563eb;
-}
-.toggle-assistant.active{
-  border-color:#8b5cf6;
-  color:#7c3aed;
-}
-
-/* زر التعديل */
-.edit-student{
-  font-size:.75rem;
-}
-
-/* السهم */
-.toggle-details{
-  margin-right:auto;
+  color:#64748b;
+  border-radius:999px;
+  padding:6px 10px;
   font-size:.8rem;
+  font-weight:900;
+  line-height:1;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  user-select:none;
+  box-shadow:none !important; /* يمنع وراثة .button */
 }
 
-/* 5) التفاصيل */
+.chip-toggle.on{
+  border-color:#22c55e;
+  color:#166534;
+  background:#f0fdf4;
+}
+
+.chip-toggle:hover{ border-color:#94a3b8; }
+.chip-toggle:active{ transform:scale(.98); }
+
+.chip-toggle .ico{
+  display:inline-block;
+  min-width:34px;
+  text-align:center;
+}
+
+/* التفاصيل */
 .student-details{
   margin-top:8px;
   padding-top:8px;
+  padding-bottom:20px; /* عشان النتوء */
   border-top:1px dashed #e5e7eb;
   font-size:.75rem;
   color:#374151;
 }
-.student-details .detail-line{
-  display:flex;
-  gap:6px;
-  margin:3px 0;
-}
-.student-details.hidden{
-  display:none;
-}
-
-
 .student-details.hidden{ display:none; }
-.toggle-details{ cursor:pointer; }
-.toggle-details.open{ transform: rotate(180deg); }
-.toggle-details-bottom{
-  width:100%;
-  margin-top:6px;
-  padding:6px 0;
-  border-radius:10px;
-  border:1px solid #e5e7eb;
-  background:#fff;
-  font-weight:900;
-  cursor:pointer;
-}
-.student-card{
-  position:relative;
-  overflow:hidden;
-}
+.student-sub{ font-size:.8rem; color:#7f8c8d; }
 
 /* النتوء السفلي */
 .card-notch{
@@ -782,121 +448,127 @@ h1 { text-align: center; margin-bottom: 10px; }
   cursor:pointer;
   z-index:5;
 }
-
 .card-notch .chev{
   font-size:16px;
   opacity:.7;
   transition:transform .2s ease;
 }
+.student-card.details-open .card-notch .chev{ transform:rotate(180deg); }
 
-/* عند الفتح */
-.student-card.details-open .card-notch .chev{
-  transform:rotate(180deg);
-}
-
-/* فراغ بسيط عشان النتوء ما يغطي المحتوى */
-.student-details{
-  padding-bottom:20px;
-}
-.student-actions{
+/* =====================================================
+   10) لوحة الشرف
+===================================================== */
+.honor-list{ list-style:none; margin:8px 0 0; padding:0; }
+.honor-item{
   display:flex;
-  flex-wrap:wrap;
-  gap:8px;
+  justify-content:space-between;
   align-items:center;
-}
-
-/* زر التبديل الصغير */
-.chip-toggle{
-  width:36px;
-  height:30px;
+  padding:6px 10px;
+  margin-bottom:6px;
   border-radius:10px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  border:2px solid #e5e7eb;
-  background:#fff;
-  cursor:pointer;
-  padding:0;
-  line-height:1;
-}
-
-.chip-toggle .ico{
-  font-size:16px;
-  transform: translateY(-1px);
-  opacity:.75;
-}
-
-/* الحالة ON */
-.chip-toggle.on{
-  border-color:#22c55e;         /* أخضر */
-  background:#f0fdf4;           /* أخضر فاتح */
-}
-
-.chip-toggle.on .ico{
-  opacity:1;
-}
-
-/* اختيارياً: حالة OFF أوضح */
-.chip-toggle:not(.on){
-  border-color:#ef4444;         /* أحمر */
-  background:#fff;
-}
-
-/* صف الأزرار داخل بطاقة الطالب */
-.student-actions{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;       /* لو ضاقت الشاشة ينزل سطر ثاني بشكل مرتب */
-  margin-top:8px;
-}
-
-/* زر التعديل يبقى طبيعي لكن أصغر شوي */
-.student-actions .btn-edit-student{
-  padding:6px 10px;
+  background:#f9fbff;
+  border-right:4px solid #95a5a6;
   font-size:.85rem;
-  line-height:1;
 }
+.honor-item.rank-1{ border-right-color:#f1c40f; background:#fff9e0; }
+.honor-item.rank-2{ border-right-color:#bdc3c7; background:#f7f9fb; }
+.honor-item.rank-3{ border-right-color:#e67e22; background:#fff3e6; }
 
-/* أزرار الـ Chip الجديدة */
-.chip-toggle{
-  appearance:none;
-  border:1.8px solid #cbd5e1;
+/* =====================================================
+   11) عرض المنهج
+===================================================== */
+.curriculum-view{ display:grid; grid-template-columns:1fr; gap:10px; }
+.curriculum-list{
+  max-height:350px;
+  overflow-y:auto;
+  border-radius:10px;
+  border:1px solid #ecf0f1;
+  padding:8px;
+  font-size:.85rem;
+}
+.curriculum-item{ padding:4px 0; border-bottom:1px dashed #e0e6ed; }
+.curriculum-item:last-child{ border-bottom:none; }
+
+/* =====================================================
+   12) ولي الأمر
+===================================================== */
+.children-list{ margin-top:10px; }
+.child-card{
   background:#fff;
-  color:#64748b;
+  border-radius:12px;
+  border:1px solid #e0e6ed;
+  padding:12px;
+  margin-bottom:10px;
+}
+.child-name{ font-weight:700; margin-bottom:5px; }
+.child-line{ font-size:.85rem; margin:2px 0; }
+.child-card .progress-bar{ margin:6px 0 4px; }
+
+/* =====================================================
+   13) اختيار الحلقة (حضوري/إلكتروني)
+===================================================== */
+.halaqa-toggle{ margin-top:8px; display:flex; gap:6px; }
+
+.halaqa-btn{
+  border:none;
   border-radius:999px;
-  padding:6px 10px;
+  padding:5px 12px;
   font-size:.8rem;
-  font-weight:900;
-  line-height:1;
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
+  font-weight:600;
+  background:#ecf5ff;
+  color:#34495e;
   cursor:pointer;
-  user-select:none;
+  transition:all .2s ease;
+}
+.halaqa-btn.active{
+  background:#3498db;
+  color:#fff;
+  box-shadow:0 2px 6px rgba(0,0,0,.12);
 }
 
-/* حالة ON */
-.chip-toggle.on{
-  border-color:#22c55e;
-  color:#166534;
-  background:#f0fdf4;
+/* =====================================================
+   14) شبكة طلاب الحلقة (Tiles)
+===================================================== */
+.halaqa-grid{
+  margin-top:10px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));
+  gap:10px;
 }
-
-/* ضغط/هوفر */
-.chip-toggle:active{ transform:scale(.98); }
-.chip-toggle:hover{ border-color:#94a3b8; }
-
-/* لو تبغى كلمة داخلها تكون ثابتة */
-.chip-toggle .ico{
-  display:inline-block;
-  min-width:34px;       /* يخلي “حفظ/ولي/طالب” متساوية تقريباً */
+.halaqa-tile{
+  background:#fff;
+  border-radius:12px;
+  border:1px solid #e0e6ed;
+  padding:10px;
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  font-size:.9rem;
   text-align:center;
 }
-
-/* مهم: امنع وراثة تنسيق .button على chip-toggle */
-button.chip-toggle{
-  box-shadow:none !important;
+.halaqa-tile:hover{
+  transform:translateY(-2px);
+  box-shadow:0 3px 10px rgba(0,0,0,.08);
+  border-color:#3498db;
+}
+.halaqa-tile-code{
+  font-weight:700;
+  margin-bottom:4px;
+  font-size:1.4rem;
+}
+.halaqa-tile-line{
+  font-size:.8rem;
+  color:#555;
 }
 
-
+/* =====================================================
+   15) Responsive
+===================================================== */
+@media (min-width:768px){
+  .container{ padding:30px; }
+  .dashboard-header{ flex-direction:row; justify-content:space-between; align-items:center; }
+  .tabs{ flex-direction:row; }
+  .tab-button{ flex:1; }
+  .progress-section{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+  .curriculum-view{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+}
