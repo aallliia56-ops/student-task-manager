@@ -1950,19 +1950,18 @@ async function loadStudentsForTeacher() {
       const murPaused = !!s.pause_murajaa;
       const isStudentAssistant = !!s.is_student_assistant;
       const isParentAssistant = !!s.is_parent_assistant && !!s.parent_code;
-
-    li.innerHTML = `
-    <div class="student-card">
-
-    <!-- الاسم -->
+      
+      li.innerHTML = `
+      <div class="student-card">
+    
     <div class="student-top">
-      <div class="student-name">#${i + 1} - ${s.name} (${s.code})</div>
+      <div class="student-name">
+        #${i + 1} - ${s.name} (${s.code})
+      </div>
     </div>
 
-    <!-- أيام الأسبوع -->
     <div class="student-week week-strip"></div>
 
-    <!-- الأزرار -->
     <div class="student-actions">
       <button class="button primary btn-edit-student" data-code="${s.code}">
         تعديل
@@ -1985,15 +1984,15 @@ async function loadStudentsForTeacher() {
       </button>
     </div>
 
-    <!-- السهم (أسفل البطاقة) -->
-    <button
-      type="button"
+    <!-- السهم في أسفل البطاقة -->
+    <button type="button"
       class="toggle-details"
       aria-expanded="false"
-      title="تفاصيل"
-    >▾</button>
+      title="تفاصيل">
+      ▾
+    </button>
 
-    <!-- التفاصيل (مقفلة افتراضياً) -->
+    <!-- التفاصيل -->
     <div class="student-details hidden">
       <div class="student-sub">
         حفظ: ${hifzPercent}% ${hifzPaused ? " (موقوف)" : ""} |
@@ -2003,6 +2002,17 @@ async function loadStudentsForTeacher() {
 
       <div class="student-sub">
         ولي الأمر: ${s.parent_name || "غير مسجل"} (${s.parent_code || "—"})
+      </div>
+
+      <div class="student-sub">
+        مساعد طالب: ${isStudentAssistant ? "✅ مفعّل" : "❌ غير مفعّل"} |
+        مساعد ولي أمر: ${isParentAssistant ? "✅ مفعّل" : "❌ غير مفعّل"}
+      </div>
+    </div>
+
+  </div>
+`;
+
 
       const weekDiv = li.querySelector(".week-strip");
       weekDiv.innerHTML = buildWeekStripHtml(Array.isArray(s.tasks) ? s.tasks : []);
@@ -2698,6 +2708,7 @@ function markStudentWeek(cardEl, doneDays = []) {
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
