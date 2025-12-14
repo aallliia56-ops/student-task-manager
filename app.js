@@ -1,7 +1,7 @@
 // app.js
-// ========================
-// 1) Firebase + المناهج
-// ========================
+// =====================================================
+// 1) Firebase + المناهج (Curriculum)
+// =====================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
 import {
@@ -31,9 +31,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ========================
-// 2) اختصارات + عناصر DOM
-// ========================
+// =====================================================
+// 2) DOM Shortcuts + عناصر الواجهة
+// =====================================================
 
 const $ = (s) => document.querySelector(s);
 
@@ -43,7 +43,7 @@ const userCodeInput = $("#user-code");
 const loginButton = $("#login-button");
 const authMessage = $("#auth-message");
 
-// أزرار تبويبات المعلم
+// تبويبات المعلم
 const tabButtons = document.querySelectorAll(".tab-button");
 
 // زر نوع الحلقة
@@ -70,11 +70,11 @@ const studentMurajaaProgressBar = $("#student-murajaa-progress-bar");
 const studentHifzProgressPercent = $("#student-hifz-progress-percent");
 const studentMurajaaProgressPercent = $("#student-murajaa-progress-percent");
 const studentMurajaaLevelLabel = $("#student-murajaa-level-label");
+
 const studentTotalPoints = $("#student-total-points");
 const studentRankText = $("#student-rank-text");
 const studentTasksDiv = $("#student-tasks");
 const logoutButtonStudent = $("#logout-button-student");
-
 const refreshStudentButton = $("#refresh-student-button");
 const studentWeekStrip = $("#student-week-strip");
 
@@ -136,9 +136,9 @@ const halaqaSubtitle = $("#halaqa-subtitle");
 const halaqaBackButton = $("#halaqa-back-button");
 const halaqaStudentsGrid = $("#halaqa-students-grid");
 
-// ========================
+// =====================================================
 // 3) حالة عامة / متغيرات
-// ========================
+// =====================================================
 
 let currentUser = null;
 let editingStudentCode = null;
@@ -154,9 +154,9 @@ let lastStudentEntrySource = null; // DIRECT / HALAQA / null
 let lastHalaqaLoginCode = null;
 let lastHalaqaType = null;
 
-// ========================
-// 4) دوال مساعدة عامة
-// ========================
+// =====================================================
+// 4) أدوات مساعدة عامة (Helpers)
+// =====================================================
 
 const safeSetText = (el, t = "") => el && (el.textContent = t);
 const safeSetWidth = (el, pct = 0) => el && (el.style.width = `${pct}%`);
@@ -182,20 +182,31 @@ const showMessage = (el, msg, type = "info") => {
   setTimeout(() => el.classList.add("hidden"), 5000);
 };
 
-// بداية الأسبوع (الأحد) حسب التاريخ الحالي
+function hideAllScreens() {
+  authScreen?.classList.add("hidden");
+  studentScreen?.classList.add("hidden");
+  teacherScreen?.classList.add("hidden");
+  parentScreen?.classList.add("hidden");
+  halaqaScreen?.classList.add("hidden");
+}
+
+const generateUniqueId = () =>
+  Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+const getReviewArrayForLevel = (level) => REVIEW_CURRICULUM[level] || [];
+
+// بداية الأسبوع (الأحد)
 function getWeekStart(date = new Date()) {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
-  const day = d.getDay(); // 0 أحد, 1 اثنين, ... 6 سبت في بعض المتصفحات (أغلب البيئات: 0 أحد)
-  // نرجّع لأقرب أحد
-  const diff = day; // من الأحد
-  d.setDate(d.getDate() - diff);
+  const day = d.getDay(); // 0 أحد
+  d.setDate(d.getDate() - day);
   return d;
 }
 
+// شريط التزام الأسبوع (أحد-خميس) — HTML جاهز
 function buildWeekStripHtml(tasks) {
-  const now = new Date();
-  const weekStart = getWeekStart(now); // بداية الأسبوع (أحد)
+  const weekStart = getWeekStart(new Date());
 
   const daysMeta = [
     { offset: 0, label: "احد" },
@@ -233,68 +244,12 @@ function buildWeekStripHtml(tasks) {
     .join("");
 }
 
-
-// رسم شريط التزام الأسبوع (أحد-خميس)
+// رسم شريط الأسبوع في واجهة الطالب
 function renderStudentWeekStrip(student) {
   if (!studentWeekStrip) return;
-
   const tasks = Array.isArray(student.tasks) ? student.tasks : [];
-  const now = new Date();
-  const weekStart = getWeekStart(now); // بداية الأسبوع (أحد)
-
-  const daysMeta = [
-    { offset: 0, label: "أحد" },
-    { offset: 1, label: "اثنين" },
-    { offset: 2, label: "ثلاثاء" },
-    { offset: 3, label: "أربعاء" },
-    { offset: 4, label: "خميس" },
-  ];
-
-  const html = daysMeta
-    .map(({ offset, label }) => {
-      const dayStart = new Date(weekStart);
-      dayStart.setDate(weekStart.getDate() + offset);
-      dayStart.setHours(0, 0, 0, 0);
-
-      const dayEnd = new Date(dayStart);
-      dayEnd.setHours(23, 59, 59, 999);
-
-      const hasCompleted = tasks.some((t) => {
-        if (t.status !== "completed" || !t.completed_at) return false;
-        const ts = t.completed_at;
-        return ts >= dayStart.getTime() && ts <= dayEnd.getTime();
-      });
-
-      const cls = hasCompleted
-        ? "week-day done"
-        : "week-day";
-      const icon = hasCompleted ? "✔" : "•";
-
-      return `
-        <div class="${cls}">
-          <span class="week-day-label">${label}</span>
-          <span class="week-day-icon">${icon}</span>
-        </div>
-      `;
-    })
-    .join("");
-
   studentWeekStrip.innerHTML = buildWeekStripHtml(tasks);
 }
-
-
-function hideAllScreens() {
-  authScreen?.classList.add("hidden");
-  studentScreen?.classList.add("hidden");
-  teacherScreen?.classList.add("hidden");
-  parentScreen?.classList.add("hidden");
-  halaqaScreen?.classList.add("hidden");
-}
-
-const generateUniqueId = () =>
-  Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-
-const getReviewArrayForLevel = (level) => REVIEW_CURRICULUM[level] || [];
 
 /** جلب جميع الطلاب مرتبين بالنقاط مع فلتر اختياري */
 async function fetchAllStudentsSortedByPoints(filterFn) {
@@ -356,12 +311,7 @@ function buildGroupedRanks(students) {
   return { buildingSorted, buildingRankMap, devAdvSorted, devAdvRankMap };
 }
 
-function updatePlanStrip({
-  startSurah = "—",
-  endSurah = "—",
-  points = 0,
-  rank = "—",
-}) {
+function updatePlanStrip({ startSurah = "—", endSurah = "—", points = 0, rank = "—" }) {
   if (studentPlanLine) {
     studentPlanLine.textContent = `الخطة: من ${startSurah} إلى ${endSurah} • النقاط: ${points} • الترتيب: ${rank}`;
   }
@@ -370,9 +320,9 @@ function updatePlanStrip({
   safeSetText(stripRank, `الترتيب: ${rank}`);
 }
 
-// ========================
-// 5) منهج الحفظ والمراجعة
-// ========================
+// =====================================================
+// 5) منهج الحفظ والمراجعة (Missions / Percent)
+// =====================================================
 
 function getCurrentHifzMission(student) {
   const all = HIFZ_CURRICULUM;
@@ -387,26 +337,16 @@ function getCurrentHifzMission(student) {
 
   const tasks = Array.isArray(student.tasks) ? student.tasks : [];
 
-  // أولاً: مهمة سورة كاملة (لو انتهت كل مقاطع السورة)
+  // مهمة سورة كاملة (لو انتهت كل مقاطع السورة)
   const prevIndex = nextIndex - 1;
   if (prevIndex >= planStart && prevIndex <= planEnd) {
     const prevSeg = all[prevIndex];
 
     let first = prevIndex;
-    while (
-      first - 1 >= planStart &&
-      all[first - 1].surah_number === prevSeg.surah_number
-    ) {
-      first--;
-    }
+    while (first - 1 >= planStart && all[first - 1].surah_number === prevSeg.surah_number) first--;
 
     let last = prevIndex;
-    while (
-      last + 1 <= planEnd &&
-      all[last + 1].surah_number === prevSeg.surah_number
-    ) {
-      last++;
-    }
+    while (last + 1 <= planEnd && all[last + 1].surah_number === prevSeg.surah_number) last++;
 
     const segmentsCount = last - first + 1;
 
@@ -442,11 +382,7 @@ function getCurrentHifzMission(student) {
   const first = all[nextIndex];
   const segs = [first];
 
-  for (
-    let i = nextIndex + 1;
-    i <= planEnd && segs.length < maxSegments;
-    i++
-  ) {
+  for (let i = nextIndex + 1; i <= planEnd && segs.length < maxSegments; i++) {
     const seg = all[i];
     if (seg.surah_number !== first.surah_number) break;
     segs.push(seg);
@@ -480,11 +416,7 @@ function getNextHifzMission(student) {
   const first = all[candidate];
   const segs = [first];
 
-  for (
-    let i = candidate + 1;
-    i < all.length && i <= planEnd && segs.length < maxSegments;
-    i++
-  ) {
+  for (let i = candidate + 1; i < all.length && i <= planEnd && segs.length < maxSegments; i++) {
     const seg = all[i];
     if (seg.surah_number !== first.surah_number) break;
     segs.push(seg);
@@ -579,24 +511,12 @@ function getLastFullSurahNumber(student) {
     const sNum = all[i].surah_number;
 
     let first = i;
-    while (
-      first - 1 >= planStart &&
-      all[first - 1].surah_number === sNum
-    ) {
-      first--;
-    }
+    while (first - 1 >= planStart && all[first - 1].surah_number === sNum) first--;
 
     let last = i;
-    while (
-      last + 1 <= planEnd &&
-      all[last + 1].surah_number === sNum
-    ) {
-      last++;
-    }
+    while (last + 1 <= planEnd && all[last + 1].surah_number === sNum) last++;
 
-    if (last < progress) {
-      return sNum;
-    }
+    if (last < progress) return sNum;
 
     i = first - 1;
   }
@@ -604,44 +524,30 @@ function getLastFullSurahNumber(student) {
   return null;
 }
 
-function chooseMurajaaStartIndexFromLastSurah(
-  level,
-  lastSurahNumber,
-  fallbackStart
-) {
+function chooseMurajaaStartIndexFromLastSurah(level, lastSurahNumber, fallbackStart) {
   const arr = getReviewArrayForLevel(level);
   const len = arr.length;
   if (!len) return 0;
 
-  if (!lastSurahNumber) {
-    return ((fallbackStart % len) + len) % len;
-  }
+  if (!lastSurahNumber) return ((fallbackStart % len) + len) % len;
 
-  const surahSeg = HIFZ_CURRICULUM.find(
-    (seg) => seg.surah_number === lastSurahNumber
-  );
+  const surahSeg = HIFZ_CURRICULUM.find((seg) => seg.surah_number === lastSurahNumber);
   const surahName = surahSeg?.surah_name_ar;
-  if (!surahName) {
-    return ((fallbackStart % len) + len) % len;
-  }
+  if (!surahName) return ((fallbackStart % len) + len) % len;
 
   let idx = arr.findIndex((it) => {
     const name = typeof it === "string" ? it : it?.name;
     return typeof name === "string" && name.includes(surahName);
   });
 
-  if (idx === -1) {
-    idx = ((fallbackStart % len) + len) % len;
-  }
-
+  if (idx === -1) idx = ((fallbackStart % len) + len) % len;
   return idx;
 }
 
-// ========================
-// 6) مهام المساعد (طالب / ولي)
-// ========================
+// =====================================================
+// 6) مهام المساعد (Student/Parent Assistants)
+// =====================================================
 
-/** تحميل مهام المساعد لأي مستخدم حالي */
 async function loadAssistantTasksForCurrentUser() {
   if (!currentUser) return;
 
@@ -653,6 +559,7 @@ async function loadAssistantTasksForCurrentUser() {
     const tasks = Array.isArray(s.tasks) ? s.tasks : [];
     tasks.forEach((t) => {
       if (t.status !== "pending_assistant") return;
+
       if (
         currentUser.role === "student" &&
         t.assistant_type === "student" &&
@@ -671,29 +578,19 @@ async function loadAssistantTasksForCurrentUser() {
 
   if (currentUser.role === "student") {
     if (!studentAssistantTasksList) return;
-    renderAssistantTasksList(
-      assigned,
-      studentAssistantTasksList,
-      "طالب"
-    );
+    renderAssistantTasksList(assigned, studentAssistantTasksList, "طالب");
   } else if (currentUser.role === "parent") {
     if (!parentAssistantTasksList) return;
-    renderAssistantTasksList(
-      assigned,
-      parentAssistantTasksList,
-      "ولي الأمر"
-    );
+    renderAssistantTasksList(assigned, parentAssistantTasksList, "ولي الأمر");
   }
 }
 
-/** رسم قائمة مهام المساعد */
 function renderAssistantTasksList(list, container, roleLabel) {
   if (!container) return;
   container.innerHTML = "";
 
   if (!list.length) {
-    container.innerHTML =
-      '<p class="message info">لا توجد مهام مسندة لك حاليًا.</p>';
+    container.innerHTML = '<p class="message info">لا توجد مهام مسندة لك حاليًا.</p>';
     return;
   }
 
@@ -756,19 +653,11 @@ function renderAssistantTasksList(list, container, roleLabel) {
     footer.append(pts, ok, no);
     item.appendChild(footer);
     block.appendChild(item);
-
     container.appendChild(block);
   });
 }
 
-
-/** توجيه مهمة لمساعد (طالب / ولي أمر) */
-async function forwardTaskToAssistant(
-  studentCode,
-  taskId,
-  assistantType,
-  assistantId
-) {
+async function forwardTaskToAssistant(studentCode, taskId, assistantType, assistantId) {
   try {
     if (!assistantType || !assistantId) {
       alert("الرجاء اختيار مساعد صحيح.");
@@ -786,11 +675,7 @@ async function forwardTaskToAssistant(
 
     const task = tasks[idx];
     if (task.status !== "pending") {
-      showMessage(
-        authMessage,
-        "لا يمكن توجيه مهمة ليست بانتظار المراجعة لدى المعلم.",
-        "error"
-      );
+      showMessage(authMessage, "لا يمكن توجيه مهمة ليست بانتظار المراجعة لدى المعلم.", "error");
       return;
     }
 
@@ -806,15 +691,10 @@ async function forwardTaskToAssistant(
     showMessage(authMessage, "تم توجيه المهمة للمساعد.", "success");
   } catch (e) {
     console.error("Error forwardTaskToAssistant:", e);
-    showMessage(
-      authMessage,
-      `خطأ في توجيه المهمة: ${e.message}`,
-      "error"
-    );
+    showMessage(authMessage, `خطأ في توجيه المهمة: ${e.message}`, "error");
   }
 }
 
-/** إظهار قائمة المساعدين لإسناد مهمة */
 async function showAssistantSelector(studentCode, taskId, containerEl) {
   try {
     const existing = containerEl.querySelector(".assistant-picker");
@@ -880,12 +760,7 @@ async function showAssistantSelector(studentCode, taskId, containerEl) {
 
     sendBtn.addEventListener("click", async () => {
       const [assistantType, assistantId] = select.value.split("|");
-      await forwardTaskToAssistant(
-        studentCode,
-        taskId,
-        assistantType,
-        assistantId
-      );
+      await forwardTaskToAssistant(studentCode, taskId, assistantType, assistantId);
       wrapper.remove();
     });
 
@@ -895,17 +770,13 @@ async function showAssistantSelector(studentCode, taskId, containerEl) {
     containerEl.appendChild(wrapper);
   } catch (e) {
     console.error("Error showAssistantSelector:", e);
-    showMessage(
-      authMessage,
-      `خطأ في تحميل قائمة المساعدين: ${e.message}`,
-      "error"
-    );
+    showMessage(authMessage, `خطأ في تحميل قائمة المساعدين: ${e.message}`, "error");
   }
 }
 
-// ========================
-// 7) بناء كروت الطالب
-// ========================
+// =====================================================
+// 7) بناء كروت الطالب (Student Tasks Cards)
+// =====================================================
 
 function buildMissionCard({
   title,
@@ -922,9 +793,7 @@ function buildMissionCard({
   card.innerHTML = `
     <div class="task-header">
       <div class="task-title">${title}</div>
-      <span class="task-type-tag ${tagClass}">${
-        tagClass === "hifz" ? "حفظ" : "مراجعة"
-      }</span>
+      <span class="task-type-tag ${tagClass}">${tagClass === "hifz" ? "حفظ" : "مراجعة"}</span>
     </div>
     <div class="task-body mission-text">${description}</div>
     <div class="task-footer">
@@ -932,15 +801,15 @@ function buildMissionCard({
       <span class="task-status-text">${pendingText}</span>
     </div>
   `;
+
   const footer = card.querySelector(".task-footer");
   const btn = document.createElement("button");
   btn.className = "button success";
   btn.textContent = buttonText;
-  if (disabled) {
-    btn.disabled = true;
-  } else {
-    btn.addEventListener("click", onClick);
-  }
+
+  if (disabled) btn.disabled = true;
+  else btn.addEventListener("click", onClick);
+
   footer.appendChild(btn);
   return card;
 }
@@ -964,8 +833,7 @@ function renderStudentTasks(student) {
     );
 
     const isAssistantPending =
-      pendingCurriculumTask &&
-      pendingCurriculumTask.status === "pending_assistant";
+      pendingCurriculumTask && pendingCurriculumTask.status === "pending_assistant";
 
     wrap.appendChild(
       buildMissionCard({
@@ -987,11 +855,7 @@ function renderStudentTasks(student) {
         onClick: () =>
           pendingCurriculumTask
             ? !isAssistantPending &&
-              cancelCurriculumTask(
-                student.code,
-                "hifz",
-                hifzMission.startIndex
-              )
+              cancelCurriculumTask(student.code, "hifz", hifzMission.startIndex)
             : submitCurriculumTask(student.code, hifzMission),
       })
     );
@@ -1008,8 +872,7 @@ function renderStudentTasks(student) {
         t.murajaa_level === murMission.level
     );
 
-    const isAssistantPending =
-      pendingMurTask && pendingMurTask.status === "pending_assistant";
+    const isAssistantPending = pendingMurTask && pendingMurTask.status === "pending_assistant";
 
     wrap.appendChild(
       buildMissionCard({
@@ -1030,17 +893,15 @@ function renderStudentTasks(student) {
         disabled: !!pendingMurTask && isAssistantPending,
         onClick: () =>
           pendingMurTask
-            ? !isAssistantPending &&
-              cancelMurajaaTask(student.code, murMission)
+            ? !isAssistantPending && cancelMurajaaTask(student.code, murMission)
             : submitMurajaaTask(student.code, murMission),
       })
     );
   }
 
   // المهام العامة (غير المكتملة)
-  const generalTasks = tasksArray.filter(
-    (t) => t.type === "general" && t.status !== "completed"
-  );
+  const generalTasks = tasksArray.filter((t) => t.type === "general" && t.status !== "completed");
+
   for (const task of generalTasks) {
     const card = document.createElement("div");
     card.className = "task-card";
@@ -1063,20 +924,17 @@ function renderStudentTasks(student) {
         }</span>
       </div>
     `;
+
     const footer = card.querySelector(".task-footer");
     const btn = document.createElement("button");
     btn.className = "button success";
 
     if (task.status === "assigned") {
       btn.textContent = "أنجزت المهمة ✅";
-      btn.addEventListener("click", () =>
-        submitGeneralTask(student.code, task.id)
-      );
+      btn.addEventListener("click", () => submitGeneralTask(student.code, task.id));
     } else if (task.status === "pending") {
       btn.textContent = "إلغاء الإرسال";
-      btn.addEventListener("click", () =>
-        cancelGeneralTask(student.code, task.id)
-      );
+      btn.addEventListener("click", () => cancelGeneralTask(student.code, task.id));
     } else if (task.status === "pending_assistant") {
       btn.textContent = "قيد المراجعة";
       btn.disabled = true;
@@ -1089,28 +947,20 @@ function renderStudentTasks(student) {
     wrap.appendChild(card);
   }
 
-  if (
-    !hifzMission &&
-    !murMission &&
-    !hifzPaused &&
-    !murajaaPaused &&
-    generalTasks.length === 0
-  ) {
-    studentTasksDiv.innerHTML =
-      '<p class="message info">لا توجد مهام حالياً. وفقك الله 🤍</p>';
+  if (!hifzMission && !murMission && !hifzPaused && !murajaaPaused && generalTasks.length === 0) {
+    studentTasksDiv.innerHTML = '<p class="message info">لا توجد مهام حالياً. وفقك الله 🤍</p>';
   } else {
     studentTasksDiv.appendChild(wrap);
   }
 }
 
-// ========================
-// 8) لوحات الطالب / المعلم / ولي الأمر / الحلقة
-// ========================
+// =====================================================
+// 8) لوحات الطالب / ولي الأمر / الحلقة
+// =====================================================
 
 async function displayStudentDashboard(student) {
   try {
     const els = getStudentEls();
-
     safeSetText(els.welcome, `أهلاً بك يا ${student.name || "طالب"}`);
 
     const startIdx = student.hifz_start_id ?? 0;
@@ -1123,17 +973,13 @@ async function displayStudentDashboard(student) {
 
     const studentHalaqa = student.halaqa || "ONSITE";
     const allStudents = await fetchAllStudentsSortedByPoints();
-    const sameHalaqa = allStudents.filter(
-      (s) => (s.halaqa || "ONSITE") === studentHalaqa
-    );
+    const sameHalaqa = allStudents.filter((s) => (s.halaqa || "ONSITE") === studentHalaqa);
 
     const level = student.murajaa_level || "BUILDING";
     let rankOnly = "—";
 
     if (level === "BUILDING") {
-      const buildingGroup = sameHalaqa.filter(
-        (s) => (s.murajaa_level || "BUILDING") === "BUILDING"
-      );
+      const buildingGroup = sameHalaqa.filter((s) => (s.murajaa_level || "BUILDING") === "BUILDING");
       const idx = buildingGroup.findIndex((s) => s.code === student.code);
       if (idx !== -1) rankOnly = String(idx + 1);
     } else {
@@ -1150,14 +996,8 @@ async function displayStudentDashboard(student) {
     const hifzMission = getCurrentHifzMission(student);
     const murMission = getCurrentMurajaaMission(student);
 
-    safeSetText(
-      els.hifzLabel,
-      hifzMission ? hifzMission.description : "لا توجد مهمة حفظ حالياً."
-    );
-    safeSetText(
-      els.murLabel,
-      murMission ? murMission.description : "لا توجد مهمة مراجعة حالياً."
-    );
+    safeSetText(els.hifzLabel, hifzMission ? hifzMission.description : "لا توجد مهمة حفظ حالياً.");
+    safeSetText(els.murLabel, murMission ? murMission.description : "لا توجد مهمة مراجعة حالياً.");
 
     if (els.murLevel) {
       safeSetText(
@@ -1174,14 +1014,8 @@ async function displayStudentDashboard(student) {
 
     const nextH = getNextHifzMission(student);
     const nextM = getNextMurajaaMission(student);
-    safeSetText(
-      studentHifzNextLabel,
-      `المهمة القادمة: ${nextH ? nextH.description : "—"}`
-    );
-    safeSetText(
-      studentMurajaaNextLabel,
-      `المهمة القادمة: ${nextM ? nextM.description : "—"}`
-    );
+    safeSetText(studentHifzNextLabel, `المهمة القادمة: ${nextH ? nextH.description : "—"}`);
+    safeSetText(studentMurajaaNextLabel, `المهمة القادمة: ${nextM ? nextM.description : "—"}`);
 
     const hifzPct = computeHifzPercent(student);
     const murPct = computeMurajaaPercent(student);
@@ -1194,9 +1028,7 @@ async function displayStudentDashboard(student) {
     safeSetText(els.rankText, rankOnly);
 
     renderStudentTasks(student);
-    
     renderStudentWeekStrip(student);
-
 
     hideAllScreens();
     studentScreen.classList.remove("hidden");
@@ -1208,11 +1040,7 @@ async function displayStudentDashboard(student) {
     }
   } catch (err) {
     console.error("displayStudentDashboard error:", err);
-    showMessage(
-      authMessage,
-      `خطأ في عرض واجهة الطالب: ${err.message}`,
-      "error"
-    );
+    showMessage(authMessage, `خطأ في عرض واجهة الطالب: ${err.message}`, "error");
   }
 }
 
@@ -1223,10 +1051,7 @@ async function displayParentDashboard(parentCode) {
     snap.forEach((d) => all.push(d.data()));
 
     const parentKey = String(parentCode || "");
-
-    const children = all.filter(
-      (s) => String(s.parent_code || "") === parentKey
-    );
+    const children = all.filter((s) => String(s.parent_code || "") === parentKey);
 
     const halaqaBuckets = { ONSITE: [], ONLINE: [] };
     all.forEach((s) => {
@@ -1246,44 +1071,29 @@ async function displayParentDashboard(parentCode) {
     parentChildrenList.innerHTML = "";
 
     if (!children.length) {
-      parentChildrenList.innerHTML =
-        '<p class="message info">لا يوجد أبناء مربوطون بهذا الرمز.</p>';
+      parentChildrenList.innerHTML = '<p class="message info">لا يوجد أبناء مربوطون بهذا الرمز.</p>';
     } else {
       children.forEach((s) => {
         const h = s.halaqa || "ONSITE";
-        const {
-          buildingRankMap = {},
-          devAdvRankMap = {},
-        } = ranksByHalaqa[h] || {};
+        const { buildingRankMap = {}, devAdvRankMap = {} } = ranksByHalaqa[h] || {};
 
         const level = s.murajaa_level || "BUILDING";
-
         let groupTitle;
         let childRank = "-";
 
         if (level === "BUILDING") {
           groupTitle = "مجموعة البناء (نفس الحلقة)";
-          if (buildingRankMap[s.code] != null) {
-            childRank = String(buildingRankMap[s.code]);
-          }
+          if (buildingRankMap[s.code] != null) childRank = String(buildingRankMap[s.code]);
         } else {
           groupTitle = "مجموعة التطوير/المتقدم (نفس الحلقة)";
-          if (devAdvRankMap[s.code] != null) {
-            childRank = String(devAdvRankMap[s.code]);
-          }
+          if (devAdvRankMap[s.code] != null) childRank = String(devAdvRankMap[s.code]);
         }
 
-        const startIndex = Number.isFinite(s.hifz_start_id)
-          ? s.hifz_start_id
-          : 0;
-        const endIndex = Number.isFinite(s.hifz_end_id)
-          ? s.hifz_end_id
-          : HIFZ_CURRICULUM.length - 1;
+        const startIndex = Number.isFinite(s.hifz_start_id) ? s.hifz_start_id : 0;
+        const endIndex = Number.isFinite(s.hifz_end_id) ? s.hifz_end_id : HIFZ_CURRICULUM.length - 1;
         const startItem = HIFZ_CURRICULUM[startIndex] || null;
         const endItem = HIFZ_CURRICULUM[endIndex] || null;
-        const startSurah = startItem
-          ? startItem.surah_name_ar
-          : "غير محددة";
+        const startSurah = startItem ? startItem.surah_name_ar : "غير محددة";
         const endSurah = endItem ? endItem.surah_name_ar : "غير محددة";
 
         const hifzPercent = computeHifzPercent(s);
@@ -1294,28 +1104,24 @@ async function displayParentDashboard(parentCode) {
         const hifzMission = getCurrentHifzMission(s);
         const murMission = getCurrentMurajaaMission(s);
 
-        const halaqaLabel =
-          h === "ONLINE" ? "حلقة إلكترونية" : "حلقة حضوري";
+        const halaqaLabel = h === "ONLINE" ? "حلقة إلكترونية" : "حلقة حضوري";
 
         const el = document.createElement("div");
         el.className = "child-card";
         el.innerHTML = `
-        <div class="child-name">${s.name} (${s.code})</div>
-        <div class="child-line"><strong>${halaqaLabel}</strong></div>
-        <div class="child-line">خطة الحفظ: من سورة <strong>${startSurah}</strong> إلى سورة <strong>${endSurah}</strong></div>
-        <div class="child-line">إنجاز الحفظ: <strong>${hifzPercent}%</strong></div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${hifzPercent}%"></div></div>
-        <div class="child-line">${motivation}</div>
-        <div class="child-line">مجموع النقاط: <strong>${s.total_points || 0}</strong></div>
-        <div class="child-line">الترتيب داخل ${groupTitle}: <strong>${childRank}</strong></div>
-        <div class="child-line">مهمة الحفظ الحالية: <span>${
-          hifzMission ? hifzMission.description : "لا توجد"
-        }</span></div>
-        <div class="child-line">مهمة المراجعة الحالية: <span>${
-          murMission ? murMission.description : "لا توجد"
-        }</span></div>
-        <div class="week-strip"></div>
-       `;
+          <div class="child-name">${s.name} (${s.code})</div>
+          <div class="child-line"><strong>${halaqaLabel}</strong></div>
+          <div class="child-line">خطة الحفظ: من سورة <strong>${startSurah}</strong> إلى سورة <strong>${endSurah}</strong></div>
+          <div class="child-line">إنجاز الحفظ: <strong>${hifzPercent}%</strong></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${hifzPercent}%"></div></div>
+          <div class="child-line">${motivation}</div>
+          <div class="child-line">مجموع النقاط: <strong>${s.total_points || 0}</strong></div>
+          <div class="child-line">الترتيب داخل ${groupTitle}: <strong>${childRank}</strong></div>
+          <div class="child-line">مهمة الحفظ الحالية: <span>${hifzMission ? hifzMission.description : "لا توجد"}</span></div>
+          <div class="child-line">مهمة المراجعة الحالية: <span>${murMission ? murMission.description : "لا توجد"}</span></div>
+          <div class="week-strip"></div>
+        `;
+
         const weekDiv = el.querySelector(".week-strip");
         weekDiv.innerHTML = buildWeekStripHtml(Array.isArray(s.tasks) ? s.tasks : []);
         parentChildrenList.appendChild(el);
@@ -1331,6 +1137,7 @@ async function displayParentDashboard(parentCode) {
         String(s.parent_code || "") === parentKey &&
         s.halaqa === currentHalaqa
     );
+
     if (isParentAssistant) {
       await loadAssistantTasksForCurrentUser();
     } else if (parentAssistantTasksList) {
@@ -1338,8 +1145,7 @@ async function displayParentDashboard(parentCode) {
     }
   } catch (e) {
     console.error("Error displayParentDashboard:", e);
-    parentChildrenList.innerHTML =
-      `<p class="message error">خطأ في تحميل بيانات الأبناء: ${e.message}</p>`;
+    parentChildrenList.innerHTML = `<p class="message error">خطأ في تحميل بيانات الأبناء: ${e.message}</p>`;
   }
 }
 
@@ -1348,13 +1154,9 @@ async function displayHalaqaScreen(loginCode, halaqaType) {
     hideAllScreens();
     halaqaScreen.classList.remove("hidden");
 
-    const halaqaLabel =
-      halaqaType === "ONLINE" ? "الحلقة الإلكترونية" : "الحلقة الحضورية";
+    const halaqaLabel = halaqaType === "ONLINE" ? "الحلقة الإلكترونية" : "الحلقة الحضورية";
     safeSetText(halaqaTitle, `حسابات ${halaqaLabel}`);
-    safeSetText(
-      halaqaSubtitle,
-      `تم الدخول بواسطة كود الحلقة: ${loginCode}`
-    );
+    safeSetText(halaqaSubtitle, `تم الدخول بواسطة كود الحلقة: ${loginCode}`);
 
     const snap = await getDocs(collection(db, "students"));
     const allStudents = [];
@@ -1366,8 +1168,7 @@ async function displayHalaqaScreen(loginCode, halaqaType) {
     });
 
     if (!allStudents.length) {
-      halaqaStudentsGrid.innerHTML =
-        `<p class="message info">لا يوجد طلاب مسجلون في هذه الحلقة.</p>`;
+      halaqaStudentsGrid.innerHTML = `<p class="message info">لا يوجد طلاب مسجلون في هذه الحلقة.</p>`;
       return;
     }
 
@@ -1393,16 +1194,18 @@ async function displayHalaqaScreen(loginCode, halaqaType) {
     });
   } catch (e) {
     console.error("displayHalaqaScreen error:", e);
-    halaqaStudentsGrid.innerHTML =
-      `<p class="message error">حدث خطأ في تحميل طلاب الحلقة: ${e.message}</p>`;
+    halaqaStudentsGrid.innerHTML = `<p class="message error">حدث خطأ في تحميل طلاب الحلقة: ${e.message}</p>`;
   }
 }
+
+// =====================================================
+// 9) لوحة الشرف (Honor Board)
+// =====================================================
 
 async function loadHonorBoard() {
   if (!honorBoardDiv) return;
 
-  honorBoardDiv.innerHTML =
-    '<p class="message info">جارٍ تحميل لوحة الشرف...</p>';
+  honorBoardDiv.innerHTML = '<p class="message info">جارٍ تحميل لوحة الشرف...</p>';
 
   try {
     const snap = await getDocs(collection(db, "students"));
@@ -1415,13 +1218,11 @@ async function loadHonorBoard() {
     });
 
     if (!all.length) {
-      honorBoardDiv.innerHTML =
-        '<p class="message info">لا يوجد طلاب في هذه الحلقة حتى الآن.</p>';
+      honorBoardDiv.innerHTML = '<p class="message info">لا يوجد طلاب في هذه الحلقة حتى الآن.</p>';
       return;
     }
 
     const { buildingSorted, devAdvSorted } = buildGroupedRanks(all);
-
     const topBuilding = buildingSorted.slice(0, 5);
     const topDevAdv = devAdvSorted.slice(0, 5);
 
@@ -1473,14 +1274,13 @@ async function loadHonorBoard() {
     honorBoardDiv.appendChild(container);
   } catch (e) {
     console.error("Error loadHonorBoard:", e);
-    honorBoardDiv.innerHTML =
-      `<p class="message error">خطأ في تحميل لوحة الشرف: ${e.message}</p>`;
+    honorBoardDiv.innerHTML = `<p class="message error">خطأ في تحميل لوحة الشرف: ${e.message}</p>`;
   }
 }
 
-// ========================
-// 9) العمليات على المهام
-// ========================
+// =====================================================
+// 10) العمليات على المهام (Submit/Cancel/Review)
+// =====================================================
 
 async function submitCurriculumTask(studentCode, mission) {
   try {
@@ -1498,11 +1298,7 @@ async function submitCurriculumTask(studentCode, mission) {
           t.mission_start === mission.startIndex
       )
     ) {
-      showMessage(
-        authMessage,
-        "المهمة قيد المراجعة بالفعل.",
-        "info"
-      );
+      showMessage(authMessage, "المهمة قيد المراجعة بالفعل.", "info");
       return;
     }
 
@@ -1544,11 +1340,7 @@ async function cancelCurriculumTask(studentCode, type, missionStartIndex) {
 
     await updateDoc(studentRef, { tasks });
     await displayStudentDashboard({ code: studentCode, ...student, tasks });
-    showMessage(
-      authMessage,
-      "تم إلغاء إرسال المهمة وإعادتها لك.",
-      "success"
-    );
+    showMessage(authMessage, "تم إلغاء إرسال المهمة وإعادتها لك.", "success");
   } catch (e) {
     console.error("Error cancelCurriculumTask:", e);
     showMessage(authMessage, `حدث خطأ: ${e.message}`, "error");
@@ -1572,11 +1364,7 @@ async function submitMurajaaTask(studentCode, mission) {
           t.murajaa_level === mission.level
       )
     ) {
-      showMessage(
-        authMessage,
-        "مهمة المراجعة قيد المراجعة بالفعل.",
-        "info"
-      );
+      showMessage(authMessage, "مهمة المراجعة قيد المراجعة بالفعل.", "info");
       return;
     }
 
@@ -1619,11 +1407,7 @@ async function cancelMurajaaTask(studentCode, mission) {
 
     await updateDoc(studentRef, { tasks });
     await displayStudentDashboard({ code: studentCode, ...student, tasks });
-    showMessage(
-      authMessage,
-      "تم إلغاء إرسال مهمة المراجعة وإعادتها لك.",
-      "success"
-    );
+    showMessage(authMessage, "تم إلغاء إرسال مهمة المراجعة وإعادتها لك.", "success");
   } catch (e) {
     console.error("Error cancelMurajaaTask:", e);
     showMessage(authMessage, `حدث خطأ: ${e.message}`, "error");
@@ -1640,15 +1424,9 @@ async function submitGeneralTask(studentCode, taskId) {
     const tasks = Array.isArray(student.tasks) ? student.tasks : [];
     const i = tasks.findIndex((t) => t.id === taskId);
     if (i === -1) return;
-    if (
-      tasks[i].status === "pending" ||
-      tasks[i].status === "pending_assistant"
-    ) {
-      showMessage(
-        authMessage,
-        "المهمة قيد المراجعة بالفعل.",
-        "info"
-      );
+
+    if (tasks[i].status === "pending" || tasks[i].status === "pending_assistant") {
+      showMessage(authMessage, "المهمة قيد المراجعة بالفعل.", "info");
       return;
     }
 
@@ -1676,11 +1454,7 @@ async function cancelGeneralTask(studentCode, taskId) {
     if (tasks[i].status === "pending") tasks[i].status = "assigned";
     await updateDoc(studentRef, { tasks });
     await displayStudentDashboard({ code: studentCode, ...student, tasks });
-    showMessage(
-      authMessage,
-      "تم إلغاء إرسال المهمة العامة.",
-      "success"
-    );
+    showMessage(authMessage, "تم إلغاء إرسال المهمة العامة.", "success");
   } catch (e) {
     console.error("Error cancelGeneralTask:", e);
     showMessage(authMessage, `حدث خطأ: ${e.message}`, "error");
@@ -1700,35 +1474,28 @@ async function reviewTask(studentCode, taskId, action) {
       showMessage(authMessage, "المهمة غير موجودة.", "error");
       return;
     }
+
     const task = tasks[i];
     if (task.status !== "pending" && task.status !== "pending_assistant") {
-      showMessage(
-        authMessage,
-        "المهمة ليست بانتظار المراجعة.",
-        "error"
-      );
+      showMessage(authMessage, "المهمة ليست بانتظار المراجعة.", "error");
       return;
     }
 
     if (action === "approve") {
-      student.total_points =
-        (student.total_points || 0) + (task.points || 0);
+      student.total_points = (student.total_points || 0) + (task.points || 0);
 
       if (task.type === "hifz") {
         const last = task.mission_last ?? task.mission_start ?? 0;
         student.hifz_progress = last + 1;
       } else if (task.type === "murajaa") {
-        const level =
-          student.murajaa_level || task.murajaa_level || "BUILDING";
+        const level = student.murajaa_level || task.murajaa_level || "BUILDING";
         const arr = getReviewArrayForLevel(level);
         const len = arr.length;
 
-        let start =
-          student.murajaa_start_index ?? task.murajaa_index ?? 0;
+        let start = student.murajaa_start_index ?? task.murajaa_index ?? 0;
         start = len ? ((start % len) + len) % len : 0;
 
-        let cur =
-          student.murajaa_progress_index ?? task.murajaa_index ?? start;
+        let cur = student.murajaa_progress_index ?? task.murajaa_index ?? start;
         cur = len ? ((cur % len) + len) % len : start;
 
         let next = len ? (cur + 1) % len : start;
@@ -1738,12 +1505,7 @@ async function reviewTask(studentCode, taskId, action) {
           cycles += 1;
 
           const lastFullSurahNumber = getLastFullSurahNumber(student);
-
-          const dynamicStart = chooseMurajaaStartIndexFromLastSurah(
-            level,
-            lastFullSurahNumber,
-            start
-          );
+          const dynamicStart = chooseMurajaaStartIndexFromLastSurah(level, lastFullSurahNumber, start);
 
           start = dynamicStart;
           next = dynamicStart;
@@ -1756,10 +1518,9 @@ async function reviewTask(studentCode, taskId, action) {
       }
 
       tasks[i].status = "completed";
-      tasks[i].completed_at = Date.now(); // وقت إنجاز المهمة (مطلوب للأسبوع)
+      tasks[i].completed_at = Date.now();
       delete tasks[i].assistant_type;
       delete tasks[i].assistant_code;
-
 
       await updateDoc(studentRef, {
         tasks,
@@ -1773,11 +1534,7 @@ async function reviewTask(studentCode, taskId, action) {
         murajaa_cycles: student.murajaa_cycles || 0,
       });
 
-      showMessage(
-        authMessage,
-        `تم قبول المهمة وإضافة ${task.points} نقطة للطالب ${student.name}.`,
-        "success"
-      );
+      showMessage(authMessage, `تم قبول المهمة وإضافة ${task.points} نقطة للطالب ${student.name}.`, "success");
     } else {
       if (task.type === "general") {
         tasks[i].status = "assigned";
@@ -1787,36 +1544,29 @@ async function reviewTask(studentCode, taskId, action) {
         tasks.splice(i, 1);
       }
       await updateDoc(studentRef, { tasks });
-      showMessage(
-        authMessage,
-        `تم رفض المهمة وإعادتها للطالب ${student.name}.`,
-        "info"
-      );
+      showMessage(authMessage, `تم رفض المهمة وإعادتها للطالب ${student.name}.`, "info");
     }
 
     await loadPendingTasksForReview();
     await loadHonorBoard();
+
     const manageTab = $("#manage-students-tab");
     if (manageTab && !manageTab.classList.contains("hidden")) {
       await loadStudentsForTeacher();
     }
   } catch (e) {
     console.error("Error reviewTask:", e);
-    showMessage(
-      authMessage,
-      `خطأ في مراجعة المهمة: ${e.message}`,
-      "error"
-    );
+    showMessage(authMessage, `خطأ في مراجعة المهمة: ${e.message}`, "error");
   }
 }
 
-// ========================
-// 🔟 تبويبات المعلم + قائمة المراجعة + الطلاب
-// ========================
+// =====================================================
+// 11) قائمة المراجعة + قائمة الطلاب (Teacher Panels)
+// =====================================================
 
 async function loadPendingTasksForReview() {
-  pendingTasksList.innerHTML =
-    '<p class="message info">جارٍ تحميل المهام...</p>';
+  pendingTasksList.innerHTML = '<p class="message info">جارٍ تحميل المهام...</p>';
+
   try {
     const snap = await getDocs(collection(db, "students"));
 
@@ -1832,15 +1582,12 @@ async function loadPendingTasksForReview() {
       tasks.forEach((t) => {
         if (t.status !== "pending") return;
         if (t.type === "hifz") pendingHifz.push({ student, task: t });
-        else if (t.type === "murajaa")
-          pendingMurajaa.push({ student, task: t });
+        else if (t.type === "murajaa") pendingMurajaa.push({ student, task: t });
         else pendingGeneral.push({ student, task: t });
       });
     });
 
-    const byCreatedAt = (a, b) =>
-      (a.task.created_at || 0) - (b.task.created_at || 0);
-
+    const byCreatedAt = (a, b) => (a.task.created_at || 0) - (b.task.created_at || 0);
     pendingHifz.sort(byCreatedAt);
     pendingMurajaa.sort(byCreatedAt);
     pendingGeneral.sort(byCreatedAt);
@@ -1849,91 +1596,85 @@ async function loadPendingTasksForReview() {
     let any = false;
 
     function renderGroup(list, titleText) {
-  if (!list.length) return;
-  any = true;
+      if (!list.length) return;
+      any = true;
 
-  const groupTitle = document.createElement("h4");
-  groupTitle.textContent = titleText;
-  groupTitle.className = "review-group-title";
-  pendingTasksList.appendChild(groupTitle);
+      const groupTitle = document.createElement("h4");
+      groupTitle.textContent = titleText;
+      groupTitle.className = "review-group-title";
+      pendingTasksList.appendChild(groupTitle);
 
-  list.forEach(({ student, task }) => {
-    const block = document.createElement("div");
-    block.className = "review-student-block";
+      list.forEach(({ student, task }) => {
+        const block = document.createElement("div");
+        block.className = "review-student-block";
 
-    const title = document.createElement("div");
-    title.className = "review-student-title";
-    title.textContent = `الطالب: ${student.name} (${student.code})`;
-    block.appendChild(title);
+        const title = document.createElement("div");
+        title.className = "review-student-title";
+        title.textContent = `الطالب: ${student.name} (${student.code})`;
+        block.appendChild(title);
 
-    const item = document.createElement("div");
-    item.className = `review-task-item ${task.type}`;
-    item.innerHTML = `
-      <div class="review-task-body" style="
-        font-size:1.05rem;
-        font-weight:800;
-        line-height:1.8;
-        color:#2c3e50;
-      ">
-        ${task.description || ""}
-      </div>
-    `;
+        const item = document.createElement("div");
+        item.className = `review-task-item ${task.type}`;
+        item.innerHTML = `
+          <div class="review-task-body" style="
+            font-size:1.05rem;
+            font-weight:800;
+            line-height:1.8;
+            color:#2c3e50;
+          ">
+            ${task.description || ""}
+          </div>
+        `;
 
-    const footer = document.createElement("div");
-    footer.className = "review-task-footer";
+        const footer = document.createElement("div");
+        footer.className = "review-task-footer";
 
-    const pts = document.createElement("span");
-    pts.className = "review-points-badge";
-    pts.textContent = `${task.points || 0}`;
+        const pts = document.createElement("span");
+        pts.className = "review-points-badge";
+        pts.textContent = `${task.points || 0}`;
 
-    const ok = document.createElement("button");
-    ok.className = "button success";
-    ok.textContent = "☑";
-    ok.title = "قبول";
-    ok.addEventListener("click", () =>
-      reviewTask(student.code, task.id, "approve")
-    );
+        const ok = document.createElement("button");
+        ok.className = "button success";
+        ok.textContent = "☑";
+        ok.title = "قبول";
+        ok.addEventListener("click", () => reviewTask(student.code, task.id, "approve"));
 
-    const no = document.createElement("button");
-    no.className = "button danger";
-    no.textContent = "✕";
-    no.title = "رفض";
-    no.addEventListener("click", () =>
-      reviewTask(student.code, task.id, "reject")
-    );
+        const no = document.createElement("button");
+        no.className = "button danger";
+        no.textContent = "✕";
+        no.title = "رفض";
+        no.addEventListener("click", () => reviewTask(student.code, task.id, "reject"));
 
-    const forward = document.createElement("button");
-    forward.className = "button";
-    forward.textContent = "➜";
-    forward.title = "تحويل للمساعد";
-    forward.addEventListener("click", () =>
-      showAssistantSelector(student.code, task.id, block)
-    );
+        const forward = document.createElement("button");
+        forward.className = "button";
+        forward.textContent = "➜";
+        forward.title = "تحويل للمساعد";
+        forward.addEventListener("click", () => showAssistantSelector(student.code, task.id, block));
 
-    footer.append(pts, ok, no, forward);
-    item.appendChild(footer);
-    block.appendChild(item);
+        footer.append(pts, ok, no, forward);
+        item.appendChild(footer);
+        block.appendChild(item);
 
-    pendingTasksList.appendChild(block);
-  });
-}
+        pendingTasksList.appendChild(block);
+      });
+    }
+
     renderGroup(pendingHifz, "مهام الحفظ");
     renderGroup(pendingMurajaa, "مهام المراجعة");
     renderGroup(pendingGeneral, "مهام عامة ");
 
     if (!any) {
-      pendingTasksList.innerHTML =
-        '<p class="message success">لا توجد مهام بانتظار المراجعة حالياً 🎉</p>';
+      pendingTasksList.innerHTML = '<p class="message success">لا توجد مهام بانتظار المراجعة حالياً 🎉</p>';
     }
   } catch (e) {
     console.error("Error loadPendingTasksForReview:", e);
-    pendingTasksList.innerHTML =
-      `<p class="message error">خطأ في تحميل المهام: ${e.message}</p>`;
+    pendingTasksList.innerHTML = `<p class="message error">خطأ في تحميل المهام: ${e.message}</p>`;
   }
 }
 
 async function loadStudentsForTeacher() {
   studentList.innerHTML = "<li>جارٍ تحميل الطلاب...</li>";
+
   try {
     const students = await fetchAllStudentsSortedByPoints(isInCurrentHalaqa);
     if (!students.length) {
@@ -1946,139 +1687,117 @@ async function loadStudentsForTeacher() {
       const hifzPercent = computeHifzPercent(s);
       const murPercent = computeMurajaaPercent(s);
       const li = document.createElement("li");
+
       const hifzPaused = !!s.pause_hifz;
       const murPaused = !!s.pause_murajaa;
       const isStudentAssistant = !!s.is_student_assistant;
       const isParentAssistant = !!s.is_parent_assistant && !!s.parent_code;
-      
+
       li.innerHTML = `
-      <div class="student-card">
-    
-    <div class="student-top">
-      <div class="student-name">
-        #${i + 1} - ${s.name} (${s.code})
-      </div>
-    </div>
+        <div class="student-card">
 
-    <div class="student-week week-strip"></div>
+          <div class="student-top">
+            <div class="student-name">#${i + 1} - ${s.name} (${s.code})</div>
+          </div>
 
-    <div class="student-actions">
-  <button class="button primary btn-edit-student" data-code="${s.code}">تعديل</button>
+          <div class="student-week week-strip"></div>
 
-  <!-- حفظ -->
-  <button class="chip-toggle ${hifzPaused ? "" : "on"} btn-toggle-hifz"
-    data-code="${s.code}"
-    aria-pressed="${hifzPaused ? "false" : "true"}"
-    title="${hifzPaused ? "الحفظ: موقوف" : "الحفظ: شغال"}">
-    <span class="ico">حفظ</span>
-  </button>
+          <div class="student-actions">
+            <button class="button primary btn-edit-student" data-code="${s.code}">تعديل</button>
 
-  <!-- مراجعة -->
-  <button class="chip-toggle ${murPaused ? "" : "on"} btn-toggle-murajaa"
-    data-code="${s.code}"
-    aria-pressed="${murPaused ? "false" : "true"}"
-    title="${murPaused ? "المراجعة: موقوفة" : "المراجعة: شغالة"}">
-    <span class="ico">مراجعة</span>
-  </button>
+            <button class="chip-toggle ${hifzPaused ? "" : "on"} btn-toggle-hifz"
+              data-code="${s.code}"
+              aria-pressed="${hifzPaused ? "false" : "true"}"
+              title="${hifzPaused ? "الحفظ: موقوف" : "الحفظ: شغال"}">
+              <span class="ico">حفظ</span>
+            </button>
 
-  <!-- مساعد طالب -->
-  <button class="chip-toggle ${isStudentAssistant ? "on" : ""} btn-toggle-student-assistant"
-    data-code="${s.code}"
-    aria-pressed="${isStudentAssistant ? "true" : "false"}"
-    title="${isStudentAssistant ? "مساعد طالب: مفعّل" : "مساعد طالب: غير مفعّل"}">
-    <span class="ico">طالب</span>
-  </button>
+            <button class="chip-toggle ${murPaused ? "" : "on"} btn-toggle-murajaa"
+              data-code="${s.code}"
+              aria-pressed="${murPaused ? "false" : "true"}"
+              title="${murPaused ? "المراجعة: موقوفة" : "المراجعة: شغالة"}">
+              <span class="ico">مراجعة</span>
+            </button>
 
-  <!-- مساعد ولي -->
-  <button class="chip-toggle ${isParentAssistant ? "on" : ""} btn-toggle-parent-assistant"
-    data-code="${s.code}"
-    aria-pressed="${isParentAssistant ? "true" : "false"}"
-    title="${isParentAssistant ? "مساعد ولي: مفعّل" : "مساعد ولي: غير مفعّل"}">
-    <span class="ico">ولي</span>
-  </button>
-</div>
+            <button class="chip-toggle ${isStudentAssistant ? "on" : ""} btn-toggle-student-assistant"
+              data-code="${s.code}"
+              aria-pressed="${isStudentAssistant ? "true" : "false"}"
+              title="${isStudentAssistant ? "مساعد طالب: مفعّل" : "مساعد طالب: غير مفعّل"}">
+              <span class="ico">طالب</span>
+            </button>
 
+            <button class="chip-toggle ${isParentAssistant ? "on" : ""} btn-toggle-parent-assistant"
+              data-code="${s.code}"
+              aria-pressed="${isParentAssistant ? "true" : "false"}"
+              title="${isParentAssistant ? "مساعد ولي: مفعّل" : "مساعد ولي: غير مفعّل"}">
+              <span class="ico">ولي</span>
+            </button>
+          </div>
 
-    <!-- السهم في أسفل البطاقة -->
-   <div class="card-notch toggle-details" aria-expanded="false">
-  <span class="chev">▾</span>
-</div>
+          <!-- النتوء السفلي (بدون زر) -->
+          <div class="card-notch toggle-details" aria-expanded="false">
+            <span class="chev">▾</span>
+          </div>
 
+          <div class="student-details hidden">
+            <div class="student-sub">
+              حفظ: ${hifzPercent}% ${hifzPaused ? " (موقوف)" : ""} |
+              مراجعة: ${murPercent}% ${murPaused ? " (موقوف)" : ""} |
+              نقاط: ${s.total_points || 0}
+            </div>
 
-    <!-- التفاصيل -->
-    <div class="student-details hidden">
-      <div class="student-sub">
-        حفظ: ${hifzPercent}% ${hifzPaused ? " (موقوف)" : ""} |
-        مراجعة: ${murPercent}% ${murPaused ? " (موقوف)" : ""} |
-        نقاط: ${s.total_points || 0}
-      </div>
+            <div class="student-sub">
+              ولي الأمر: ${s.parent_name || "غير مسجل"} (${s.parent_code || "—"})
+            </div>
 
-      <div class="student-sub">
-        ولي الأمر: ${s.parent_name || "غير مسجل"} (${s.parent_code || "—"})
-      </div>
+            <div class="student-sub">
+              مساعد طالب: ${isStudentAssistant ? "✅ مفعّل" : "❌ غير مفعّل"} |
+              مساعد ولي أمر: ${isParentAssistant ? "✅ مفعّل" : "❌ غير مفعّل"}
+            </div>
+          </div>
 
-      <div class="student-sub">
-        مساعد طالب: ${isStudentAssistant ? "✅ مفعّل" : "❌ غير مفعّل"} |
-        مساعد ولي أمر: ${isParentAssistant ? "✅ مفعّل" : "❌ غير مفعّل"}
-      </div>
-    </div>
-
-  </div>
-`;
-
+        </div>
+      `;
 
       const weekDiv = li.querySelector(".week-strip");
       weekDiv.innerHTML = buildWeekStripHtml(Array.isArray(s.tasks) ? s.tasks : []);
+
       li.dataset.search = `${s.code || ""} ${s.name || ""} ${s.parent_name || ""} ${s.parent_code || ""}`.toLowerCase();
       studentList.appendChild(li);
     });
 
+    // Bind actions
     document.querySelectorAll(".btn-edit-student").forEach((btn) => {
-      btn.addEventListener("click", (e) =>
-        loadStudentIntoForm(e.target.dataset.code)
-      );
+      btn.addEventListener("click", (e) => loadStudentIntoForm(e.target.dataset.code));
     });
 
     document.querySelectorAll(".btn-toggle-hifz").forEach((btn) => {
-      btn.addEventListener("click", (e) =>
-        toggleStudentFlag(e.target.dataset.code, "pause_hifz")
-      );
+      btn.addEventListener("click", (e) => toggleStudentFlag(e.target.dataset.code, "pause_hifz"));
     });
 
     document.querySelectorAll(".btn-toggle-murajaa").forEach((btn) => {
-      btn.addEventListener("click", (e) =>
-        toggleStudentFlag(e.target.dataset.code, "pause_murajaa")
-      );
+      btn.addEventListener("click", (e) => toggleStudentFlag(e.target.dataset.code, "pause_murajaa"));
     });
 
-    document
-      .querySelectorAll(".btn-toggle-student-assistant")
-      .forEach((btn) => {
-        btn.addEventListener("click", (e) =>
-          toggleStudentFlag(e.target.dataset.code, "is_student_assistant")
-        );
-      });
+    document.querySelectorAll(".btn-toggle-student-assistant").forEach((btn) => {
+      btn.addEventListener("click", (e) => toggleStudentFlag(e.target.dataset.code, "is_student_assistant"));
+    });
 
-    document
-      .querySelectorAll(".btn-toggle-parent-assistant")
-      .forEach((btn) => {
-        btn.addEventListener("click", (e) =>
-          toggleStudentFlag(e.target.dataset.code, "is_parent_assistant")
-        );
-      });
+    document.querySelectorAll(".btn-toggle-parent-assistant").forEach((btn) => {
+      btn.addEventListener("click", (e) => toggleStudentFlag(e.target.dataset.code, "is_parent_assistant"));
+    });
   } catch (e) {
     console.error("Error loadStudentsForTeacher:", e);
-    studentList.innerHTML =
-      "<li>حدث خطأ أثناء تحميل قائمة الطلاب.</li>";
+    studentList.innerHTML = "<li>حدث خطأ أثناء تحميل قائمة الطلاب.</li>";
   }
 }
 
-/** تبديل أحد الفلاق في سجل الطالب */
 async function toggleStudentFlag(code, fieldName) {
   try {
     const studentRef = doc(db, "students", code);
     const snap = await getDoc(studentRef);
     if (!snap.exists()) return;
+
     const s = snap.data();
     const current = !!s[fieldName];
 
@@ -2091,22 +1810,17 @@ async function toggleStudentFlag(code, fieldName) {
     } else if (fieldName === "pause_murajaa") {
       msg = !current ? "تم إيقاف مهام المراجعة لهذا الطالب." : "تم تشغيل مهام المراجعة لهذا الطالب.";
     } else if (fieldName === "is_student_assistant") {
-      msg = !current
-        ? "تم تفعيل هذا الطالب كمساعد."
-        : "تم إلغاء تفعيل هذا الطالب كمساعد.";
+      msg = !current ? "تم تفعيل هذا الطالب كمساعد." : "تم إلغاء تفعيل هذا الطالب كمساعد.";
     } else if (fieldName === "is_parent_assistant") {
       msg = !current
         ? "تم تفعيل ولي الأمر كمساعد في هذه الحلقة."
         : "تم إلغاء تفعيل ولي الأمر كمساعد في هذه الحلقة.";
     }
+
     if (msg) showMessage(registerStudentMessage, msg, "success");
   } catch (e) {
     console.error("Error toggleStudentFlag:", e);
-    showMessage(
-      registerStudentMessage,
-      `خطأ في تحديث حالة الطالب: ${e.message}`,
-      "error"
-    );
+    showMessage(registerStudentMessage, `خطأ في تحديث حالة الطالب: ${e.message}`, "error");
   }
 }
 
@@ -2119,8 +1833,7 @@ async function loadStudentIntoForm(code) {
     editingStudentCode = s.code;
     studentFormTitle.textContent = `تعديل بيانات الطالب: ${s.name}`;
 
-    if (!newStudentHifzStart.options.length || !newStudentHifzEnd.options.length)
-      populateHifzSelects();
+    if (!newStudentHifzStart.options.length || !newStudentHifzEnd.options.length) populateHifzSelects();
 
     newStudentCodeInput.value = s.code;
     newStudentNameInput.value = s.name;
@@ -2133,12 +1846,11 @@ async function loadStudentIntoForm(code) {
 
     newStudentMurajaaLevel.value = s.murajaa_level || "BUILDING";
     populateMurajaaStartSelect();
+
     const arr = getReviewArrayForLevel(newStudentMurajaaLevel.value);
     const def = s.murajaa_start_index ?? s.murajaa_progress_index ?? 0;
-    newStudentMurajaaStart.value = (
-      arr?.length ? Math.min(def, arr.length - 1) : 0
-    ).toString();
 
+    newStudentMurajaaStart.value = (arr?.length ? Math.min(def, arr.length - 1) : 0).toString();
     if (newStudentHalaqa) newStudentHalaqa.value = s.halaqa || "ONSITE";
 
     activateTab("manage-students-tab");
@@ -2162,21 +1874,16 @@ function displayCurriculumsInTeacherPanel() {
           ? "التطوير"
           : "المتقدم";
       const list = items
-        .map(
-          (it, i) =>
-            `<div class="curriculum-item">(${i}) ${it.name} – نقاط: ${
-              it.points || 0
-            }</div>`
-        )
+        .map((it, i) => `<div class="curriculum-item">(${i}) ${it.name} – نقاط: ${it.points || 0}</div>`)
         .join("");
       return `<h4>${title}</h4>${list}`;
     })
     .join("<hr />");
 }
 
-// ========================
-// 11) إضافة / تعديل طالب
-// ========================
+// =====================================================
+// 12) إضافة / تعديل طالب (Register/Update)
+// =====================================================
 
 function populateHifzSelects() {
   if (!newStudentHifzStart || !newStudentHifzEnd) return;
@@ -2192,13 +1899,10 @@ function populateMurajaaStartSelect() {
   if (!newStudentMurajaaLevel || !newStudentMurajaaStart) return;
   const arr = getReviewArrayForLevel(newStudentMurajaaLevel.value || "BUILDING");
   if (!arr?.length) {
-    newStudentMurajaaStart.innerHTML =
-      '<option value="0">لا توجد مهام لهذا المستوى</option>';
+    newStudentMurajaaStart.innerHTML = '<option value="0">لا توجد مهام لهذا المستوى</option>';
     return;
   }
-  newStudentMurajaaStart.innerHTML = arr
-    .map((it, i) => `<option value="${i}">(${i}) ${it.name}</option>`)
-    .join("");
+  newStudentMurajaaStart.innerHTML = arr.map((it, i) => `<option value="${i}">(${i}) ${it.name}</option>`).join("");
 }
 
 newStudentMurajaaLevel?.addEventListener("change", populateMurajaaStartSelect);
@@ -2217,19 +1921,11 @@ registerStudentButton?.addEventListener("click", async () => {
   const halaqaValue = newStudentHalaqa?.value || "ONSITE";
 
   if (!code || !name || isNaN(hifzStartIndex) || isNaN(hifzEndIndex)) {
-    showMessage(
-      registerStudentMessage,
-      "الرجاء تعبئة جميع الحقول الأساسية بشكل صحيح.",
-      "error"
-    );
+    showMessage(registerStudentMessage, "الرجاء تعبئة جميع الحقول الأساسية بشكل صحيح.", "error");
     return;
   }
   if (hifzEndIndex < hifzStartIndex) {
-    showMessage(
-      registerStudentMessage,
-      "نقطة نهاية الحفظ يجب أن تكون بعد نقطة البداية.",
-      "error"
-    );
+    showMessage(registerStudentMessage, "نقطة نهاية الحفظ يجب أن تكون بعد نقطة البداية.", "error");
     return;
   }
 
@@ -2247,9 +1943,7 @@ registerStudentButton?.addEventListener("click", async () => {
       parent_code: parentCode,
       hifz_start_id: hifzStartIndex,
       hifz_end_id: hifzEndIndex,
-      hifz_progress: existing
-        ? existing.hifz_progress ?? hifzStartIndex
-        : hifzStartIndex,
+      hifz_progress: existing ? existing.hifz_progress ?? hifzStartIndex : hifzStartIndex,
       hifz_level: hifzLevel,
       murajaa_level: murajaaLevel,
       murajaa_start_index: murajaaStartIndex,
@@ -2265,6 +1959,7 @@ registerStudentButton?.addEventListener("click", async () => {
 
     await setDoc(studentRef, baseData, { merge: true });
     showMessage(registerStudentMessage, "تم حفظ بيانات الطالب.", "success");
+
     editingStudentCode = null;
     studentFormTitle.textContent = "إضافة / تعديل طالب";
 
@@ -2272,41 +1967,32 @@ registerStudentButton?.addEventListener("click", async () => {
     await loadHonorBoard();
   } catch (e) {
     console.error("Error registerStudent:", e);
-    showMessage(
-      registerStudentMessage,
-      `حدث خطأ في حفظ بيانات الطالب: ${e.message}`,
-      "error"
-    );
+    showMessage(registerStudentMessage, `حدث خطأ في حفظ بيانات الطالب: ${e.message}`, "error");
   }
 });
 
-// ========================
-// 12) تبويبات المعلم + نوع الحلقة
-// ========================
+// =====================================================
+// 13) تبويبات المعلم + نوع الحلقة + التحديث
+// =====================================================
 
 function activateTab(tabId) {
-  document
-    .querySelectorAll(".tab-content")
-    .forEach((el) => el.classList.add("hidden"));
+  document.querySelectorAll(".tab-content").forEach((el) => el.classList.add("hidden"));
   document.querySelectorAll(".tab-button").forEach((btn) =>
     btn.classList.toggle("active", btn.dataset.tab === tabId)
   );
+
   const target = document.getElementById(tabId);
   target?.classList.remove("hidden");
 
-  if (tabId === "review-tasks-tab") {
-    loadPendingTasksForReview();
-  } else if (tabId === "manage-students-tab") {
-    loadStudentsForTeacher();
-  } else if (tabId === "curriculum-tab") {
+  if (tabId === "review-tasks-tab") loadPendingTasksForReview();
+  else if (tabId === "manage-students-tab") loadStudentsForTeacher();
+  else if (tabId === "curriculum-tab") {
     displayCurriculumsInTeacherPanel();
     loadHonorBoard();
   }
 }
 
-tabButtons.forEach((btn) =>
-  btn.addEventListener("click", () => activateTab(btn.dataset.tab))
-);
+tabButtons.forEach((btn) => btn.addEventListener("click", () => activateTab(btn.dataset.tab)));
 
 halaqaOnsiteBtn?.addEventListener("click", () => {
   currentHalaqa = "ONSITE";
@@ -2320,13 +2006,11 @@ halaqaOnlineBtn?.addEventListener("click", () => {
   refreshTeacherView();
 });
 
-// ========================
-// 13) شبكة الحلقة (tiles)
-// ========================
-
+// شبكة الحلقة (tiles)
 halaqaStudentsGrid?.addEventListener("click", async (e) => {
   const tile = e.target.closest(".halaqa-tile");
   if (!tile) return;
+
   const code = tile.dataset.code;
   if (!code) return;
 
@@ -2353,9 +2037,9 @@ halaqaBackButton?.addEventListener("click", () => {
   userCodeInput.value = "";
 });
 
-// ========================
+// =====================================================
 // 14) تسجيل الدخول / الخروج
-// ========================
+// =====================================================
 
 async function fetchStudentByCode(code) {
   const studentRef = doc(db, "students", code);
@@ -2399,9 +2083,7 @@ loginButton.addEventListener("click", async () => {
     let parentHasChildren = false;
     parentSnap.forEach((d) => {
       const s = d.data();
-      if (String(s.parent_code || "") === String(rawCode)) {
-        parentHasChildren = true;
-      }
+      if (String(s.parent_code || "") === String(rawCode)) parentHasChildren = true;
     });
 
     if (parentHasChildren) {
@@ -2414,11 +2096,7 @@ loginButton.addEventListener("click", async () => {
     // الطالب
     const student = await fetchStudentByCode(rawCode);
     if (!student) {
-      showMessage(
-        authMessage,
-        "لم يتم العثور على طالب بهذا الرمز",
-        "error"
-      );
+      showMessage(authMessage, "لم يتم العثور على طالب بهذا الرمز", "error");
       return;
     }
     currentUser = { role: "student", code: student.code };
@@ -2455,9 +2133,9 @@ logoutButtonStudent?.addEventListener("click", logout);
 logoutButtonTeacher?.addEventListener("click", logout);
 logoutButtonParent?.addEventListener("click", logout);
 
-// ========================
+// =====================================================
 // 15) التحديث (Refresh)
-// ========================
+// =====================================================
 
 async function refreshStudentView() {
   if (!currentUser?.code) {
@@ -2470,17 +2148,10 @@ async function refreshStudentView() {
       showMessage(authMessage, "تعذر العثور على بيانات الطالب.", "error");
       return;
     }
-    await displayStudentDashboard({
-      code: currentUser.code,
-      ...snap.data(),
-    });
+    await displayStudentDashboard({ code: currentUser.code, ...snap.data() });
   } catch (e) {
     console.error("Error refreshStudentView:", e);
-    showMessage(
-      authMessage,
-      `خطأ في تحديث بيانات الطالب: ${e.message}`,
-      "error"
-    );
+    showMessage(authMessage, `خطأ في تحديث بيانات الطالب: ${e.message}`, "error");
   }
 }
 
@@ -2500,9 +2171,9 @@ function refreshTeacherView() {
 refreshStudentButton?.addEventListener("click", refreshStudentView);
 refreshTeacherButton?.addEventListener("click", refreshTeacherView);
 
-// ========================
-// 16) تعيين مهام (أزرار المعلم)
-// ========================
+// =====================================================
+// 16) تعيين مهام (Teacher Assign Buttons)
+// =====================================================
 
 assignIndividualTaskButton?.addEventListener("click", async () => {
   const code = assignTaskStudentCode.value.trim();
@@ -2511,11 +2182,7 @@ assignIndividualTaskButton?.addEventListener("click", async () => {
   const points = parseInt(assignTaskPoints.value, 10);
 
   if (!code || !description || isNaN(points) || points <= 0) {
-    showMessage(
-      assignTaskMessage,
-      "الرجاء تعبئة رمز الطالب والوصف والنقاط بشكل صحيح.",
-      "error"
-    );
+    showMessage(assignTaskMessage, "الرجاء تعبئة رمز الطالب والوصف والنقاط بشكل صحيح.", "error");
     return;
   }
 
@@ -2542,11 +2209,7 @@ assignIndividualTaskButton?.addEventListener("click", async () => {
     showMessage(assignTaskMessage, "تم تعيين المهمة للطالب.", "success");
   } catch (e) {
     console.error("Error assignIndividualTask:", e);
-    showMessage(
-      assignTaskMessage,
-      `حدث خطأ في تعيين المهمة: ${e.message}`,
-      "error"
-    );
+    showMessage(assignTaskMessage, `حدث خطأ في تعيين المهمة: ${e.message}`, "error");
   }
 });
 
@@ -2556,11 +2219,7 @@ assignGroupTaskButton?.addEventListener("click", async () => {
   const points = parseInt(assignTaskPoints.value, 10);
 
   if (!description || isNaN(points) || points <= 0) {
-    showMessage(
-      assignTaskMessage,
-      "الرجاء تعبئة الوصف والنقاط بشكل صحيح.",
-      "error"
-    );
+    showMessage(assignTaskMessage, "الرجاء تعبئة الوصف والنقاط بشكل صحيح.", "error");
     return;
   }
 
@@ -2585,47 +2244,28 @@ assignGroupTaskButton?.addEventListener("click", async () => {
     });
 
     await batch.commit();
-    showMessage(
-      assignTaskMessage,
-      "تم تعيين المهمة لجميع الطلاب.",
-      "success"
-    );
+    showMessage(assignTaskMessage, "تم تعيين المهمة لجميع الطلاب.", "success");
   } catch (e) {
     console.error("Error assignGroupTask:", e);
-    showMessage(
-      assignTaskMessage,
-      `حدث خطأ في تعيين المهمة الجماعية: ${e.message}`,
-      "error"
-    );
+    showMessage(assignTaskMessage, `حدث خطأ في تعيين المهمة الجماعية: ${e.message}`, "error");
   }
 });
 
-// ========================
-// 17) تبويبات الطالب
-// ========================
+// =====================================================
+// 17) تبويبات الطالب (مهامي / مهام المساعد)
+// =====================================================
 
 function activateStudentTab(tabId) {
   if (!studentMainTasksSection || !studentAssistantTabSection) return;
 
-  studentMainTasksSection.classList.toggle(
-    "hidden",
-    tabId !== "student-main-tasks"
-  );
-  studentAssistantTabSection.classList.toggle(
-    "hidden",
-    tabId !== "student-assistant-tab"
-  );
+  studentMainTasksSection.classList.toggle("hidden", tabId !== "student-main-tasks");
+  studentAssistantTabSection.classList.toggle("hidden", tabId !== "student-assistant-tab");
 
-  studentTabButtons.forEach((btn) =>
-    btn.classList.toggle("active", btn.dataset.tab === tabId)
-  );
+  studentTabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === tabId));
 
   const progressSection = document.querySelector(".progress-section");
   if (progressSection) {
-    progressSection.classList.toggle(
-      "hidden",
-      tabId === "student-assistant-tab"
-    );
+    progressSection.classList.toggle("hidden", tabId === "student-assistant-tab");
   }
 
   if (tabId === "student-assistant-tab") {
@@ -2634,18 +2274,12 @@ function activateStudentTab(tabId) {
 }
 
 studentTabButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    activateStudentTab(btn.dataset.tab);
-  });
+  btn.addEventListener("click", () => activateStudentTab(btn.dataset.tab));
 });
 
-// ========================
-// 18) تهيئة أولية
-// ========================
-
-populateHifzSelects();
-populateMurajaaStartSelect();
-updateHalaqaToggleUI();
+// =====================================================
+// 18) البحث في قائمة الطلاب (Teacher Search)
+// =====================================================
 
 let teacherSearchBound = false;
 
@@ -2672,15 +2306,17 @@ function bindTeacherStudentSearch() {
   teacherSearchBound = true;
 }
 
-// استدعها بعد كل تحميل للطلاب
 const _oldLoadStudentsForTeacher = loadStudentsForTeacher;
 loadStudentsForTeacher = async function () {
   await _oldLoadStudentsForTeacher();
   bindTeacherStudentSearch();
 };
-/* ===== بطاقة الطالب: تفاعل بسيط ===== */
 
-// 1) فتح/إغلاق التفاصيل
+// =====================================================
+// 19) تفاعل بطاقة الطالب (السهم السفلي) + قلب chip-toggle بصرياً
+// =====================================================
+
+// فتح/إغلاق التفاصيل
 document.addEventListener("click", (e) => {
   const notch = e.target.closest(".toggle-details");
   if (!notch) return;
@@ -2694,63 +2330,20 @@ document.addEventListener("click", (e) => {
   notch.setAttribute("aria-expanded", String(!open));
 });
 
-
-// 2) تبديل حالة الأزرار (بصري فقط)
-document.addEventListener("click", (e) => {
-  const toggleBtn = e.target.closest(
-    ".toggle-hifz, .toggle-murajaa, .toggle-assistant"
-  );
-  if (!toggleBtn) return;
-
-  toggleBtn.classList.toggle("active");
-});
+// قلب بصري سريع فقط (البيانات الرسمية تتحدث بعد loadStudentsForTeacher)
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".chip-toggle");
   if (!btn) return;
-
-  // قلب بصري سريع فقط (البيانات الرسمية تتحدث بعد loadStudentsForTeacher)
   btn.classList.toggle("on");
   btn.setAttribute("aria-pressed", btn.classList.contains("on") ? "true" : "false");
 });
 
+// =====================================================
+// 20) تهيئة أولية
+// =====================================================
 
-// 3) تعليم أيام الأسبوع (مثال استخدام)
-function markStudentWeek(cardEl, doneDays = []) {
-  // doneDays مثال: ["sun","mon","thu"]
-  cardEl.querySelectorAll(".student-week .day").forEach((d) => {
-    const key = d.dataset.day;
-    d.classList.toggle("done", doneDays.includes(key));
-  });
-}
+populateHifzSelects();
+populateMurajaaStartSelect();
+updateHalaqaToggleUI();
 
-/*
-  مثال استدعاء بعد إنشاء البطاقة:
-  markStudentWeek(li, ["sun","tue","thu"]);
-*/
-
-console.log(
-  "App ready. Curriculum loaded from external file with assistants & pause flags."
-);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+console.log("App ready. Curriculum loaded from external file with assistants & pause flags.");
