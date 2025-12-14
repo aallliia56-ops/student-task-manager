@@ -385,29 +385,32 @@ h1{ text-align:center; margin-bottom:10px; }
 }
 
 /* chip-toggle — هذه النسخة النهائية (pill) */
-button.chip-toggle{
+.chip-toggle{
   appearance:none;
-  border:1.8px solid #cbd5e1;
+  height:28px;                 /* هذا أهم سطر */
+  min-width:44px;              /* يخليها متناسقة */
+  padding:0 8px;               /* نحف العرض */
+  border:1.5px solid #cbd5e1;
   background:#fff;
   color:#64748b;
   border-radius:999px;
-  padding:6px 10px;
-  font-size:.8rem;
+  font-size:.7rem;             /* أصغر شوي */
   font-weight:900;
   line-height:1;
   display:inline-flex;
   align-items:center;
-  gap:6px;
+  justify-content:center;
   cursor:pointer;
   user-select:none;
-  box-shadow:none !important; /* يمنع وراثة .button */
 }
+
 
 .chip-toggle.on{
   border-color:#22c55e;
   color:#166534;
   background:#f0fdf4;
 }
+
 
 .chip-toggle:hover{ border-color:#94a3b8; }
 .chip-toggle:active{ transform:scale(.98); }
@@ -572,3 +575,11 @@ button.chip-toggle{
   .progress-section{ grid-template-columns:repeat(3, minmax(0,1fr)); }
   .curriculum-view{ grid-template-columns:repeat(2, minmax(0,1fr)); }
 }
+@media (max-width:420px){
+  .chip-toggle{
+    height:26px;
+    padding:0 6px;
+    font-size:.65rem;
+  }
+}
+
