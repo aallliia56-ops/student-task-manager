@@ -2704,6 +2704,15 @@ document.addEventListener("click", (e) => {
 
   toggleBtn.classList.toggle("active");
 });
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".chip-toggle");
+  if (!btn) return;
+
+  // قلب بصري سريع فقط (البيانات الرسمية تتحدث بعد loadStudentsForTeacher)
+  btn.classList.toggle("on");
+  btn.setAttribute("aria-pressed", btn.classList.contains("on") ? "true" : "false");
+});
+
 
 // 3) تعليم أيام الأسبوع (مثال استخدام)
 function markStudentWeek(cardEl, doneDays = []) {
@@ -2722,6 +2731,7 @@ function markStudentWeek(cardEl, doneDays = []) {
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
