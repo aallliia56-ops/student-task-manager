@@ -842,5 +842,61 @@ h1 { text-align: center; margin-bottom: 10px; }
   background:#fff;
 }
 
+/* صف الأزرار داخل بطاقة الطالب */
+.student-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;       /* لو ضاقت الشاشة ينزل سطر ثاني بشكل مرتب */
+  margin-top:8px;
+}
+
+/* زر التعديل يبقى طبيعي لكن أصغر شوي */
+.student-actions .btn-edit-student{
+  padding:6px 10px;
+  font-size:.85rem;
+  line-height:1;
+}
+
+/* أزرار الـ Chip الجديدة */
+.chip-toggle{
+  appearance:none;
+  border:1.8px solid #cbd5e1;
+  background:#fff;
+  color:#64748b;
+  border-radius:999px;
+  padding:6px 10px;
+  font-size:.8rem;
+  font-weight:900;
+  line-height:1;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  user-select:none;
+}
+
+/* حالة ON */
+.chip-toggle.on{
+  border-color:#22c55e;
+  color:#166534;
+  background:#f0fdf4;
+}
+
+/* ضغط/هوفر */
+.chip-toggle:active{ transform:scale(.98); }
+.chip-toggle:hover{ border-color:#94a3b8; }
+
+/* لو تبغى كلمة داخلها تكون ثابتة */
+.chip-toggle .ico{
+  display:inline-block;
+  min-width:34px;       /* يخلي “حفظ/ولي/طالب” متساوية تقريباً */
+  text-align:center;
+}
+
+/* مهم: امنع وراثة تنسيق .button على chip-toggle */
+button.chip-toggle{
+  box-shadow:none !important;
+}
 
 
