@@ -214,14 +214,14 @@ h1{ text-align:center; margin-bottom:10px; }
 ===================================================== */
 .week-strip{
   display:flex;
-  gap:8px;
-  margin-top:8px;
+  gap:4px;
+  margin-top:6px;
   justify-content:center;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
 }
 
 .week-day{
-  min-width:50px;
+  min-width:22px;
   padding:4px 6px;
   border-radius:999px;
   border:1px solid #ccc;
