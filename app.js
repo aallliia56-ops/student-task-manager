@@ -1952,7 +1952,7 @@ async function loadStudentsForTeacher() {
       const isParentAssistant = !!s.is_parent_assistant && !!s.parent_code;
 
     li.innerHTML = `
-  <div class="student-card">
+    <div class="student-card">
 
     <!-- الاسم -->
     <div class="student-top">
@@ -2698,6 +2698,7 @@ function markStudentWeek(cardEl, doneDays = []) {
 console.log(
   "App ready. Curriculum loaded from external file with assistants & pause flags."
 );
+
 
 
 
