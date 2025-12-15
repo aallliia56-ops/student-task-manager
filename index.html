@@ -201,74 +201,117 @@
       </div>
 
       <div id="manage-students-tab" class="tab-content hidden">
-        <h3 id="student-form-title">إضافة / تعديل طالب</h3>
+        <h3 id="student-form-title">الطلاب</h3>
 
-        <div class="student-form">
-          <div class="input-group">
-            <label for="new-student-code">رمز الطالب:</label>
-            <input type="text" id="new-student-code" placeholder="مثال: 101" />
-          </div>
+<!-- زر إضافة -->
+<div class="action-buttons" style="margin:10px 0 14px;">
+  <button id="open-student-form" class="button success">+ إضافة طالب</button>
+  <button id="close-student-form" class="button secondary hidden">إغلاق</button>
+</div>
 
-          <div class="input-group">
-            <label for="new-student-name">اسم الطالب:</label>
-            <input type="text" id="new-student-name" placeholder="الاسم الكامل" />
-          </div>
+<!-- الفورم (مخفي بالبداية) -->
+<div id="student-form-wrapper" class="student-form hidden">
 
-          <div class="input-group">
-            <label for="new-student-parent-name">اسم ولي الأمر (اختياري):</label>
-            <input type="text" id="new-student-parent-name" placeholder="اسم ولي الأمر" />
-          </div>
+  <!-- 1) بيانات الطالب -->
+  <details class="form-section" open>
+    <summary>بيانات الطالب</summary>
 
-          <div class="input-group">
-            <label for="new-student-parent-code">رمز ولي الأمر (اختياري):</label>
-            <input type="text" id="new-student-parent-code" placeholder="مثال: P100 (يستخدمه ولي الأمر للدخول)"/>
-          </div>
+    <div class="input-group">
+      <label for="new-student-code">رمز الطالب (إلزامي):</label>
+      <input type="text" id="new-student-code" placeholder="مثال: 101" />
+    </div>
 
-          <div class="input-group">
-            <label for="new-student-hifz-start">نقطة بداية الحفظ:</label>
-            <select id="new-student-hifz-start"></select>
-          </div>
+    <div class="input-group">
+      <label for="new-student-name">اسم الطالب (إلزامي):</label>
+      <input type="text" id="new-student-name" placeholder="الاسم الكامل" />
+    </div>
 
-          <div class="input-group">
-            <label for="new-student-hifz-end">نقطة نهاية الحفظ:</label>
-            <select id="new-student-hifz-end"></select>
-          </div>
+    <!-- نوع الحلقة: زرّين -->
+    <div class="input-group">
+      <label>نوع الحلقة:</label>
 
-          <div class="input-group">
-            <label for="new-student-hifz-level">مستوى الحفظ (عدد المقاطع):</label>
-            <select id="new-student-hifz-level">
-              <option value="1">مقطع واحد (1x)</option>
-              <option value="2">مقطعين (2x)</option>
-              <option value="3">ثلاثة مقاطع (3x)</option>
-            </select>
-          </div>
+      <div id="halaqa-segment" class="halaqa-toggle">
+        <button type="button" class="halaqa-btn active seg-btn" data-value="ONSITE">حضوري</button>
+        <button type="button" class="halaqa-btn seg-btn" data-value="ONLINE">إلكتروني</button>
+      </div>
 
-          <div class="input-group">
-            <label for="new-student-murajaa-level">مستوى المراجعة (الحلقة):</label>
-            <select id="new-student-murajaa-level">
-              <option value="BUILDING">البناء</option>
-              <option value="DEVELOPMENT">التطوير</option>
-              <option value="ADVANCED">المتقدم</option>
-            </select>
-          </div>
+      <!-- نخلي الـ select موجود عشان كودك ما ينكسر -->
+      <select id="new-student-halaqa" class="hidden">
+        <option value="ONSITE">حلقة حضورية</option>
+        <option value="ONLINE">حلقة إلكترونية</option>
+      </select>
+    </div>
+  </details>
 
-          <div class="input-group">
-            <label for="new-student-murajaa-start">نقطة بداية المراجعة:</label>
-            <select id="new-student-murajaa-start"></select>
-            <p class="info-text">هذه أول مهمة مراجعة يبدأ منها الطالب في دورته الحالية.</p>
-          </div>
+  <!-- 2) الحفظ -->
+  <details class="form-section">
+    <summary>خطة الحفظ</summary>
 
-          <div class="input-group">
-            <label for="new-student-halaqa">نوع الحلقة:</label>
-            <select id="new-student-halaqa">
-              <option value="ONSITE">حلقة حضورية</option>
-              <option value="ONLINE">حلقة إلكترونية</option>
-            </select>
-          </div>
+    <div class="input-group">
+      <label for="new-student-hifz-start">نقطة بداية الحفظ:</label>
+      <select id="new-student-hifz-start"></select>
+    </div>
 
-          <button id="register-student-button" class="button primary">حفظ بيانات الطالب</button>
-          <p id="register-student-message" class="message hidden"></p>
-        </div>
+    <div class="input-group">
+      <label for="new-student-hifz-end">نقطة نهاية الحفظ:</label>
+      <select id="new-student-hifz-end"></select>
+    </div>
+
+    <!-- (لو عندك progress للحفظ أضفه هنا بنفس id حقك) -->
+    <!-- <div class="input-group">
+      <label for="new-student-hifz-progress">نقطة الانطلاق الحالية للحفظ:</label>
+      <select id="new-student-hifz-progress"></select>
+    </div> -->
+
+    <div class="input-group">
+      <label for="new-student-hifz-level">مستوى الحفظ (عدد المقاطع):</label>
+      <select id="new-student-hifz-level">
+        <option value="1">مقطع واحد (1x)</option>
+        <option value="2">مقطعين (2x)</option>
+        <option value="3">ثلاثة مقاطع (3x)</option>
+      </select>
+    </div>
+  </details>
+
+  <!-- 3) المراجعة -->
+  <details class="form-section">
+    <summary>خطة المراجعة</summary>
+
+    <div class="input-group">
+      <label for="new-student-murajaa-level">مستوى المراجعة (الحلقة):</label>
+      <select id="new-student-murajaa-level">
+        <option value="BUILDING">البناء</option>
+        <option value="DEVELOPMENT">التطوير</option>
+        <option value="ADVANCED">المتقدم</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label for="new-student-murajaa-start">نقطة بداية المراجعة:</label>
+      <select id="new-student-murajaa-start"></select>
+      <p class="info-text">هذه أول مهمة مراجعة يبدأ منها الطالب في دورته الحالية.</p>
+    </div>
+  </details>
+
+  <!-- 4) ولي الأمر -->
+  <details class="form-section">
+    <summary>بيانات ولي الأمر (اختياري)</summary>
+
+    <div class="input-group">
+      <label for="new-student-parent-name">اسم ولي الأمر:</label>
+      <input type="text" id="new-student-parent-name" placeholder="اسم ولي الأمر" />
+    </div>
+
+    <div class="input-group">
+      <label for="new-student-parent-code">رمز ولي الأمر:</label>
+      <input type="text" id="new-student-parent-code" placeholder="مثال: P100 (يستخدمه ولي الأمر للدخول)"/>
+    </div>
+  </details>
+
+  <button id="register-student-button" class="button primary">حفظ بيانات الطالب</button>
+  <p id="register-student-message" class="message hidden"></p>
+</div>
+
 
         <hr />
 
@@ -353,3 +396,4 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
+
