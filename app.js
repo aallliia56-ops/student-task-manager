@@ -1730,66 +1730,33 @@ async function loadPendingTasksForReview() {
   }
 }
 
-async function loadStudentIntoForm(code) {
+async function loadStudentsForTeacher() {
+  studentList.innerHTML = "<li>جارٍ تحميل الطلاب...</li>";
+
   try {
-    const snap = await getDoc(doc(db, "students", code));
-    if (!snap.exists()) return;
-    const s = snap.data();
+    const students = await fetchAllStudentsSortedByPoints(isInCurrentHalaqa);
 
-    editingStudentCode = s.code;
-
-    // ✅ افتح تبويب إدارة الطلاب ثم افتح الفورم كامل
-    activateTab("manage-students-tab");
-    openStudentForm();
-
-    if (studentFormTitle) studentFormTitle.textContent = `تعديل بيانات الطالب: ${s.name || s.code}`;
-
-    // تأكد القوائم متعبية
-    if (!newStudentHifzStart?.options.length || !newStudentHifzEnd?.options.length) {
-      populateHifzSelects();
+    if (!students.length) {
+      studentList.innerHTML = "<li>لا يوجد طلاب مسجلون بعد.</li>";
+      return;
     }
-
-    // تعبئة البيانات
-    if (newStudentCodeInput) newStudentCodeInput.value = s.code || "";
-    if (newStudentNameInput) newStudentNameInput.value = s.name || "";
-    if (newStudentParentNameInput) newStudentParentNameInput.value = s.parent_name || "";
-    if (newStudentParentCodeInput) newStudentParentCodeInput.value = s.parent_code || "";
-
-    if (newStudentHifzStart) newStudentHifzStart.value = String(s.hifz_start_id ?? 0);
-    if (newStudentHifzEnd) newStudentHifzEnd.value = String(s.hifz_end_id ?? (HIFZ_CURRICULUM.length - 1));
-    if (newStudentHifzLevel) newStudentHifzLevel.value = String(s.hifz_level || 1);
-
-    if (newStudentMurajaaLevel) newStudentMurajaaLevel.value = s.murajaa_level || "BUILDING";
-    populateMurajaaStartSelect();
-
-    const arr = getReviewArrayForLevel(newStudentMurajaaLevel?.value || "BUILDING");
-    const def = s.murajaa_start_index ?? 0;
-    if (newStudentMurajaaStart) {
-      newStudentMurajaaStart.value = String(arr?.length ? Math.min(def, arr.length - 1) : 0);
-    }
-
-    // ✅ ضبط حضوري/إلكتروني في الأزرار + القيمة المخفية
-    setHalaqaSegment(s.halaqa || "ONSITE");
-  } catch (e) {
-    console.error("Error loadStudentIntoForm:", e);
-  }
-}
-
 
     studentList.innerHTML = "";
+
     students.forEach((s, i) => {
       const hifzPercent = computeHifzPercent(s);
-      const murPercent = computeMurajaaPercent(s);
-      const li = document.createElement("li");
+      const murPercent  = computeMurajaaPercent(s);
 
       const hifzPaused = !!s.pause_hifz;
-      const murPaused = !!s.pause_murajaa;
+      const murPaused  = !!s.pause_murajaa;
+
       const isStudentAssistant = !!s.is_student_assistant;
-      const isParentAssistant = !!s.is_parent_assistant && !!s.parent_code;
+      const isParentAssistant  = !!s.is_parent_assistant && !!s.parent_code;
+
+      const li = document.createElement("li");
 
       li.innerHTML = `
         <div class="student-card">
-
           <div class="student-top">
             <div class="student-name">#${i + 1} - ${s.name} (${s.code})</div>
           </div>
@@ -1799,28 +1766,32 @@ async function loadStudentIntoForm(code) {
           <div class="student-actions">
             <button class="button primary btn-edit-student" data-code="${s.code}">تعديل</button>
 
-            <button class="chip-toggle ${hifzPaused ? "" : "on"} btn-toggle-hifz"
+            <button type="button"
+              class="chip-toggle ${hifzPaused ? "" : "on"} btn-toggle-hifz"
               data-code="${s.code}"
               aria-pressed="${hifzPaused ? "false" : "true"}"
               title="${hifzPaused ? "الحفظ: موقوف" : "الحفظ: شغال"}">
               <span class="ico">حفظ</span>
             </button>
 
-            <button class="chip-toggle ${murPaused ? "" : "on"} btn-toggle-murajaa"
+            <button type="button"
+              class="chip-toggle ${murPaused ? "" : "on"} btn-toggle-murajaa"
               data-code="${s.code}"
               aria-pressed="${murPaused ? "false" : "true"}"
               title="${murPaused ? "المراجعة: موقوفة" : "المراجعة: شغالة"}">
               <span class="ico">مراجعة</span>
             </button>
 
-            <button class="chip-toggle ${isStudentAssistant ? "on" : ""} btn-toggle-student-assistant"
+            <button type="button"
+              class="chip-toggle ${isStudentAssistant ? "on" : ""} btn-toggle-student-assistant"
               data-code="${s.code}"
               aria-pressed="${isStudentAssistant ? "true" : "false"}"
               title="${isStudentAssistant ? "مساعد طالب: مفعّل" : "مساعد طالب: غير مفعّل"}">
               <span class="ico">طالب</span>
             </button>
 
-            <button class="chip-toggle ${isParentAssistant ? "on" : ""} btn-toggle-parent-assistant"
+            <button type="button"
+              class="chip-toggle ${isParentAssistant ? "on" : ""} btn-toggle-parent-assistant"
               data-code="${s.code}"
               aria-pressed="${isParentAssistant ? "true" : "false"}"
               title="${isParentAssistant ? "مساعد ولي: مفعّل" : "مساعد ولي: غير مفعّل"}">
@@ -1828,7 +1799,6 @@ async function loadStudentIntoForm(code) {
             </button>
           </div>
 
-          <!-- النتوء السفلي (بدون زر) -->
           <div class="card-notch toggle-details" aria-expanded="false">
             <span class="chev">▾</span>
           </div>
@@ -1849,7 +1819,6 @@ async function loadStudentIntoForm(code) {
               مساعد ولي أمر: ${isParentAssistant ? "✅ مفعّل" : "❌ غير مفعّل"}
             </div>
           </div>
-
         </div>
       `;
 
@@ -1862,24 +1831,37 @@ async function loadStudentIntoForm(code) {
 
     // Bind actions
     document.querySelectorAll(".btn-edit-student").forEach((btn) => {
-      btn.addEventListener("click", (e) => loadStudentIntoForm(e.target.dataset.code));
+      btn.addEventListener("click", (e) => loadStudentIntoForm(e.currentTarget.dataset.code));
     });
 
     document.querySelectorAll(".btn-toggle-hifz").forEach((btn) => {
-      btn.addEventListener("click", (e) => toggleStudentFlag(e.target.dataset.code, "pause_hifz"));
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleStudentFlag(e.currentTarget.dataset.code, "pause_hifz");
+      });
     });
 
     document.querySelectorAll(".btn-toggle-murajaa").forEach((btn) => {
-      btn.addEventListener("click", (e) => toggleStudentFlag(e.target.dataset.code, "pause_murajaa"));
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleStudentFlag(e.currentTarget.dataset.code, "pause_murajaa");
+      });
     });
 
     document.querySelectorAll(".btn-toggle-student-assistant").forEach((btn) => {
-      btn.addEventListener("click", (e) => toggleStudentFlag(e.target.dataset.code, "is_student_assistant"));
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleStudentFlag(e.currentTarget.dataset.code, "is_student_assistant");
+      });
     });
 
     document.querySelectorAll(".btn-toggle-parent-assistant").forEach((btn) => {
-      btn.addEventListener("click", (e) => toggleStudentFlag(e.target.dataset.code, "is_parent_assistant"));
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleStudentFlag(e.currentTarget.dataset.code, "is_parent_assistant");
+      });
     });
+
   } catch (e) {
     console.error("Error loadStudentsForTeacher:", e);
     studentList.innerHTML = "<li>حدث خطأ أثناء تحميل قائمة الطلاب.</li>";
@@ -2424,13 +2406,6 @@ document.addEventListener("click", (e) => {
   notch.setAttribute("aria-expanded", String(!open));
 });
 
-// قلب بصري سريع فقط (البيانات الرسمية تتحدث بعد loadStudentsForTeacher)
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest(".chip-toggle");
-  if (!btn) return;
-  btn.classList.toggle("on");
-  btn.setAttribute("aria-pressed", btn.classList.contains("on") ? "true" : "false");
-});
 
 // =====================================================
 // 20) تهيئة أولية
@@ -2441,4 +2416,5 @@ populateMurajaaStartSelect();
 updateHalaqaToggleUI();
 
 console.log("App ready. Curriculum loaded from external file with assistants & pause flags.");
+
 
