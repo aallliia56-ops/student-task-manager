@@ -117,6 +117,13 @@ const newStudentHalaqa = $("#new-student-halaqa");
 const registerStudentButton = $("#register-student-button");
 const registerStudentMessage = $("#register-student-message");
 
+// ✅ IDs الجديدة حسب HTML اللي عندك
+const btnOpenStudentForm = document.getElementById("open-student-form");
+const btnCloseStudentForm = document.getElementById("close-student-form");
+const studentFormWrapper = document.getElementById("student-form-wrapper");
+const halaqaSegment = document.getElementById("halaqa-segment");
+
+
 // عرض المنهج + لوحة الشرف
 const hifzCurriculumDisplay = $("#hifz-curriculum-display");
 const murajaaCurriculumDisplay = $("#murajaa-curriculum-display");
@@ -142,6 +149,57 @@ const halaqaStudentsGrid = $("#halaqa-students-grid");
 
 let currentUser = null;
 let editingStudentCode = null;
+
+// =====================================================
+// ✅ Student Form (Open/Close) + Halaqa Segment
+// =====================================================
+
+function openStudentForm() {
+  studentFormWrapper?.classList.remove("hidden");
+  btnOpenStudentForm?.classList.add("hidden");
+  btnCloseStudentForm?.classList.remove("hidden");
+
+  // افتح كل الأقسام (details)
+  studentFormWrapper?.querySelectorAll("details.form-section")
+    .forEach(d => d.open = true);
+}
+
+function closeStudentForm() {
+  studentFormWrapper?.classList.add("hidden");
+  btnOpenStudentForm?.classList.remove("hidden");
+  btnCloseStudentForm?.classList.add("hidden");
+}
+
+function setHalaqaSegment(value) {
+  const v = value || "ONSITE";
+  if (newStudentHalaqa) newStudentHalaqa.value = v;
+
+  halaqaSegment?.querySelectorAll(".seg-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.value === v);
+  });
+}
+
+// زر + إضافة طالب
+btnOpenStudentForm?.addEventListener("click", () => {
+  editingStudentCode = null;
+  if (studentFormTitle) studentFormTitle.textContent = "إضافة طالب";
+  openStudentForm();
+});
+
+// زر إغلاق
+btnCloseStudentForm?.addEventListener("click", closeStudentForm);
+
+// اختيار نوع الحلقة (حضوري/إلكتروني)
+halaqaSegment?.addEventListener("click", (e) => {
+  const b = e.target.closest(".seg-btn");
+  if (!b) return;
+
+  halaqaSegment.querySelectorAll(".seg-btn").forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+
+  if (newStudentHalaqa) newStudentHalaqa.value = b.dataset.value; // ONSITE / ONLINE
+});
+
 
 const HALAQA_LOGIN_CODES = {
   HALAQA_ONSITE: "ONSITE",
@@ -1672,15 +1730,51 @@ async function loadPendingTasksForReview() {
   }
 }
 
-async function loadStudentsForTeacher() {
-  studentList.innerHTML = "<li>جارٍ تحميل الطلاب...</li>";
-
+async function loadStudentIntoForm(code) {
   try {
-    const students = await fetchAllStudentsSortedByPoints(isInCurrentHalaqa);
-    if (!students.length) {
-      studentList.innerHTML = "<li>لا يوجد طلاب مسجلون بعد.</li>";
-      return;
+    const snap = await getDoc(doc(db, "students", code));
+    if (!snap.exists()) return;
+    const s = snap.data();
+
+    editingStudentCode = s.code;
+
+    // ✅ افتح تبويب إدارة الطلاب ثم افتح الفورم كامل
+    activateTab("manage-students-tab");
+    openStudentForm();
+
+    if (studentFormTitle) studentFormTitle.textContent = `تعديل بيانات الطالب: ${s.name || s.code}`;
+
+    // تأكد القوائم متعبية
+    if (!newStudentHifzStart?.options.length || !newStudentHifzEnd?.options.length) {
+      populateHifzSelects();
     }
+
+    // تعبئة البيانات
+    if (newStudentCodeInput) newStudentCodeInput.value = s.code || "";
+    if (newStudentNameInput) newStudentNameInput.value = s.name || "";
+    if (newStudentParentNameInput) newStudentParentNameInput.value = s.parent_name || "";
+    if (newStudentParentCodeInput) newStudentParentCodeInput.value = s.parent_code || "";
+
+    if (newStudentHifzStart) newStudentHifzStart.value = String(s.hifz_start_id ?? 0);
+    if (newStudentHifzEnd) newStudentHifzEnd.value = String(s.hifz_end_id ?? (HIFZ_CURRICULUM.length - 1));
+    if (newStudentHifzLevel) newStudentHifzLevel.value = String(s.hifz_level || 1);
+
+    if (newStudentMurajaaLevel) newStudentMurajaaLevel.value = s.murajaa_level || "BUILDING";
+    populateMurajaaStartSelect();
+
+    const arr = getReviewArrayForLevel(newStudentMurajaaLevel?.value || "BUILDING");
+    const def = s.murajaa_start_index ?? 0;
+    if (newStudentMurajaaStart) {
+      newStudentMurajaaStart.value = String(arr?.length ? Math.min(def, arr.length - 1) : 0);
+    }
+
+    // ✅ ضبط حضوري/إلكتروني في الأزرار + القيمة المخفية
+    setHalaqaSegment(s.halaqa || "ONSITE");
+  } catch (e) {
+    console.error("Error loadStudentIntoForm:", e);
+  }
+}
+
 
     studentList.innerHTML = "";
     students.forEach((s, i) => {
@@ -2347,3 +2441,4 @@ populateMurajaaStartSelect();
 updateHalaqaToggleUI();
 
 console.log("App ready. Curriculum loaded from external file with assistants & pause flags.");
+
