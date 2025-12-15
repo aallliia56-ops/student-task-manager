@@ -583,3 +583,15 @@ h1{ text-align:center; margin-bottom:10px; }
   }
 }
 
+.student-form-top{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;}
+.form-section{border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px; background:#fff; margin-bottom:8px;}
+.form-section summary{cursor:pointer; font-weight:900; color:#1f2937; padding:6px 4px;}
+.grid-2{display:grid; grid-template-columns:1fr; gap:10px;}
+@media(min-width:768px){ .grid-2{grid-template-columns:repeat(2,minmax(0,1fr));} }
+
+.segmented{display:flex; gap:6px; flex-wrap:wrap;}
+.seg-btn{
+  border:1px solid #d1d5db; background:#fff; border-radius:999px;
+  padding:6px 12px; font-weight:900; cursor:pointer;
+}
+.seg-btn.active{background:#3498db; color:#fff; border-color:#3498db;}
