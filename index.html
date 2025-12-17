@@ -242,11 +242,26 @@
       </select>
     </div>
   </details>
+<!-- 2) الحفظ -->
+<details class="form-section">
+  <summary>خطة الحفظ</summary>
 
-  <!-- 2) الحفظ -->
-  <details class="form-section">
-    <summary>خطة الحفظ</summary>
+  <div class="input-group">
+    <label for="new-student-hifz-type">نوع منهج الحفظ:</label>
+    <select id="new-student-hifz-type">
+      <option value="fixed">منهج ثابت (مقاطع)</option>
+      <option value="flexible">منهج مرن (آيات)</option>
+    </select>
+  </div>
 
+  <!-- ✅ خيارات المنهج المرن -->
+  <div class="input-group hidden" id="flexible-surah-group">
+    <label for="new-student-flexible-surah">سورة البداية (منهج مرن):</label>
+    <select id="new-student-flexible-surah"></select>
+  </div>
+
+  <!-- ✅ خيارات المنهج الثابت (نفس حقولك بدون تغيير) -->
+  <div id="fixed-hifz-group">
     <div class="input-group">
       <label for="new-student-hifz-start">نقطة بداية الحفظ:</label>
       <select id="new-student-hifz-start"></select>
@@ -257,12 +272,6 @@
       <select id="new-student-hifz-end"></select>
     </div>
 
-    <!-- (لو عندك progress للحفظ أضفه هنا بنفس id حقك) -->
-    <!-- <div class="input-group">
-      <label for="new-student-hifz-progress">نقطة الانطلاق الحالية للحفظ:</label>
-      <select id="new-student-hifz-progress"></select>
-    </div> -->
-
     <div class="input-group">
       <label for="new-student-hifz-level">مستوى الحفظ (عدد المقاطع):</label>
       <select id="new-student-hifz-level">
@@ -271,7 +280,9 @@
         <option value="3">ثلاثة مقاطع (3x)</option>
       </select>
     </div>
-  </details>
+  </div>
+</details>
+
 
   <!-- 3) المراجعة -->
   <details class="form-section">
@@ -396,4 +407,5 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
