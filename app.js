@@ -932,120 +932,123 @@ function renderStudentTasks(student) {
   const murajaaPaused = !!student.pause_murajaa;
 
   // مهمة الحفظ
+  const hifzMission = !hifzPaused ? getCurrentHifzMission(student) : null;
+
   if (hifzMission) {
-  const tasksArray = Array.isArray(student.tasks) ? student.tasks : [];
+    // ✅ المنهج المرن
+    if (hifzMission.mode === "flexible") {
+      const pendingFlex = tasksArray.find(
+        (t) =>
+          t.type === "hifz_flexible" &&
+          (t.status === "pending" || t.status === "pending_assistant") &&
+          t.flex_surah_index === hifzMission.surahIdx &&
+          t.flex_start_ayah === hifzMission.startAyah
+      );
 
-  // ✅ المنهج المرن
-  if (hifzMission.mode === "flexible") {
-    const pendingFlex = tasksArray.find(
-      (t) =>
-        t.type === "hifz_flexible" &&
-        (t.status === "pending" || t.status === "pending_assistant") &&
-        t.flex_surah_index === hifzMission.surahIdx &&
-        t.flex_start_ayah === hifzMission.startAyah
-    );
+      const isAssistantPending = pendingFlex && pendingFlex.status === "pending_assistant";
 
-    const isAssistantPending = pendingFlex && pendingFlex.status === "pending_assistant";
-
-    const card = document.createElement("div");
-    card.className = "task-card";
-    card.innerHTML = `
-      <div class="task-header">
-        <div class="task-title">🎯 الحفظ (منهج مرن)</div>
-        <span class="task-type-tag hifz">حفظ</span>
-      </div>
-
-      <div class="task-body mission-text" style="line-height:1.9">
-        <div style="font-weight:800">${hifzMission.surah_name_ar}</div>
-        <div>من آية: <strong>${hifzMission.startAyah}</strong></div>
-        <div style="margin-top:6px">
-          إلى آية:
-          <select id="flex-end-ayah" style="padding:6px;border-radius:10px">
-            ${Array.from({ length: hifzMission.endAyahMax - hifzMission.startAyah + 1 }, (_, k) => {
-              const v = hifzMission.startAyah + k;
-              return `<option value="${v}">${v}</option>`;
-            }).join("")}
-          </select>
+      const card = document.createElement("div");
+      card.className = "task-card";
+      card.innerHTML = `
+        <div class="task-header">
+          <div class="task-title">🎯 الحفظ (منهج مرن)</div>
+          <span class="task-type-tag hifz">حفظ</span>
         </div>
-      </div>
 
-      <div class="task-footer">
-        <span class="task-points-tag">النقاط: ${hifzMission.points}</span>
-        <span class="task-status-text">${
-          pendingFlex
+        <div class="task-body mission-text" style="line-height:1.9">
+          <div style="font-weight:800">${hifzMission.surah_name_ar}</div>
+          <div>من آية: <strong>${hifzMission.startAyah}</strong></div>
+          <div style="margin-top:6px">
+            إلى آية:
+            <select id="flex-end-ayah" style="padding:6px;border-radius:10px">
+              ${Array.from(
+                { length: hifzMission.endAyahMax - hifzMission.startAyah + 1 },
+                (_, k) => {
+                  const v = hifzMission.startAyah + k;
+                  return `<option value="${v}">${v}</option>`;
+                }
+              ).join("")}
+            </select>
+          </div>
+        </div>
+
+        <div class="task-footer">
+          <span class="task-points-tag">النقاط: ${hifzMission.points}</span>
+          <span class="task-status-text">${
+            pendingFlex
+              ? isAssistantPending
+                ? "قيد المراجعة لدى المساعد..."
+                : "قيد المراجعة لدى المعلم..."
+              : ""
+          }</span>
+        </div>
+      `;
+
+      const footer = card.querySelector(".task-footer");
+      const btn = document.createElement("button");
+      btn.className = "button success";
+
+      if (pendingFlex) {
+        btn.textContent = isAssistantPending ? "قيد المراجعة" : "إلغاء الإرسال";
+        btn.disabled = !!isAssistantPending;
+
+        if (!isAssistantPending) {
+          btn.addEventListener("click", () =>
+            cancelCurriculumTask(student.code, "hifz_flexible", pendingFlex.id)
+          );
+        }
+      } else {
+        btn.textContent = "أنجزت المهمة ✅";
+        btn.addEventListener("click", () => {
+          const endAyah = parseInt(card.querySelector("#flex-end-ayah").value, 10);
+          submitFlexibleHifzTask(student.code, hifzMission, endAyah);
+        });
+      }
+
+      footer.appendChild(btn);
+      wrap.appendChild(card);
+    } else {
+      // ✅ المنهج الثابت
+      const pendingCurriculumTask = tasksArray.find(
+        (t) =>
+          t.type === "hifz" &&
+          (t.status === "pending" || t.status === "pending_assistant") &&
+          t.mission_start === hifzMission.startIndex
+      );
+
+      const isAssistantPending =
+        pendingCurriculumTask && pendingCurriculumTask.status === "pending_assistant";
+
+      wrap.appendChild(
+        buildMissionCard({
+          title: "🎯 الحفظ",
+          tagClass: "hifz",
+          description: hifzMission.description,
+          points: hifzMission.points,
+          pendingText: pendingCurriculumTask
             ? isAssistantPending
               ? "قيد المراجعة لدى المساعد..."
               : "قيد المراجعة لدى المعلم..."
-            : ""
-        }</span>
-      </div>
-    `;
-
-    const footer = card.querySelector(".task-footer");
-    const btn = document.createElement("button");
-    btn.className = "button success";
-
-    if (pendingFlex) {
-      btn.textContent = isAssistantPending ? "قيد المراجعة" : "إلغاء الإرسال";
-      btn.disabled = !!isAssistantPending;
-      if (!isAssistantPending) {
-        btn.addEventListener("click", () =>
-          cancelCurriculumTask(student.code, "hifz_flexible", pendingFlex.id)
-        );
-      }
-    } else {
-      btn.textContent = "أنجزت المهمة ✅";
-      btn.addEventListener("click", () => {
-        const endAyah = parseInt(card.querySelector("#flex-end-ayah").value, 10);
-        submitFlexibleHifzTask(student.code, hifzMission, endAyah);
-      });
+            : "",
+          buttonText: pendingCurriculumTask
+            ? isAssistantPending
+              ? "قيد المراجعة"
+              : "إلغاء الإرسال"
+            : "أنجزت المهمة ✅",
+          disabled: !!pendingCurriculumTask && isAssistantPending,
+          onClick: () =>
+            pendingCurriculumTask
+              ? !isAssistantPending &&
+                cancelCurriculumTask(student.code, "hifz", hifzMission.startIndex)
+              : submitCurriculumTask(student.code, hifzMission),
+        })
+      );
     }
-
-    footer.appendChild(btn);
-    wrap.appendChild(card);
-
-  } else {
-    // ✅ المنهج الثابت (كودك السابق كما هو)
-    const pendingCurriculumTask = tasksArray.find(
-      (t) =>
-        t.type === "hifz" &&
-        (t.status === "pending" || t.status === "pending_assistant") &&
-        t.mission_start === hifzMission.startIndex
-    );
-
-    const isAssistantPending =
-      pendingCurriculumTask && pendingCurriculumTask.status === "pending_assistant";
-
-    wrap.appendChild(
-      buildMissionCard({
-        title: "🎯 الحفظ",
-        tagClass: "hifz",
-        description: hifzMission.description,
-        points: hifzMission.points,
-        pendingText: pendingCurriculumTask
-          ? isAssistantPending
-            ? "قيد المراجعة لدى المساعد..."
-            : "قيد المراجعة لدى المعلم..."
-          : "",
-        buttonText: pendingCurriculumTask
-          ? isAssistantPending
-            ? "قيد المراجعة"
-            : "إلغاء الإرسال"
-          : "أنجزت المهمة ✅",
-        disabled: !!pendingCurriculumTask && isAssistantPending,
-        onClick: () =>
-          pendingCurriculumTask
-            ? !isAssistantPending &&
-              cancelCurriculumTask(student.code, "hifz", hifzMission.startIndex)
-            : submitCurriculumTask(student.code, hifzMission),
-      })
-    );
   }
-}
-
 
   // مهمة المراجعة
   const murMission = !murajaaPaused ? getCurrentMurajaaMission(student) : null;
+
   if (murMission) {
     const pendingMurTask = tasksArray.find(
       (t) =>
@@ -1082,7 +1085,7 @@ function renderStudentTasks(student) {
     );
   }
 
-  // المهام العامة (غير المكتملة)
+  // المهام العامة
   const generalTasks = tasksArray.filter((t) => t.type === "general" && t.status !== "completed");
 
   for (const task of generalTasks) {
@@ -1538,36 +1541,6 @@ async function submitFlexibleHifzTask(studentCode, mission, endAyah) {
   }
 }
 
-function submitFlexibleHifzTask(studentCode, endAyah) {
-  return submitFlexibleHifzTaskInternal(studentCode, endAyah);
-}
-
-async function submitFlexibleHifzTaskInternal(studentCode, endAyah) {
-  const studentRef = doc(db, "students", studentCode);
-  const snap = await getDoc(studentRef);
-  if (!snap.exists()) return;
-
-  const student = snap.data();
-  const fp = student.flexible_progress;
-  if (!fp?.current_surah) return;
-
-  const tasks = Array.isArray(student.tasks) ? student.tasks : [];
-
-  tasks.push({
-    id: generateUniqueId(),
-    type: "hifz_flexible",
-    surah: fp.current_surah,
-    start_ayah: fp.next_start_ayah,
-    end_ayah: endAyah,
-    description: `حفظ ${fp.current_surah} (${fp.next_start_ayah} - ${endAyah})`,
-    points: 5,
-    status: "pending",
-    created_at: Date.now(),
-  });
-
-  await updateDoc(studentRef, { tasks });
-}
-
 
 async function cancelCurriculumTask(studentCode, type, key) {
   try {
@@ -1737,36 +1710,34 @@ async function reviewTask(studentCode, taskId, action) {
       student.total_points = (student.total_points || 0) + (task.points || 0);
 
       // 2) تحديث التقدم حسب نوع المهمة
-      if (task.type === "hifz_flexible") {
-        // ✅ تأمين كائن التقدم المرن
-        const cur = student.flexible_progress || {
-          current_surah: task.surah,
-          next_start_ayah: task.start_ayah || 1,
-        };
+            if (task.type === "hifz_flexible") {
+  const surahIdx = Number.isFinite(task.flex_surah_index) ? task.flex_surah_index : 0;
+  const surah = FLEXIBLE_HIFZ[surahIdx];
+  if (!surah) {
+    showMessage(authMessage, "بيانات السورة غير موجودة في FLEXIBLE_HIFZ", "error");
+    return;
+  }
 
-        const surah = FLEXIBLE_CURRICULUM.find((s) => s.surah === task.surah);
-        if (!surah) {
-          showMessage(authMessage, "سورة المنهج المرن غير موجودة في FLEXIBLE_CURRICULUM", "error");
-          return;
-        }
+  const endAyah = Number.isFinite(task.flex_end_ayah)
+    ? task.flex_end_ayah
+    : (surah.start_ayah || 1);
 
-        const endAyah =
-          Number.isFinite(task.end_ayah) ? task.end_ayah :
-          Number.isFinite(task.flex_end_ayah) ? task.flex_end_ayah :
-          Number.isFinite(task.endAyah) ? task.endAyah :
-          (cur.next_start_ayah || 1);
+  let nextAyah = endAyah + 1;
+  let nextSurahIdx = surahIdx;
 
-        if (endAyah < surah.total_ayahs) {
-          student.flexible_progress = {
-            current_surah: task.surah,
-            next_start_ayah: endAyah + 1,
-          };
-        } else {
-          student.flexible_progress = {
-            current_surah: surah.next_surah,
-            next_start_ayah: 1,
-          };
-        }
+  if (nextAyah > surah.end_ayah) {
+    nextSurahIdx = surahIdx + 1;
+    const nextSurah = FLEXIBLE_HIFZ[nextSurahIdx];
+    if (nextSurah) nextAyah = nextSurah.start_ayah;
+  }
+
+  student.hifz_mode = "flexible";
+  student.flex_surah_index = nextSurahIdx;
+  student.flex_next_ayah = nextAyah;
+
+} else if (task.type === "hifz") {
+  // ...
+}
 
         student.hifz_mode = "flexible";
       } else if (task.type === "hifz") {
@@ -1810,25 +1781,27 @@ async function reviewTask(studentCode, taskId, action) {
 
       // 4) حفظ
       await updateDoc(studentRef, {
-        tasks,
-        total_points: student.total_points,
+  tasks,
+  total_points: student.total_points,
 
-        // الثابت
-        hifz_start_id: student.hifz_start_id ?? 0,
-        hifz_end_id: student.hifz_end_id ?? HIFZ_CURRICULUM.length - 1,
-        hifz_progress: student.hifz_progress ?? 0,
-        hifz_level: student.hifz_level ?? 1,
+  // الثابت
+  hifz_start_id: student.hifz_start_id ?? 0,
+  hifz_end_id: student.hifz_end_id ?? HIFZ_CURRICULUM.length - 1,
+  hifz_progress: student.hifz_progress ?? 0,
+  hifz_level: student.hifz_level ?? 1,
 
-        // ✅ المرن (منطقك)
-        hifz_mode: student.hifz_mode || "fixed",
-        flexible_progress: student.flexible_progress || null,
+  // ✅ المرن (النظام الجديد)
+  hifz_mode: student.hifz_mode || "fixed",
+  flex_surah_index: student.flex_surah_index ?? 0,
+  flex_next_ayah: student.flex_next_ayah ?? 1,
 
-        // المراجعة
-        murajaa_level: student.murajaa_level || "BUILDING",
-        murajaa_start_index: student.murajaa_start_index ?? 0,
-        murajaa_progress_index: student.murajaa_progress_index ?? 0,
-        murajaa_cycles: student.murajaa_cycles || 0,
-      });
+  // المراجعة
+  murajaa_level: student.murajaa_level || "BUILDING",
+  murajaa_start_index: student.murajaa_start_index ?? 0,
+  murajaa_progress_index: student.murajaa_progress_index ?? 0,
+  murajaa_cycles: student.murajaa_cycles || 0,
+});
+
 
       showMessage(
         authMessage,
@@ -1882,7 +1855,6 @@ async function loadPendingTasksForReview() {
 
       const tasks = Array.isArray(student.tasks) ? student.tasks : [];
       tasks.forEach((t) => {
-        if (t.status !== "pending") return;
         if (t.status !== "pending") return;
         if (t.type === "hifz" || t.type === "hifz_flexible") pendingHifz.push({ student, task: t });
         else if (t.type === "murajaa") pendingMurajaa.push({ student, task: t });
@@ -2264,7 +2236,8 @@ registerStudentButton?.addEventListener("click", async () => {
   const murajaaStartIndex = parseInt(newStudentMurajaaStart.value, 10) || 0;
   const halaqaValue = newStudentHalaqa?.value || "ONSITE";
 
-    const hifzModeNow = newStudentHifzType?.value || "fixed";
+  const hifzModeNow = newStudentHifzType?.value || "fixed";
+  const flexSurahIndex = parseInt(newStudentFlexibleSurah?.value || "0", 10) || 0; // ✅ لازم هنا
 
   if (!code || !name) {
     showMessage(registerStudentMessage, "الرجاء تعبئة رمز الطالب والاسم.", "error");
@@ -2287,14 +2260,12 @@ registerStudentButton?.addEventListener("click", async () => {
     }
   }
 
-
   try {
     const studentRef = doc(db, "students", code);
     const snap = await getDoc(studentRef);
     const existing = snap.exists() ? snap.data() : null;
 
-    const hifzMode = newStudentHifzType?.value || "fixed";
-    const flexSurahIndex = parseInt(newStudentFlexibleSurah?.value || "0", 10) || 0;
+    const hifzMode = hifzModeNow;
     const flexSurah = FLEXIBLE_HIFZ[flexSurahIndex] || FLEXIBLE_HIFZ[0];
 
     const baseData = {
@@ -2304,20 +2275,30 @@ registerStudentButton?.addEventListener("click", async () => {
       halaqa: halaqaValue,
       parent_name: parentName,
       parent_code: parentCode,
+
       hifz_mode: hifzMode,
-      // ✅ المرن
+
+      // ✅ المرن (نظام جديد)
       flex_surah_index: existing ? (existing.flex_surah_index ?? flexSurahIndex) : flexSurahIndex,
-      flex_next_ayah: existing ? (existing.flex_next_ayah ?? (flexSurah?.start_ayah || 1)) : (flexSurah?.start_ayah || 1),
+      flex_next_ayah: existing
+        ? (existing.flex_next_ayah ?? (flexSurah?.start_ayah || 1))
+        : (flexSurah?.start_ayah || 1),
+
+      // ✅ الثابت
       hifz_start_id: hifzStartIndex,
       hifz_end_id: hifzEndIndex,
-      hifz_progress: existing ? existing.hifz_progress ?? hifzStartIndex : hifzStartIndex,
+      hifz_progress: existing ? (existing.hifz_progress ?? hifzStartIndex) : hifzStartIndex,
       hifz_level: hifzLevel,
+
+      // المراجعة
       murajaa_level: murajaaLevel,
       murajaa_start_index: murajaaStartIndex,
       murajaa_progress_index: murajaaStartIndex,
       murajaa_cycles: existing ? existing.murajaa_cycles || 0 : 0,
+
       total_points: existing ? existing.total_points || 0 : 0,
       tasks: existing ? existing.tasks || [] : [],
+
       pause_hifz: existing ? !!existing.pause_hifz : false,
       pause_murajaa: existing ? !!existing.pause_murajaa : false,
       is_student_assistant: existing ? !!existing.is_student_assistant : false,
@@ -2325,8 +2306,8 @@ registerStudentButton?.addEventListener("click", async () => {
     };
 
     await setDoc(studentRef, baseData, { merge: true });
-    showMessage(registerStudentMessage, "تم حفظ بيانات الطالب.", "success");
 
+    showMessage(registerStudentMessage, "تم حفظ بيانات الطالب.", "success");
     editingStudentCode = null;
     studentFormTitle.textContent = "إضافة / تعديل طالب";
 
@@ -2337,6 +2318,7 @@ registerStudentButton?.addEventListener("click", async () => {
     showMessage(registerStudentMessage, `حدث خطأ في حفظ بيانات الطالب: ${e.message}`, "error");
   }
 });
+
 
 // =====================================================
 // 13) تبويبات المعلم + نوع الحلقة + التحديث
@@ -2710,6 +2692,7 @@ syncHifzTypeUI();
 
 
 console.log("App ready. Curriculum loaded from external file with assistants & pause flags.");
+
 
 
 
