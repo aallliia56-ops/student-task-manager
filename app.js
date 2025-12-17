@@ -1694,6 +1694,7 @@ async function reviewTask(studentCode, taskId, action) {
     const student = snap.data();
     const tasks = Array.isArray(student.tasks) ? student.tasks : [];
     const i = tasks.findIndex((t) => t.id === taskId);
+
     if (i === -1) {
       showMessage(authMessage, "المهمة غير موجودة.", "error");
       return;
@@ -1710,39 +1711,37 @@ async function reviewTask(studentCode, taskId, action) {
       student.total_points = (student.total_points || 0) + (task.points || 0);
 
       // 2) تحديث التقدم حسب نوع المهمة
-            if (task.type === "hifz_flexible") {
-  const surahIdx = Number.isFinite(task.flex_surah_index) ? task.flex_surah_index : 0;
-  const surah = FLEXIBLE_HIFZ[surahIdx];
-  if (!surah) {
-    showMessage(authMessage, "بيانات السورة غير موجودة في FLEXIBLE_HIFZ", "error");
-    return;
-  }
+      if (task.type === "hifz_flexible") {
+        const surahIdx = Number.isFinite(task.flex_surah_index) ? task.flex_surah_index : 0;
+        const surah = FLEXIBLE_HIFZ[surahIdx];
 
-  const endAyah = Number.isFinite(task.flex_end_ayah)
-    ? task.flex_end_ayah
-    : (surah.start_ayah || 1);
+        if (!surah) {
+          showMessage(authMessage, "بيانات السورة غير موجودة في FLEXIBLE_HIFZ", "error");
+          return;
+        }
 
-  let nextAyah = endAyah + 1;
-  let nextSurahIdx = surahIdx;
+        const endAyah = Number.isFinite(task.flex_end_ayah)
+          ? task.flex_end_ayah
+          : (surah.start_ayah || 1);
 
-  if (nextAyah > surah.end_ayah) {
-    nextSurahIdx = surahIdx + 1;
-    const nextSurah = FLEXIBLE_HIFZ[nextSurahIdx];
-    if (nextSurah) nextAyah = nextSurah.start_ayah;
-  }
+        let nextAyah = endAyah + 1;
+        let nextSurahIdx = surahIdx;
 
-  student.hifz_mode = "flexible";
-  student.flex_surah_index = nextSurahIdx;
-  student.flex_next_ayah = nextAyah;
-
-} else if (task.type === "hifz") {
-  // ...
-}
+        // إذا وصل آخر السورة -> انتقل للسورة التالية
+        if (nextAyah > surah.end_ayah) {
+          nextSurahIdx = surahIdx + 1;
+          const nextSurah = FLEXIBLE_HIFZ[nextSurahIdx];
+          if (nextSurah) nextAyah = nextSurah.start_ayah;
+        }
 
         student.hifz_mode = "flexible";
+        student.flex_surah_index = nextSurahIdx;
+        student.flex_next_ayah = nextAyah;
+
       } else if (task.type === "hifz") {
         const last = task.mission_last ?? task.mission_start ?? 0;
         student.hifz_progress = last + 1;
+
       } else if (task.type === "murajaa") {
         const level = student.murajaa_level || task.murajaa_level || "BUILDING";
         const arr = getReviewArrayForLevel(level);
@@ -1761,7 +1760,11 @@ async function reviewTask(studentCode, taskId, action) {
           cycles += 1;
 
           const lastFullSurahNumber = getLastFullSurahNumber(student);
-          const dynamicStart = chooseMurajaaStartIndexFromLastSurah(level, lastFullSurahNumber, start);
+          const dynamicStart = chooseMurajaaStartIndexFromLastSurah(
+            level,
+            lastFullSurahNumber,
+            start
+          );
 
           start = dynamicStart;
           next = dynamicStart;
@@ -1781,33 +1784,33 @@ async function reviewTask(studentCode, taskId, action) {
 
       // 4) حفظ
       await updateDoc(studentRef, {
-  tasks,
-  total_points: student.total_points,
+        tasks,
+        total_points: student.total_points,
 
-  // الثابت
-  hifz_start_id: student.hifz_start_id ?? 0,
-  hifz_end_id: student.hifz_end_id ?? HIFZ_CURRICULUM.length - 1,
-  hifz_progress: student.hifz_progress ?? 0,
-  hifz_level: student.hifz_level ?? 1,
+        // الثابت
+        hifz_start_id: student.hifz_start_id ?? 0,
+        hifz_end_id: student.hifz_end_id ?? HIFZ_CURRICULUM.length - 1,
+        hifz_progress: student.hifz_progress ?? 0,
+        hifz_level: student.hifz_level ?? 1,
 
-  // ✅ المرن (النظام الجديد)
-  hifz_mode: student.hifz_mode || "fixed",
-  flex_surah_index: student.flex_surah_index ?? 0,
-  flex_next_ayah: student.flex_next_ayah ?? 1,
+        // المرن (النظام الجديد)
+        hifz_mode: student.hifz_mode || "fixed",
+        flex_surah_index: student.flex_surah_index ?? 0,
+        flex_next_ayah: student.flex_next_ayah ?? 1,
 
-  // المراجعة
-  murajaa_level: student.murajaa_level || "BUILDING",
-  murajaa_start_index: student.murajaa_start_index ?? 0,
-  murajaa_progress_index: student.murajaa_progress_index ?? 0,
-  murajaa_cycles: student.murajaa_cycles || 0,
-});
-
+        // المراجعة
+        murajaa_level: student.murajaa_level || "BUILDING",
+        murajaa_start_index: student.murajaa_start_index ?? 0,
+        murajaa_progress_index: student.murajaa_progress_index ?? 0,
+        murajaa_cycles: student.murajaa_cycles || 0,
+      });
 
       showMessage(
         authMessage,
         `تم قبول المهمة وإضافة ${task.points} نقطة للطالب ${student.name}.`,
         "success"
       );
+
     } else {
       // رفض
       if (task.type === "general") {
@@ -2692,6 +2695,7 @@ syncHifzTypeUI();
 
 
 console.log("App ready. Curriculum loaded from external file with assistants & pause flags.");
+
 
 
 
