@@ -540,7 +540,67 @@ const REVIEW_CURRICULUM = {
 };
 
 // =========================================================================
+// FLEXIBLE_CURRICULUM: منهج حفظ مرن (حتى سورة الحج)
+// =========================================================================
+
+const FLEXIBLE_CURRICULUM = [
+  { surah: "الملك", total_ayahs: 30, next_surah: "التحريم" },
+  { surah: "التحريم", total_ayahs: 12, next_surah: "الطلاق" },
+  { surah: "الطلاق", total_ayahs: 12, next_surah: "التغابن" },
+  { surah: "التغابن", total_ayahs: 18, next_surah: "المنافقون" },
+  { surah: "المنافقون", total_ayahs: 11, next_surah: "الجمعة" },
+  { surah: "الجمعة", total_ayahs: 11, next_surah: "الصف" },
+  { surah: "الصف", total_ayahs: 14, next_surah: "الممتحنة" },
+  { surah: "الممتحنة", total_ayahs: 13, next_surah: "الحشر" },
+  { surah: "الحشر", total_ayahs: 24, next_surah: "المجادلة" },
+  { surah: "المجادلة", total_ayahs: 22, next_surah: "الحديد" },
+  { surah: "الحديد", total_ayahs: 29, next_surah: "الواقعة" },
+  { surah: "الواقعة", total_ayahs: 96, next_surah: "الرحمن" },
+  { surah: "الرحمن", total_ayahs: 78, next_surah: "القمر" },
+  { surah: "القمر", total_ayahs: 55, next_surah: "النجم" },
+  { surah: "النجم", total_ayahs: 62, next_surah: "الطور" },
+  { surah: "الطور", total_ayahs: 49, next_surah: "الذاريات" },
+  { surah: "الذاريات", total_ayahs: 60, next_surah: "ق" },
+  { surah: "ق", total_ayahs: 45, next_surah: "الحجرات" },
+  { surah: "الحجرات", total_ayahs: 18, next_surah: "الفتح" },
+  { surah: "الفتح", total_ayahs: 29, next_surah: "محمد" },
+  { surah: "محمد", total_ayahs: 38, next_surah: "الأحقاف" },
+  { surah: "الأحقاف", total_ayahs: 35, next_surah: "الجاثية" },
+  { surah: "الجاثية", total_ayahs: 37, next_surah: "الدخان" },
+  { surah: "الدخان", total_ayahs: 59, next_surah: "الزخرف" },
+  { surah: "الزخرف", total_ayahs: 89, next_surah: "الشورى" },
+  { surah: "الشورى", total_ayahs: 53, next_surah: "فصلت" },
+  { surah: "فصلت", total_ayahs: 54, next_surah: "غافر" },
+  { surah: "غافر", total_ayahs: 85, next_surah: "الزمر" },
+  { surah: "الزمر", total_ayahs: 75, next_surah: "ص" },
+  { surah: "ص", total_ayahs: 88, next_surah: "الصافات" },
+  { surah: "الصافات", total_ayahs: 182, next_surah: "يس" },
+  { surah: "يس", total_ayahs: 83, next_surah: "فاطر" },
+  { surah: "فاطر", total_ayahs: 45, next_surah: "سبأ" },
+  { surah: "سبأ", total_ayahs: 54, next_surah: "الأحزاب" },
+  { surah: "الأحزاب", total_ayahs: 73, next_surah: "السجدة" },
+  { surah: "السجدة", total_ayahs: 30, next_surah: "لقمان" },
+  { surah: "لقمان", total_ayahs: 34, next_surah: "الروم" },
+  { surah: "الروم", total_ayahs: 60, next_surah: "العنكبوت" },
+  { surah: "العنكبوت", total_ayahs: 69, next_surah: "القصص" },
+  { surah: "القصص", total_ayahs: 88, next_surah: "النمل" },
+  { surah: "النمل", total_ayahs: 93, next_surah: "الشعراء" },
+  { surah: "الشعراء", total_ayahs: 227, next_surah: "الفرقان" },
+  { surah: "الفرقان", total_ayahs: 77, next_surah: "النور" },
+  { surah: "النور", total_ayahs: 64, next_surah: "المؤمنون" },
+  { surah: "المؤمنون", total_ayahs: 118, next_surah: "الحج" },
+  { surah: "الحج", total_ayahs: 78, next_surah: null },
+];
+
+
+// =========================================================================
 // 6. Exports
 // =========================================================================
 
-export { HIFZ_CURRICULUM, REVIEW_CURRICULUM, CURRICULUM_LEVELS };
+export {
+  HIFZ_CURRICULUM,
+  REVIEW_CURRICULUM,
+  CURRICULUM_LEVELS,
+  FLEXIBLE_CURRICULUM,
+};
+
