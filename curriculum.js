@@ -540,67 +540,65 @@ const REVIEW_CURRICULUM = {
 };
 
 // =========================================================================
-// FLEXIBLE_CURRICULUM: منهج حفظ مرن (حتى سورة الحج)
+// ✅ 7) FLEXIBLE_HIFZ: منهج مرن (سورة كاملة بمدى آيات)
 // =========================================================================
 
-const FLEXIBLE_CURRICULUM = [
-  { surah: "الملك", total_ayahs: 30, next_surah: "التحريم" },
-  { surah: "التحريم", total_ayahs: 12, next_surah: "الطلاق" },
-  { surah: "الطلاق", total_ayahs: 12, next_surah: "التغابن" },
-  { surah: "التغابن", total_ayahs: 18, next_surah: "المنافقون" },
-  { surah: "المنافقون", total_ayahs: 11, next_surah: "الجمعة" },
-  { surah: "الجمعة", total_ayahs: 11, next_surah: "الصف" },
-  { surah: "الصف", total_ayahs: 14, next_surah: "الممتحنة" },
-  { surah: "الممتحنة", total_ayahs: 13, next_surah: "الحشر" },
-  { surah: "الحشر", total_ayahs: 24, next_surah: "المجادلة" },
-  { surah: "المجادلة", total_ayahs: 22, next_surah: "الحديد" },
-  { surah: "الحديد", total_ayahs: 29, next_surah: "الواقعة" },
-  { surah: "الواقعة", total_ayahs: 96, next_surah: "الرحمن" },
-  { surah: "الرحمن", total_ayahs: 78, next_surah: "القمر" },
-  { surah: "القمر", total_ayahs: 55, next_surah: "النجم" },
-  { surah: "النجم", total_ayahs: 62, next_surah: "الطور" },
-  { surah: "الطور", total_ayahs: 49, next_surah: "الذاريات" },
-  { surah: "الذاريات", total_ayahs: 60, next_surah: "ق" },
-  { surah: "ق", total_ayahs: 45, next_surah: "الحجرات" },
-  { surah: "الحجرات", total_ayahs: 18, next_surah: "الفتح" },
-  { surah: "الفتح", total_ayahs: 29, next_surah: "محمد" },
-  { surah: "محمد", total_ayahs: 38, next_surah: "الأحقاف" },
-  { surah: "الأحقاف", total_ayahs: 35, next_surah: "الجاثية" },
-  { surah: "الجاثية", total_ayahs: 37, next_surah: "الدخان" },
-  { surah: "الدخان", total_ayahs: 59, next_surah: "الزخرف" },
-  { surah: "الزخرف", total_ayahs: 89, next_surah: "الشورى" },
-  { surah: "الشورى", total_ayahs: 53, next_surah: "فصلت" },
-  { surah: "فصلت", total_ayahs: 54, next_surah: "غافر" },
-  { surah: "غافر", total_ayahs: 85, next_surah: "الزمر" },
-  { surah: "الزمر", total_ayahs: 75, next_surah: "ص" },
-  { surah: "ص", total_ayahs: 88, next_surah: "الصافات" },
-  { surah: "الصافات", total_ayahs: 182, next_surah: "يس" },
-  { surah: "يس", total_ayahs: 83, next_surah: "فاطر" },
-  { surah: "فاطر", total_ayahs: 45, next_surah: "سبأ" },
-  { surah: "سبأ", total_ayahs: 54, next_surah: "الأحزاب" },
-  { surah: "الأحزاب", total_ayahs: 73, next_surah: "السجدة" },
-  { surah: "السجدة", total_ayahs: 30, next_surah: "لقمان" },
-  { surah: "لقمان", total_ayahs: 34, next_surah: "الروم" },
-  { surah: "الروم", total_ayahs: 60, next_surah: "العنكبوت" },
-  { surah: "العنكبوت", total_ayahs: 69, next_surah: "القصص" },
-  { surah: "القصص", total_ayahs: 88, next_surah: "النمل" },
-  { surah: "النمل", total_ayahs: 93, next_surah: "الشعراء" },
-  { surah: "الشعراء", total_ayahs: 227, next_surah: "الفرقان" },
-  { surah: "الفرقان", total_ayahs: 77, next_surah: "النور" },
-  { surah: "النور", total_ayahs: 64, next_surah: "المؤمنون" },
-  { surah: "المؤمنون", total_ayahs: 118, next_surah: "الحج" },
-  { surah: "الحج", total_ayahs: 78, next_surah: null },
+const FLEXIBLE_HIFZ = [
+  { surah_number: 67, surah_name_ar: "الملك", start_ayah: 1, end_ayah: 30 },
+  { surah_number: 66, surah_name_ar: "التحريم", start_ayah: 1, end_ayah: 12 },
+  { surah_number: 65, surah_name_ar: "الطلاق", start_ayah: 1, end_ayah: 12 },
+  { surah_number: 64, surah_name_ar: "التغابن", start_ayah: 1, end_ayah: 18 },
+  { surah_number: 63, surah_name_ar: "المنافقون", start_ayah: 1, end_ayah: 11 },
+  { surah_number: 62, surah_name_ar: "الجمعة", start_ayah: 1, end_ayah: 11 },
+  { surah_number: 61, surah_name_ar: "الصف", start_ayah: 1, end_ayah: 14 },
+  { surah_number: 60, surah_name_ar: "الممتحنة", start_ayah: 1, end_ayah: 13 },
+  { surah_number: 59, surah_name_ar: "الحشر", start_ayah: 1, end_ayah: 24 },
+  { surah_number: 58, surah_name_ar: "المجادلة", start_ayah: 1, end_ayah: 22 },
+  { surah_number: 57, surah_name_ar: "الحديد", start_ayah: 1, end_ayah: 29 },
+  { surah_number: 56, surah_name_ar: "الواقعة", start_ayah: 1, end_ayah: 96 },
+  { surah_number: 55, surah_name_ar: "الرحمن", start_ayah: 1, end_ayah: 78 },
+  { surah_number: 54, surah_name_ar: "القمر", start_ayah: 1, end_ayah: 55 },
+  { surah_number: 53, surah_name_ar: "النجم", start_ayah: 1, end_ayah: 62 },
+  { surah_number: 52, surah_name_ar: "الطور", start_ayah: 1, end_ayah: 49 },
+  { surah_number: 51, surah_name_ar: "الذاريات", start_ayah: 1, end_ayah: 60 },
+  { surah_number: 50, surah_name_ar: "ق", start_ayah: 1, end_ayah: 45 },
+  { surah_number: 49, surah_name_ar: "الحجرات", start_ayah: 1, end_ayah: 18 },
+  { surah_number: 48, surah_name_ar: "الفتح", start_ayah: 1, end_ayah: 29 },
+  { surah_number: 47, surah_name_ar: "محمد", start_ayah: 1, end_ayah: 38 },
+  { surah_number: 46, surah_name_ar: "الأحقاف", start_ayah: 1, end_ayah: 35 },
+  { surah_number: 45, surah_name_ar: "الجاثية", start_ayah: 1, end_ayah: 37 },
+  { surah_number: 44, surah_name_ar: "الدخان", start_ayah: 1, end_ayah: 59 },
+  { surah_number: 43, surah_name_ar: "الزخرف", start_ayah: 1, end_ayah: 89 },
+  { surah_number: 42, surah_name_ar: "الشورى", start_ayah: 1, end_ayah: 53 },
+  { surah_number: 41, surah_name_ar: "فصلت", start_ayah: 1, end_ayah: 54 },
+  { surah_number: 40, surah_name_ar: "غافر", start_ayah: 1, end_ayah: 85 },
+  { surah_number: 39, surah_name_ar: "الزمر", start_ayah: 1, end_ayah: 75 },
+  { surah_number: 38, surah_name_ar: "ص", start_ayah: 1, end_ayah: 88 },
+  { surah_number: 37, surah_name_ar: "الصافات", start_ayah: 1, end_ayah: 182 },
+  { surah_number: 36, surah_name_ar: "يس", start_ayah: 1, end_ayah: 83 },
+  { surah_number: 35, surah_name_ar: "فاطر", start_ayah: 1, end_ayah: 45 },
+  { surah_number: 34, surah_name_ar: "سبأ", start_ayah: 1, end_ayah: 54 },
+  { surah_number: 33, surah_name_ar: "الأحزاب", start_ayah: 1, end_ayah: 73 },
+  { surah_number: 32, surah_name_ar: "السجدة", start_ayah: 1, end_ayah: 30 },
+  { surah_number: 31, surah_name_ar: "لقمان", start_ayah: 1, end_ayah: 34 },
+  { surah_number: 30, surah_name_ar: "الروم", start_ayah: 1, end_ayah: 60 },
+  { surah_number: 29, surah_name_ar: "العنكبوت", start_ayah: 1, end_ayah: 69 },
+  { surah_number: 28, surah_name_ar: "القصص", start_ayah: 1, end_ayah: 88 },
+  { surah_number: 27, surah_name_ar: "النمل", start_ayah: 1, end_ayah: 93 },
+  { surah_number: 26, surah_name_ar: "الشعراء", start_ayah: 1, end_ayah: 227 },
+  { surah_number: 25, surah_name_ar: "الفرقان", start_ayah: 1, end_ayah: 77 },
+  { surah_number: 24, surah_name_ar: "النور", start_ayah: 1, end_ayah: 64 },
+  { surah_number: 23, surah_name_ar: "المؤمنون", start_ayah: 1, end_ayah: 118 },
+  { surah_number: 22, surah_name_ar: "الحج", start_ayah: 1, end_ayah: 78 },
 ];
+
+const FLEXIBLE_POINTS = 5;
+
 
 
 // =========================================================================
 // 6. Exports
 // =========================================================================
 
-export {
-  HIFZ_CURRICULUM,
-  REVIEW_CURRICULUM,
-  CURRICULUM_LEVELS,
-  FLEXIBLE_CURRICULUM,
-};
+export { HIFZ_CURRICULUM, REVIEW_CURRICULUM, CURRICULUM_LEVELS, FLEXIBLE_HIFZ, FLEXIBLE_POINTS };
 
