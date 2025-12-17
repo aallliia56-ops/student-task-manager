@@ -16,7 +16,7 @@ import {
   writeBatch,
 } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
 
-import { HIFZ_CURRICULUM, REVIEW_CURRICULUM } from "./curriculum.js";
+import { HIFZ_CURRICULUM, REVIEW_CURRICULUM, FLEXIBLE_HIFZ, FLEXIBLE_POINTS } from "./curriculum.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCeIcmuTd72sjiu1Uyijn_J4bMS0ChtXGo",
@@ -116,6 +116,12 @@ const newStudentMurajaaStart = $("#new-student-murajaa-start");
 const newStudentHalaqa = $("#new-student-halaqa");
 const registerStudentButton = $("#register-student-button");
 const registerStudentMessage = $("#register-student-message");
+
+const newStudentHifzType = $("#new-student-hifz-type");
+const newStudentFlexibleSurah = $("#new-student-flexible-surah");
+const fixedHifzGroup = $("#fixed-hifz-group");
+const flexibleSurahGroup = $("#flexible-surah-group");
+
 
 // ✅ IDs الجديدة حسب HTML اللي عندك
 const btnOpenStudentForm = document.getElementById("open-student-form");
@@ -383,6 +389,52 @@ function updatePlanStrip({ startSurah = "—", endSurah = "—", points = 0, ran
 // =====================================================
 
 function getCurrentHifzMission(student) {
+  const mode = student.hifz_mode || "fixed";
+
+  // =====================================================
+  // ✅ 1) المنهج المرن
+  // =====================================================
+  if (mode === "flexible") {
+    const surahIdx = Number.isFinite(student.flex_surah_index) ? student.flex_surah_index : 0;
+    const surah = FLEXIBLE_HIFZ[surahIdx];
+    if (!surah) return null;
+
+    const nextAyah = Number.isFinite(student.flex_next_ayah) ? student.flex_next_ayah : surah.start_ayah;
+
+    // لو خلص السورة فعليًا (احتياط)
+    if (nextAyah > surah.end_ayah) {
+      const nextSurahIdx = surahIdx + 1;
+      const nextSurah = FLEXIBLE_HIFZ[nextSurahIdx];
+      if (!nextSurah) return null;
+      return {
+        type: "hifz_flexible",
+        mode: "flexible",
+        surahIdx: nextSurahIdx,
+        surah_number: nextSurah.surah_number,
+        surah_name_ar: nextSurah.surah_name_ar,
+        startAyah: nextSurah.start_ayah,
+        endAyahMax: nextSurah.end_ayah,
+        points: FLEXIBLE_POINTS,
+        description: `${nextSurah.surah_name_ar} (اختر من ${nextSurah.start_ayah} إلى ${nextSurah.end_ayah})`,
+      };
+    }
+
+    return {
+      type: "hifz_flexible",
+      mode: "flexible",
+      surahIdx,
+      surah_number: surah.surah_number,
+      surah_name_ar: surah.surah_name_ar,
+      startAyah: nextAyah,          // ✅ بداية ثابتة = نقطة توقفه
+      endAyahMax: surah.end_ayah,   // ✅ النهاية يختارها الطالب
+      points: FLEXIBLE_POINTS,
+      description: `${surah.surah_name_ar} (ابدأ من ${nextAyah} واختر النهاية حتى ${surah.end_ayah})`,
+    };
+  }
+
+  // =====================================================
+  // ✅ 2) المنهج الثابت (نفس كودك السابق بدون تغيير)
+  // =====================================================
   const all = HIFZ_CURRICULUM;
   if (!all?.length) return null;
 
@@ -395,7 +447,6 @@ function getCurrentHifzMission(student) {
 
   const tasks = Array.isArray(student.tasks) ? student.tasks : [];
 
-  // مهمة سورة كاملة (لو انتهت كل مقاطع السورة)
   const prevIndex = nextIndex - 1;
   if (prevIndex >= planStart && prevIndex <= planEnd) {
     const prevSeg = all[prevIndex];
@@ -433,7 +484,6 @@ function getCurrentHifzMission(student) {
     }
   }
 
-  // السلوك العادي: مقاطع حسب المستوى
   const level = +student.hifz_level || 1;
   const maxSegments = Math.max(1, Math.min(3, level));
 
@@ -456,6 +506,7 @@ function getCurrentHifzMission(student) {
     points: first.points || 5,
   };
 }
+
 
 function getNextHifzMission(student) {
   const all = HIFZ_CURRICULUM;
@@ -881,32 +932,86 @@ function renderStudentTasks(student) {
   const murajaaPaused = !!student.pause_murajaa;
 
   // مهمة الحفظ
-  const hifzMission = !hifzPaused ? getCurrentHifzMission(student) : null;
   if (hifzMission) {
+  const tasksArray = Array.isArray(student.tasks) ? student.tasks : [];
+
+  // ✅ المنهج المرن
+  if (hifzMission.mode === "flexible") {
+    const pendingFlex = tasksArray.find(
+      (t) =>
+        t.type === "hifz_flexible" &&
+        (t.status === "pending" || t.status === "pending_assistant") &&
+        t.flex_surah_index === hifzMission.surahIdx &&
+        t.flex_start_ayah === hifzMission.startAyah
+    );
+
+    const isAssistantPending = pendingFlex && pendingFlex.status === "pending_assistant";
+
+    const card = document.createElement("div");
+    card.className = "task-card";
+    card.innerHTML = `
+      <div class="task-header">
+        <div class="task-title">🎯 الحفظ (منهج مرن)</div>
+        <span class="task-type-tag hifz">حفظ</span>
+      </div>
+
+      <div class="task-body mission-text" style="line-height:1.9">
+        <div style="font-weight:800">${hifzMission.surah_name_ar}</div>
+        <div>من آية: <strong>${hifzMission.startAyah}</strong></div>
+        <div style="margin-top:6px">
+          إلى آية:
+          <select id="flex-end-ayah" style="padding:6px;border-radius:10px">
+            ${Array.from({ length: hifzMission.endAyahMax - hifzMission.startAyah + 1 }, (_, k) => {
+              const v = hifzMission.startAyah + k;
+              return `<option value="${v}">${v}</option>`;
+            }).join("")}
+          </select>
+        </div>
+      </div>
+
+      <div class="task-footer">
+        <span class="task-points-tag">النقاط: ${hifzMission.points}</span>
+        <span class="task-status-text">${
+          pendingFlex
+            ? isAssistantPending
+              ? "قيد المراجعة لدى المساعد..."
+              : "قيد المراجعة لدى المعلم..."
+            : ""
+        }</span>
+      </div>
+    `;
+
+    const footer = card.querySelector(".task-footer");
+    const btn = document.createElement("button");
+    btn.className = "button success";
+
+    if (pendingFlex) {
+      btn.textContent = isAssistantPending ? "قيد المراجعة" : "إلغاء الإرسال";
+      btn.disabled = !!isAssistantPending;
+      if (!isAssistantPending) {
+        btn.addEventListener("click", () =>
+          cancelCurriculumTask(student.code, "hifz_flexible", pendingFlex.id)
+        );
+      }
+    } else {
+      btn.textContent = "أنجزت المهمة ✅";
+      btn.addEventListener("click", () => {
+        const endAyah = parseInt(card.querySelector("#flex-end-ayah").value, 10);
+        submitFlexibleHifzTask(student.code, hifzMission, endAyah);
+      });
+    }
+
+    footer.appendChild(btn);
+    wrap.appendChild(card);
+
+  } else {
+    // ✅ المنهج الثابت (كودك السابق كما هو)
     const pendingCurriculumTask = tasksArray.find(
       (t) =>
         t.type === "hifz" &&
         (t.status === "pending" || t.status === "pending_assistant") &&
         t.mission_start === hifzMission.startIndex
     );
-    const flexible = student.flexible_progress;
-if (flexible?.current_surah) {
-  wrap.appendChild(
-    buildMissionCard({
-      title: "🎯 الحفظ المرن",
-      tagClass: "hifz",
-      description: `${flexible.current_surah} من ${flexible.next_start_ayah}`,
-      points: 5,
-      pendingText: "",
-      buttonText: "تحديد نهاية الحفظ",
-      onClick: () => {
-        const end = prompt("إلى أي آية تريد الحفظ؟");
-        if (end) submitFlexibleHifzTask(student.code, Number(end));
-      },
-    })
-  );
-}
-
 
     const isAssistantPending =
       pendingCurriculumTask && pendingCurriculumTask.status === "pending_assistant";
@@ -936,6 +1041,8 @@ if (flexible?.current_surah) {
       })
     );
   }
+}
+
 
   // مهمة المراجعة
   const murMission = !murajaaPaused ? getCurrentMurajaaMission(student) : null;
@@ -1397,6 +1504,40 @@ async function submitCurriculumTask(studentCode, mission) {
     showMessage(authMessage, `حدث خطأ: ${e.message}`, "error");
   }
 }
+async function submitFlexibleHifzTask(studentCode, mission, endAyah) {
+  try {
+    const studentRef = doc(db, "students", studentCode);
+    const snap = await getDoc(studentRef);
+    if (!snap.exists()) return;
+    const student = snap.data();
+
+    const tasks = Array.isArray(student.tasks) ? student.tasks : [];
+
+    tasks.push({
+      id: generateUniqueId(),
+      type: "hifz_flexible",
+      status: "pending",
+      points: mission.points || FLEXIBLE_POINTS,
+      created_at: Date.now(),
+
+      flex_surah_index: mission.surahIdx,
+      flex_surah_number: mission.surah_number,
+      flex_surah_name_ar: mission.surah_name_ar,
+      flex_start_ayah: mission.startAyah,
+      flex_end_ayah: endAyah,
+
+      description: `${mission.surah_name_ar} (${mission.startAyah}-${endAyah})`,
+    });
+
+    await updateDoc(studentRef, { tasks });
+    await displayStudentDashboard({ code: studentCode, ...student, tasks });
+    showMessage(authMessage, "تم إرسال مهمة الحفظ (المنهج المرن) للمراجعة.", "success");
+  } catch (e) {
+    console.error("Error submitFlexibleHifzTask:", e);
+    showMessage(authMessage, `حدث خطأ: ${e.message}`, "error");
+  }
+}
+
 function submitFlexibleHifzTask(studentCode, endAyah) {
   return submitFlexibleHifzTaskInternal(studentCode, endAyah);
 }
@@ -1428,21 +1569,24 @@ async function submitFlexibleHifzTaskInternal(studentCode, endAyah) {
 }
 
 
-async function cancelCurriculumTask(studentCode, type, missionStartIndex) {
+async function cancelCurriculumTask(studentCode, type, key) {
   try {
     const studentRef = doc(db, "students", studentCode);
     const snap = await getDoc(studentRef);
     if (!snap.exists()) return;
     const student = snap.data();
 
-    const tasks = (Array.isArray(student.tasks) ? student.tasks : []).filter(
-      (t) =>
-        !(
-          t.type === type &&
-          t.status === "pending" &&
-          t.mission_start === missionStartIndex
-        )
-    );
+    let tasks = Array.isArray(student.tasks) ? student.tasks : [];
+
+    // type = "hifz" => key = mission_start
+    // type = "hifz_flexible" => key = task.id
+    if (type === "hifz") {
+      tasks = tasks.filter(
+        (t) => !(t.type === "hifz" && t.status === "pending" && t.mission_start === key)
+      );
+    } else if (type === "hifz_flexible") {
+      tasks = tasks.filter((t) => !(t.type === "hifz_flexible" && t.status === "pending" && t.id === key));
+    }
 
     await updateDoc(studentRef, { tasks });
     await displayStudentDashboard({ code: studentCode, ...student, tasks });
@@ -1452,6 +1596,7 @@ async function cancelCurriculumTask(studentCode, type, missionStartIndex) {
     showMessage(authMessage, `حدث خطأ: ${e.message}`, "error");
   }
 }
+
 
 async function submitMurajaaTask(studentCode, mission) {
   try {
@@ -1588,20 +1733,43 @@ async function reviewTask(studentCode, taskId, action) {
     }
 
     if (action === "approve") {
+      // 1) نقاط
       student.total_points = (student.total_points || 0) + (task.points || 0);
+
+      // 2) تحديث التقدم حسب نوع المهمة
       if (task.type === "hifz_flexible") {
-  const surah = FLEXIBLE_CURRICULUM.find(s => s.surah === task.surah);
+        // ✅ تأمين كائن التقدم المرن
+        const cur = student.flexible_progress || {
+          current_surah: task.surah,
+          next_start_ayah: task.start_ayah || 1,
+        };
 
-  if (task.end_ayah < surah.total_ayahs) {
-    student.flexible_progress.next_start_ayah = task.end_ayah + 1;
-  } else {
-    student.flexible_progress.current_surah = surah.next_surah;
-    student.flexible_progress.next_start_ayah = 1;
-  }
-}
+        const surah = FLEXIBLE_CURRICULUM.find((s) => s.surah === task.surah);
+        if (!surah) {
+          showMessage(authMessage, "سورة المنهج المرن غير موجودة في FLEXIBLE_CURRICULUM", "error");
+          return;
+        }
 
+        const endAyah =
+          Number.isFinite(task.end_ayah) ? task.end_ayah :
+          Number.isFinite(task.flex_end_ayah) ? task.flex_end_ayah :
+          Number.isFinite(task.endAyah) ? task.endAyah :
+          (cur.next_start_ayah || 1);
 
-      if (task.type === "hifz") {
+        if (endAyah < surah.total_ayahs) {
+          student.flexible_progress = {
+            current_surah: task.surah,
+            next_start_ayah: endAyah + 1,
+          };
+        } else {
+          student.flexible_progress = {
+            current_surah: surah.next_surah,
+            next_start_ayah: 1,
+          };
+        }
+
+        student.hifz_mode = "flexible";
+      } else if (task.type === "hifz") {
         const last = task.mission_last ?? task.mission_start ?? 0;
         student.hifz_progress = last + 1;
       } else if (task.type === "murajaa") {
@@ -1634,26 +1802,41 @@ async function reviewTask(studentCode, taskId, action) {
         student.murajaa_cycles = cycles;
       }
 
+      // 3) اعتماد المهمة
       tasks[i].status = "completed";
       tasks[i].completed_at = Date.now();
       delete tasks[i].assistant_type;
       delete tasks[i].assistant_code;
 
+      // 4) حفظ
       await updateDoc(studentRef, {
         tasks,
         total_points: student.total_points,
+
+        // الثابت
         hifz_start_id: student.hifz_start_id ?? 0,
         hifz_end_id: student.hifz_end_id ?? HIFZ_CURRICULUM.length - 1,
         hifz_progress: student.hifz_progress ?? 0,
+        hifz_level: student.hifz_level ?? 1,
+
+        // ✅ المرن (منطقك)
+        hifz_mode: student.hifz_mode || "fixed",
+        flexible_progress: student.flexible_progress || null,
+
+        // المراجعة
         murajaa_level: student.murajaa_level || "BUILDING",
         murajaa_start_index: student.murajaa_start_index ?? 0,
         murajaa_progress_index: student.murajaa_progress_index ?? 0,
         murajaa_cycles: student.murajaa_cycles || 0,
-        flexible_progress: student.flexible_progress,
       });
 
-      showMessage(authMessage, `تم قبول المهمة وإضافة ${task.points} نقطة للطالب ${student.name}.`, "success");
+      showMessage(
+        authMessage,
+        `تم قبول المهمة وإضافة ${task.points} نقطة للطالب ${student.name}.`,
+        "success"
+      );
     } else {
+      // رفض
       if (task.type === "general") {
         tasks[i].status = "assigned";
         delete tasks[i].assistant_type;
@@ -1661,6 +1844,7 @@ async function reviewTask(studentCode, taskId, action) {
       } else {
         tasks.splice(i, 1);
       }
+
       await updateDoc(studentRef, { tasks });
       showMessage(authMessage, `تم رفض المهمة وإعادتها للطالب ${student.name}.`, "info");
     }
@@ -1699,7 +1883,8 @@ async function loadPendingTasksForReview() {
       const tasks = Array.isArray(student.tasks) ? student.tasks : [];
       tasks.forEach((t) => {
         if (t.status !== "pending") return;
-        if (t.type === "hifz") pendingHifz.push({ student, task: t });
+        if (t.status !== "pending") return;
+        if (t.type === "hifz" || t.type === "hifz_flexible") pendingHifz.push({ student, task: t });
         else if (t.type === "murajaa") pendingMurajaa.push({ student, task: t });
         else pendingGeneral.push({ student, task: t });
       });
@@ -1982,6 +2167,14 @@ async function loadStudentIntoForm(code) {
 
     newStudentMurajaaLevel.value = s.murajaa_level || "BUILDING";
     populateMurajaaStartSelect();
+        // ✅ ضبط نوع المنهج
+    const mode = s.hifz_mode || "fixed";
+    if (newStudentHifzType) newStudentHifzType.value = mode;
+
+    populateFlexibleSurahSelect();
+    if (newStudentFlexibleSurah) newStudentFlexibleSurah.value = String(s.flex_surah_index ?? 0);
+
+    syncHifzTypeUI();
 
     const arr = getReviewArrayForLevel(newStudentMurajaaLevel.value);
     const def = s.murajaa_start_index ?? s.murajaa_progress_index ?? 0;
@@ -2030,6 +2223,21 @@ function populateHifzSelects() {
   newStudentHifzStart.innerHTML = options;
   newStudentHifzEnd.innerHTML = options;
 }
+function populateFlexibleSurahSelect() {
+  if (!newStudentFlexibleSurah) return;
+  newStudentFlexibleSurah.innerHTML = FLEXIBLE_HIFZ.map((s, i) =>
+    `<option value="${i}">${s.surah_name_ar} (${s.start_ayah}-${s.end_ayah})</option>`
+  ).join("");
+}
+
+function syncHifzTypeUI() {
+  const mode = newStudentHifzType?.value || "fixed";
+  const isFlex = mode === "flexible";
+  fixedHifzGroup?.classList.toggle("hidden", isFlex);
+  flexibleSurahGroup?.classList.toggle("hidden", !isFlex);
+}
+
+newStudentHifzType?.addEventListener("change", syncHifzTypeUI);
 
 function populateMurajaaStartSelect() {
   if (!newStudentMurajaaLevel || !newStudentMurajaaStart) return;
@@ -2056,19 +2264,38 @@ registerStudentButton?.addEventListener("click", async () => {
   const murajaaStartIndex = parseInt(newStudentMurajaaStart.value, 10) || 0;
   const halaqaValue = newStudentHalaqa?.value || "ONSITE";
 
-  if (!code || !name || isNaN(hifzStartIndex) || isNaN(hifzEndIndex)) {
-    showMessage(registerStudentMessage, "الرجاء تعبئة جميع الحقول الأساسية بشكل صحيح.", "error");
+    const hifzModeNow = newStudentHifzType?.value || "fixed";
+
+  if (!code || !name) {
+    showMessage(registerStudentMessage, "الرجاء تعبئة رمز الطالب والاسم.", "error");
     return;
   }
-  if (hifzEndIndex < hifzStartIndex) {
-    showMessage(registerStudentMessage, "نقطة نهاية الحفظ يجب أن تكون بعد نقطة البداية.", "error");
-    return;
+
+  if (hifzModeNow === "fixed") {
+    if (isNaN(hifzStartIndex) || isNaN(hifzEndIndex)) {
+      showMessage(registerStudentMessage, "الرجاء اختيار بداية ونهاية الحفظ للمنهج الثابت.", "error");
+      return;
+    }
+    if (hifzEndIndex < hifzStartIndex) {
+      showMessage(registerStudentMessage, "نقطة نهاية الحفظ يجب أن تكون بعد نقطة البداية.", "error");
+      return;
+    }
+  } else {
+    if (!Number.isFinite(flexSurahIndex) || !FLEXIBLE_HIFZ[flexSurahIndex]) {
+      showMessage(registerStudentMessage, "الرجاء اختيار سورة بداية صحيحة للمنهج المرن.", "error");
+      return;
+    }
   }
+
 
   try {
     const studentRef = doc(db, "students", code);
     const snap = await getDoc(studentRef);
     const existing = snap.exists() ? snap.data() : null;
+
+    const hifzMode = newStudentHifzType?.value || "fixed";
+    const flexSurahIndex = parseInt(newStudentFlexibleSurah?.value || "0", 10) || 0;
+    const flexSurah = FLEXIBLE_HIFZ[flexSurahIndex] || FLEXIBLE_HIFZ[0];
 
     const baseData = {
       code,
@@ -2077,10 +2304,10 @@ registerStudentButton?.addEventListener("click", async () => {
       halaqa: halaqaValue,
       parent_name: parentName,
       parent_code: parentCode,
-      flexible_progress: existing?.flexible_progress || {
-        current_surah: null,
-        next_start_ayah: 1
-      },
+      hifz_mode: hifzMode,
+      // ✅ المرن
+      flex_surah_index: existing ? (existing.flex_surah_index ?? flexSurahIndex) : flexSurahIndex,
+      flex_next_ayah: existing ? (existing.flex_next_ayah ?? (flexSurah?.start_ayah || 1)) : (flexSurah?.start_ayah || 1),
       hifz_start_id: hifzStartIndex,
       hifz_end_id: hifzEndIndex,
       hifz_progress: existing ? existing.hifz_progress ?? hifzStartIndex : hifzStartIndex,
@@ -2478,8 +2705,12 @@ document.addEventListener("click", (e) => {
 populateHifzSelects();
 populateMurajaaStartSelect();
 updateHalaqaToggleUI();
+populateFlexibleSurahSelect();
+syncHifzTypeUI();
+
 
 console.log("App ready. Curriculum loaded from external file with assistants & pause flags.");
+
 
 
 
