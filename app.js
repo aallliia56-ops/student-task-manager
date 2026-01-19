@@ -208,7 +208,7 @@ halaqaSegment?.addEventListener("click", (e) => {
 
 
 const HALAQA_LOGIN_CODES = {
-  HALAQA_ONSITE: "ONSITE",
+
   HALAQA_ONLINE: "ONLINE",
 };
 
@@ -2695,6 +2695,7 @@ syncHifzTypeUI();
 
 
 console.log("App ready. Curriculum loaded from external file with assistants & pause flags.");
+
 
 
 
