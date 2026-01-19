@@ -1342,7 +1342,7 @@ async function displayHalaqaScreen(loginCode, halaqaType) {
 
     const halaqaLabel = halaqaType === "ONLINE" ? "الحلقة الإلكترونية" : "الحلقة الحضورية";
     safeSetText(halaqaTitle, `حسابات ${halaqaLabel}`);
-    safeSetText(halaqaSubtitle, `تم الدخول بواسطة كود الحلقة: ${loginCode}`);
+    safeSetText(halaqaSubtitle, `: ${loginCode}`);
 
     const snap = await getDocs(collection(db, "students"));
     const allStudents = [];
@@ -2695,6 +2695,7 @@ syncHifzTypeUI();
 
 
 console.log("App ready. Curriculum loaded from external file with assistants & pause flags.");
+
 
 
 
