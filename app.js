@@ -287,6 +287,30 @@ function updateStreak(student) {
     lastDate: today.getTime()
   };
 }
+function getTodayProgress(student) {
+  const tasks = Array.isArray(student.tasks) ? student.tasks : [];
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  let done = 0;
+
+  tasks.forEach(task => {
+    if (!task.created_at) return;
+
+    const taskDate = new Date(task.created_at);
+    taskDate.setHours(0,0,0,0);
+
+    if (taskDate.getTime() === today.getTime()) {
+      done++;
+    }
+  });
+
+  return {
+    done
+  };
+}
+
 
 function hideAllScreens() {
   authScreen?.classList.add("hidden");
@@ -1308,6 +1332,29 @@ async function displayStudentDashboard(student) {
 
     studentTasksDiv.prepend(streakEl);
     safeSetText(els.rankText, rankOnly);
+    const todayData = getTodayProgress(student);
+
+let message = "";
+
+if (todayData.done === 0) {
+  message = "🚀 ابدأ اليوم ولو بمهمة واحدة";
+} else if (todayData.done === 1) {
+  message = "🔥 بداية ممتازة!";
+} else if (todayData.done < 4) {
+  message = "💪 استمر، تقدم رائع";
+} else {
+  message = "🏆 أداء قوي اليوم!";
+}
+
+studentTasksDiv.insertAdjacentHTML("afterbegin", `
+  <div class="daily-box">
+    📅 اليوم:
+    <br>
+    ✅ أنجزت: ${todayData.done}
+    <br>
+    ${message}
+  </div>
+`);
 
     renderStudentTasks(student);
     renderStudentWeekStrip(student);
