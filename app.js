@@ -1324,15 +1324,13 @@ async function displayStudentDashboard(student) {
     safeSetWidth(els.murBar, murPct);
 
     safeSetText(els.totalPoints, points);
-    const streak = student.streak_count || 0;
+    
+    renderStudentTasks(student);
 
-    const streakEl = document.createElement("div");
-    streakEl.className = "streak-box";
-    streakEl.textContent = `🔥 سلسلة الإنجاز: ${streak} يوم`;
+// 🔥 streak + daily بعد رسم المهام
+const streak = student.streak_count || 0;
 
-    studentTasksDiv.prepend(streakEl);
-    safeSetText(els.rankText, rankOnly);
-    const todayData = getTodayProgress(student);
+const todayData = getTodayProgress(student);
 
 let message = "";
 
@@ -1354,9 +1352,11 @@ studentTasksDiv.insertAdjacentHTML("afterbegin", `
     <br>
     ${message}
   </div>
-`);
 
-    renderStudentTasks(student);
+  <div class="streak-box">
+    🔥 سلسلة الإنجاز: ${streak} يوم
+  </div>
+`);
     renderStudentWeekStrip(student);
 
     hideAllScreens();
