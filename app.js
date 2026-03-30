@@ -967,6 +967,11 @@ function buildMissionCard({
 
 function renderStudentTasks(student) {
   studentTasksDiv.innerHTML = "";
+  studentTasksDiv.insertAdjacentHTML("beforeend", `
+    <div class="streak-box">
+      🔥 سلسلة الإنجاز: ${student.streak_count || 0} يوم
+    </div>
+  `);
   const tasksArray = Array.isArray(student.tasks) ? student.tasks : [];
   const wrap = document.createElement("div");
 
