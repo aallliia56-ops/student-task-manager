@@ -1048,22 +1048,25 @@ function renderStudentTasks(student) {
               : "إلغاء الإرسال"
             : "أنجزت المهمة ✅",
           disabled: !!pendingCurriculumTask && isAssistantPending,
-          onClick: () =>
-            pendingCurriculumTask
-              ? !isAssistantPending &&
-                cancelCurriculumTask(student.code, "hifz", hifzMission.startIndex)
-    : function(e) {
-        const btn = e.currentTarget;
-        const taskCard = btn.closest(".task-card");
+          onClick: function(e) {
+  if (pendingCurriculumTask) {
+    if (!isAssistantPending) {
+      cancelCurriculumTask(student.code, "hifz", hifzMission.startIndex);
+    }
+    return;
+  }
 
-        if (taskCard) {
-          taskCard.classList.add("task-completed");
-        }
+  const btn = e.currentTarget;
+  const taskCard = btn.closest(".task-card");
 
-        showSuccessToast(hifzMission.points || 5);
+  if (taskCard) {
+    taskCard.classList.add("task-completed");
+  }
 
-        submitCurriculumTask(student.code, hifzMission);
-      }
+  showSuccessToast(hifzMission.points || 5);
+
+  submitCurriculumTask(student.code, hifzMission);
+}
             ,
         })
       );
@@ -1101,21 +1104,25 @@ function renderStudentTasks(student) {
             : "إلغاء الإرسال"
           : "أنجزت المهمة ✅",
         disabled: !!pendingMurTask && isAssistantPending,
-        onClick: () =>
-          pendingMurTask
-            ? !isAssistantPending && cancelMurajaaTask(student.code, murMission)
-    : function(e) {
-        const btn = e.currentTarget;
-        const taskCard = btn.closest(".task-card");
+        onClick: function(e) {
+  if (pendingMurTask) {
+    if (!isAssistantPending) {
+      cancelMurajaaTask(student.code, murMission);
+    }
+    return;
+  }
 
-        if (taskCard) {
-          taskCard.classList.add("task-completed");
-        }
+  const btn = e.currentTarget;
+  const taskCard = btn.closest(".task-card");
 
-        showSuccessToast(murMission.points || 3);
+  if (taskCard) {
+    taskCard.classList.add("task-completed");
+  }
 
-        submitMurajaaTask(student.code, murMission);
-      }
+  showSuccessToast(murMission.points || 3);
+
+  submitMurajaaTask(student.code, murMission);
+}
            ,
       })
     );
