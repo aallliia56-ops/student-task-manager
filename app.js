@@ -246,6 +246,18 @@ const showMessage = (el, msg, type = "info") => {
   setTimeout(() => el.classList.add("hidden"), 5000);
 };
 
+function showSuccessToast(points = 0) {
+  const toast = document.createElement("div");
+  toast.className = "success-toast";
+  toast.textContent = `🔥 أحسنت! +${points} نقاط`;
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 2000);
+}
+
 function hideAllScreens() {
   authScreen?.classList.add("hidden");
   studentScreen?.classList.add("hidden");
@@ -1040,7 +1052,7 @@ function renderStudentTasks(student) {
             pendingCurriculumTask
               ? !isAssistantPending &&
                 cancelCurriculumTask(student.code, "hifz", hifzMission.startIndex)
-              : submitCurriculumTask(student.code, hifzMission),
+              : (() => {     const taskCard = document.activeElement.closest(".task-card");      if (taskCard) {       taskCard.classList.add("task-completed");     }      showSuccessToast(hifzMission.points || 5);      submitCurriculumTask(student.code, hifzMission);   }),
         })
       );
     }
@@ -1080,7 +1092,7 @@ function renderStudentTasks(student) {
         onClick: () =>
           pendingMurTask
             ? !isAssistantPending && cancelMurajaaTask(student.code, murMission)
-            : submitMurajaaTask(student.code, murMission),
+            : (() => {     const taskCard = document.activeElement.closest(".task-card");      if (taskCard) {       taskCard.classList.add("task-completed");     }      showSuccessToast(murMission.points || 3);      submitMurajaaTask(student.code, murMission);   }),
       })
     );
   }
@@ -1117,7 +1129,7 @@ function renderStudentTasks(student) {
 
     if (task.status === "assigned") {
       btn.textContent = "أنجزت المهمة ✅";
-      btn.addEventListener("click", () => submitGeneralTask(student.code, task.id));
+      btn.addEventListener("click", () => {   const taskCard = btn.closest(".task-card");    if (taskCard) {     taskCard.classList.add("task-completed");   }    showSuccessToast(task.points || 5);    submitGeneralTask(student.code, task.id); });
     } else if (task.status === "pending") {
       btn.textContent = "إلغاء الإرسال";
       btn.addEventListener("click", () => cancelGeneralTask(student.code, task.id));
