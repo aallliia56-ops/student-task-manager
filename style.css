@@ -595,3 +595,37 @@ h1{ text-align:center; margin-bottom:10px; }
   padding:6px 12px; font-weight:900; cursor:pointer;
 }
 .seg-btn.active{background:#3498db; color:#fff; border-color:#3498db;}
+/* 🔥 تأثير الإنجاز */
+@keyframes successPop {
+  0% { transform: scale(0.9); opacity: 0; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.task-completed {
+  animation: successPop 0.4s ease;
+  border: 2px solid #2ecc71 !important;
+  box-shadow: 0 0 12px rgba(46,204,113,0.4);
+}
+
+/* رسالة الإنجاز */
+.success-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2ecc71;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  z-index: 9999;
+  animation: fadeInOut 2s ease;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translate(-50%, 20px); }
+  20% { opacity: 1; transform: translate(-50%, 0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 20px); }
+}
