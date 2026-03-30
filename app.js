@@ -257,6 +257,36 @@ function showSuccessToast(points = 0) {
     toast.remove();
   }, 2000);
 }
+function updateStreak(student) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const last = student.last_active_date
+    ? new Date(student.last_active_date)
+    : null;
+
+  if (last) last.setHours(0,0,0,0);
+
+  let streak = student.streak_count || 0;
+
+  if (!last) {
+    streak = 1;
+  } else {
+    const diffDays = (today - last) / (1000 * 60 * 60 * 24);
+
+    if (diffDays === 1) {
+      streak += 1; // يوم جديد
+    } else if (diffDays > 1) {
+      streak = 1; // انقطع
+    }
+    // إذا نفس اليوم → ما يتغير
+  }
+
+  return {
+    streak,
+    lastDate: today.getTime()
+  };
+}
 
 function hideAllScreens() {
   authScreen?.classList.add("hidden");
@@ -1265,6 +1295,13 @@ async function displayStudentDashboard(student) {
     safeSetWidth(els.murBar, murPct);
 
     safeSetText(els.totalPoints, points);
+    const streak = student.streak_count || 0;
+
+    const streakEl = document.createElement("div");
+    streakEl.className = "streak-box";
+    streakEl.textContent = `🔥 سلسلة الإنجاز: ${streak} يوم`;
+
+    studentTasksDiv.prepend(streakEl);
     safeSetText(els.rankText, rankOnly);
 
     renderStudentTasks(student);
@@ -1541,7 +1578,8 @@ async function submitCurriculumTask(studentCode, mission) {
       showMessage(authMessage, "المهمة قيد المراجعة بالفعل.", "info");
       return;
     }
-
+    const streakData = updateStreak(student);
+    
     tasks.push({
       id: generateUniqueId(),
       type: "hifz",
@@ -1553,7 +1591,11 @@ async function submitCurriculumTask(studentCode, mission) {
       created_at: Date.now(),
     });
 
-    await updateDoc(studentRef, { tasks });
+    await updateDoc(studentRef, {
+      tasks,
+      streak_count: streakData.streak,
+      last_active_date: streakData.lastDate,
+    });     
     await displayStudentDashboard({ code: studentCode, ...student, tasks });
     showMessage(authMessage, "تم إرسال مهمة الحفظ للمراجعة.", "success");
   } catch (e) {
@@ -1646,6 +1688,8 @@ async function submitMurajaaTask(studentCode, mission) {
       return;
     }
 
+    const streakData = updateStreak(student);
+
     tasks.push({
       id: generateUniqueId(),
       type: "murajaa",
@@ -1657,7 +1701,11 @@ async function submitMurajaaTask(studentCode, mission) {
       created_at: Date.now(),
     });
 
-    await updateDoc(studentRef, { tasks });
+    await updateDoc(studentRef, {
+      tasks,
+      streak_count: streakData.streak,
+      last_active_date: streakData.lastDate,
+    });
     await displayStudentDashboard({ code: studentCode, ...student, tasks });
     showMessage(authMessage, "تم إرسال مهمة المراجعة للمراجعة.", "success");
   } catch (e) {
@@ -1709,8 +1757,18 @@ async function submitGeneralTask(studentCode, taskId) {
     }
 
     tasks[i].status = "pending";
-    await updateDoc(studentRef, { tasks });
+
+    // 🔥 إضافة streak
+    const streakData = updateStreak(student);
+
+    await updateDoc(studentRef, {
+      tasks,
+      streak_count: streakData.streak,
+      last_active_date: streakData.lastDate,
+    });
+
     await displayStudentDashboard({ code: studentCode, ...student, tasks });
+
     showMessage(authMessage, "تم إرسال المهمة العامة للمراجعة.", "success");
   } catch (e) {
     console.error("Error submitGeneralTask:", e);
