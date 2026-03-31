@@ -1260,7 +1260,7 @@ function renderStudentTasks(student) {
 async function displayStudentDashboard(student) {
   try {
     const els = getStudentEls();
-    safeSetText(els.welcome, `أهلاً بك يا ${student.name || "طالب"}`);
+    safeSetText(els.welcome, ` ${student.name || "طالب"}`);
 
     const startIdx = student.hifz_start_id ?? 0;
     const endIdx = student.hifz_end_id ?? HIFZ_CURRICULUM.length - 1;
