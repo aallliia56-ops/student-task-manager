@@ -2585,7 +2585,7 @@ loginButton.addEventListener("click", async () => {
     }
 
     // المعلم
-    if (rawCode === "teacher1") {
+    if (rawCode === "teacherA") {
       currentUser = { role: "teacher", code: rawCode };
       lastStudentEntrySource = null;
       hideAllScreens();
